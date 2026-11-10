@@ -1,0 +1,44 @@
+name: Bug report / Informar de un fallo
+description: Something in Notflix does not work as it should. / Algo de Notflix no funciona como debería.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please search the existing issues first, and never paste keys, passwords, account emails or addon URLs that contain tokens.
+        Gracias por avisar. Busca antes entre las incidencias abiertas, y no pegues nunca claves, contraseñas, correos de cuenta ni URL de complementos con tokens.
+  - type: input
+    id: version
+    attributes:
+      label: Notflix version / Versión de Notflix
+      description: Settings → About / Ajustes → Acerca de
+      placeholder: 1.0.0-beta.1
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version / Dispositivo y versión de Android
+      placeholder: Xiaomi TV A Pro, Android 11
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / Pasos para reproducirlo
+      placeholder: |
+        1. Open…
+        2. Press…
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected and what happened / Qué esperabas y qué pasó
+    validations:
+      required: true
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshots or video / Capturas o vídeo
+      description: Optional. Hide profile names, emails and anything personal. / Opcional. Oculta nombres de perfil, correos y cualquier dato personal.

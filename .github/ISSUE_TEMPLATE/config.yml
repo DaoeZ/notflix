@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: NuvioTV (engine, addons, playback / motor, complementos, reproducción)
+    url: https://github.com/NuvioMedia/NuvioTV/issues
+    about: Problems that also happen in the official Nuvio app belong there. / Los fallos que también pasan en la app oficial de Nuvio van allí.

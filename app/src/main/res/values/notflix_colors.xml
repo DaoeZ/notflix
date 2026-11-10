@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notflix brand red used by the vector wordmark and mark. Keep in sync with NotflixVisualSpec.Accent. -->
+    <color name="notflix_brand_red">#E50914</color>
+</resources>

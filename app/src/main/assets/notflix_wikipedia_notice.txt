@@ -1,0 +1,18 @@
+Notflix laboratory — Wikipedia reception extracts
+
+The optional feature resolves a public IMDb identifier via Wikidata and selects
+plain-text reception paragraphs from Wikipedia. It is not Rotten Tomatoes consensus,
+a translation, an AI summary, or an endorsement by Wikimedia or the upstream projects.
+The Kotlin implementation is original; no JavaScript is bundled or run.
+
+Wikipedia text: Wikipedia contributors, Creative Commons Attribution-ShareAlike 4.0.
+https://creativecommons.org/licenses/by-sa/4.0/
+The UI credits the particular article and permanent revision and identifies selection
+and shortening. Copyright exceptions for third-party quotations may differ from the
+article's general license; the conservative paragraph filter is not a universal guarantee.
+Wikidata structured identity data is published under CC0.
+https://www.wikidata.org/wiki/Wikidata:Licensing
+
+The feature uses the already declared jsoup dependency in the Full source set only.
+No excerpt text, account cookies, user profile, library, progress, or viewing history is sent
+to the providers. A public identifier and the required Wikipedia article title are sent.

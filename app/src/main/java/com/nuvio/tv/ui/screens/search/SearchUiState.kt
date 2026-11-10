@@ -1,0 +1,86 @@
+package com.nuvio.tv.ui.screens.search
+
+import androidx.compose.runtime.Immutable
+import com.nuvio.tv.core.profile.AgeGateSnapshot
+import com.nuvio.tv.core.profile.allows
+import com.nuvio.tv.data.local.hiddenTitleKey
+import com.nuvio.tv.domain.model.Addon
+import com.nuvio.tv.domain.model.CatalogRow
+import com.nuvio.tv.domain.model.DiscoverLocation
+import com.nuvio.tv.domain.model.MetaPreview
+
+internal const val MIN_SEARCH_QUERY_LENGTH = 2
+
+internal fun submittedSearchQuery(rawQuery: String): String =
+    rawQuery.trim().takeIf { it.length >= MIN_SEARCH_QUERY_LENGTH }.orEmpty()
+
+internal fun shouldShowDiscoverInSearch(
+    discoverLocation: DiscoverLocation,
+    query: String,
+    submittedQuery: String
+): Boolean =
+    discoverLocation == DiscoverLocation.IN_SEARCH &&
+        query.trim().length < MIN_SEARCH_QUERY_LENGTH &&
+        submittedQuery.isBlank()
+
+@Immutable
+data class SearchUiState(
+    val query: String = "",
+    val submittedQuery: String = "",
+    val isSearching: Boolean = false,
+    val error: String? = null,
+    val catalogRows: List<CatalogRow> = emptyList(),
+    val installedAddons: List<Addon> = emptyList(),
+    val discoverLocation: DiscoverLocation = DiscoverLocation.IN_SEARCH,
+    val discoverInitialized: Boolean = false,
+    val discoverLoading: Boolean = false,
+    val discoverLoadingMore: Boolean = false,
+    val discoverCatalogs: List<DiscoverCatalog> = emptyList(),
+    val selectedDiscoverType: String = "movie",
+    val selectedDiscoverCatalogKey: String? = null,
+    val selectedDiscoverGenre: String? = null,
+    val discoverResults: List<MetaPreview> = emptyList(),
+    val pendingDiscoverResults: List<MetaPreview> = emptyList(),
+    val discoverHasMore: Boolean = true,
+    val discoverPage: Int = 1,
+    val posterLabelsEnabled: Boolean = true,
+    val catalogAddonNameEnabled: Boolean = true,
+    val catalogTypeSuffixEnabled: Boolean = true,
+    val posterCardWidthDp: Int = 126,
+    val posterCardHeightDp: Int = 189,
+    val posterCardCornerRadiusDp: Int = 12,
+    val recentSearches: List<String> = emptyList(),
+    val suggestions: List<String> = emptyList()
+)
+
+/** Applies the device-local age limit and the profile's hidden titles to every rated list. */
+internal fun SearchUiState.filteredForAge(
+    age: AgeGateSnapshot,
+    hiddenKeys: Set<String> = emptySet()
+): SearchUiState {
+    if (age.limit == null && hiddenKeys.isEmpty()) return this
+    fun keep(item: MetaPreview): Boolean =
+        age.allows(item) && (hiddenKeys.isEmpty() || hiddenTitleKey(item.apiType, item.id) !in hiddenKeys)
+    return copy(
+        catalogRows = catalogRows.map { row ->
+            val filtered = row.items.filter(::keep)
+            if (filtered.size == row.items.size) row else row.copy(items = filtered)
+        },
+        discoverResults = discoverResults.filter(::keep),
+        pendingDiscoverResults = pendingDiscoverResults.filter(::keep)
+    )
+}
+
+@Immutable
+data class DiscoverCatalog(
+    val key: String,
+    val addonId: String,
+    val addonName: String,
+    val addonBaseUrl: String,
+    val catalogId: String,
+    val catalogName: String,
+    val type: String,
+    val genres: List<String>,
+    val supportsSkip: Boolean,
+    val skipStep: Int
+)

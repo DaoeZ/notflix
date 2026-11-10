@@ -1,0 +1,17 @@
+name: Idea / Sugerencia
+description: Suggest something for Notflix. / Propón algo para Notflix.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would it solve? / ¿Qué resolvería?
+      description: Describe the situation, not only the solution. / Describe la situación, no solo la solución.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea / Tu idea
+    validations:
+      required: true

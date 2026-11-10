@@ -1,0 +1,12 @@
+Notflix third-party notices
+
+Typography
+Bebas Neue is copyright (C) 2010 Dharma Type and licensed under SIL OFL 1.1.
+See typography/OFL-BebasNeue.txt. Inter reuses Nuvio's existing font resource.
+No font is downloaded at runtime or installed globally.
+
+Intro
+The NOTFLIX intro uses original motion graphics and synthesized sound with the
+Bebas Neue typeface. No third-party logo, sound or media is included.
+
+Artwork and metadata are supplied at runtime by the user's own providers.
