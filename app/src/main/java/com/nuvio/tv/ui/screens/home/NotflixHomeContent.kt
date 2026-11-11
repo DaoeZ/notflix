@@ -222,7 +222,9 @@ internal fun notflixRows(state: HomeUiState, keepPendingCw: Boolean, cwTitle: St
         }
         add(NotflixDisplayRow(row.key, row.loadKey, row.title, row.phase,
             if (row.folderTarget != null && row.phase == NotflixRowPhase.PENDING && tiles.isEmpty()) emptyList()
-            else tiles + listOfNotNull(folderAction, catalogAction), folderTarget = row.folderTarget,
+            else tiles + listOfNotNull(folderAction, catalogAction),
+            wide = row.collection?.let { notflixCollectionRowIsWide(it.folders) } == true,
+            folderTarget = row.folderTarget,
             empty = row.catalog?.let { catalog ->
                 catalog.items.isEmpty() || catalog.items.none {
                     state.allowsForAge(it) && !it.isHiddenTitle(hiddenKeys)
@@ -1098,7 +1100,7 @@ private fun NotflixCard(tile: NotflixTile, identity: String, wide: Boolean, expa
             this[Spec.RenderedCardWidthDp] = width.value
         }) {
         if (tile.meta == null && tile.folder != null) {
-            NotflixFolderArtwork(tile, focused, Modifier.fillMaxSize())
+            NotflixFolderArtwork(tile, focused, Modifier.fillMaxSize(), wide)
         } else if (tile.meta == null && tile.seeAllCatalog != null) {
             NotflixSeeAllArtwork(tile, focused, Modifier.fillMaxSize())
         } else if (expanded && !wide && Spec.CARD_LANDSCAPE) Row(Modifier.fillMaxSize()) {
@@ -1422,9 +1424,9 @@ private fun NotflixAction(title: String, modifier: Modifier = Modifier, onClick:
 
 /** Folder card: official cover respecting the folder shape, emoji or the «Ver todo» drawing as fallback. */
 @Composable
-private fun NotflixFolderArtwork(tile: NotflixTile, focused: Boolean, modifier: Modifier) {
+private fun NotflixFolderArtwork(tile: NotflixTile, focused: Boolean, modifier: Modifier, wide: Boolean = false) {
     var imageFailed by remember(tile.poster) { mutableStateOf(false) }
-    val mode = notflixFolderArtworkMode(tile.poster, imageFailed, tile.coverEmoji, tile.tileShape)
+    val mode = notflixFolderArtworkMode(tile.poster, imageFailed, tile.coverEmoji, tile.tileShape, wide)
     if (mode == NotflixFolderArtworkMode.FALLBACK) {
         NotflixSeeAllArtwork(tile, focused, modifier, showTitle = !tile.hideTitle)
         return
