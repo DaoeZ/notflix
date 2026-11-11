@@ -6,26 +6,41 @@ import com.nuvio.tv.domain.model.CollectionFolder
 import com.nuvio.tv.domain.model.FolderViewMode
 import com.nuvio.tv.domain.model.PosterShape
 
+/** Localized texts resolved by the screen with stringResource; the app language decides their values. */
+internal data class NotflixHomeCollectionTexts(
+    val title: String,
+    val popularMovies: String,
+    val popularSeries: String,
+    val animatedMovies: String,
+    val newMovies: String,
+    val newSeries: String,
+    val familyMovies: String,
+    val action: String,
+    val comedy: String,
+    val sciFi: String,
+    val dramaSeries: String,
+    val featuredMovies: String
+)
+
 /** Product definition approved 2026-11-02. Existing collections are never migrated here. */
 internal object NotflixHomeCollectionPreset {
     const val ID = "notflix-inicio"
-    const val TITLE = "Inicio Notflix"
     private const val ADDON = "com.linvo.cinemeta"
 
-    fun create(): Collection = Collection(
-        id = ID, title = TITLE, pinToTop = true, viewMode = FolderViewMode.ROWS, showAllTab = false,
+    fun create(texts: NotflixHomeCollectionTexts, year: Int): Collection = Collection(
+        id = ID, title = texts.title, pinToTop = true, viewMode = FolderViewMode.ROWS, showAllTab = false,
         folders = listOf(
-            folder("peliculas-populares", "Películas populares", "movie", "top"),
-            folder("series-populares", "Series populares", "series", "top"),
-            folder("animacion", "Películas de animación", "movie", "top", "Animation"),
-            folder("novedades-peliculas", "Novedades en películas", "movie", "year", "2026"),
-            folder("novedades-series", "Novedades en series", "series", "year", "2026"),
-            folder("familia", "Para ver en familia", "movie", "top", "Family"),
-            folder("accion", "Acción", "movie", "top", "Action"),
-            folder("comedia", "Comedia", "movie", "top", "Comedy"),
-            folder("ciencia-ficcion", "Ciencia ficción", "movie", "top", "Sci-Fi"),
-            folder("series-drama", "Series de drama", "series", "top", "Drama"),
-            folder("peliculas-destacadas", "Películas destacadas", "movie", "imdbRating")
+            folder("peliculas-populares", texts.popularMovies, "movie", "top"),
+            folder("series-populares", texts.popularSeries, "series", "top"),
+            folder("animacion", texts.animatedMovies, "movie", "top", "Animation"),
+            folder("novedades-peliculas", texts.newMovies, "movie", "year", year.toString()),
+            folder("novedades-series", texts.newSeries, "series", "year", year.toString()),
+            folder("familia", texts.familyMovies, "movie", "top", "Family"),
+            folder("accion", texts.action, "movie", "top", "Action"),
+            folder("comedia", texts.comedy, "movie", "top", "Comedy"),
+            folder("ciencia-ficcion", texts.sciFi, "movie", "top", "Sci-Fi"),
+            folder("series-drama", texts.dramaSeries, "series", "top", "Drama"),
+            folder("peliculas-destacadas", texts.featuredMovies, "movie", "imdbRating")
         )
     )
 

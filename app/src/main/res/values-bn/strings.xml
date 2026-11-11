@@ -3114,4 +3114,19 @@
         <item quantity="one">%dটি নির্বাচিত</item>
         <item quantity="other">%dটি নির্বাচিত</item>
     </plurals>
-    </resources>
+        <string name="notflix_home_collection_title">Notflix হোম</string>
+    <string name="notflix_home_folder_popular_movies">জনপ্রিয় চলচ্চিত্র</string>
+    <string name="notflix_home_folder_popular_series">জনপ্রিয় সিরিজ</string>
+    <string name="notflix_home_folder_animated_movies">অ্যানিমেটেড চলচ্চিত্র</string>
+    <string name="notflix_home_folder_new_movies">নতুন চলচ্চিত্র</string>
+    <string name="notflix_home_folder_new_series">নতুন সিরিজ</string>
+    <string name="notflix_home_folder_family_movies">পারিবারিক চলচ্চিত্র</string>
+    <string name="notflix_home_folder_action">অ্যাকশন</string>
+    <string name="notflix_home_folder_comedy">কমেডি</string>
+    <string name="notflix_home_folder_sci_fi">বিজ্ঞান কল্পনা</string>
+    <string name="notflix_home_folder_drama_series">ড্রামা সিরিজ</string>
+    <string name="notflix_home_folder_featured_movies">নির্বাচিত চলচ্চিত্র</string>
+    <string name="notflix_collection_help">এগারোটি ফোল্ডারসহ অফিসিয়াল %1$s সংগ্রহ তৈরি করুন। বিদ্যমান সংগ্রহ ও সম্পাদনা সংরক্ষিত থাকে।</string>
+    <string name="notflix_collection_create">%1$s তৈরি করুন</string>
+    <string name="notflix_collection_creating">%1$s তৈরি হচ্ছে…</string>
+</resources>

@@ -3374,4 +3374,19 @@
     <string name="autosync_toast_failed_no_reference">הסנכרון נכשל: אין בסרטון הזה כתוביות מוטמעות להשוואה.</string>
     <string name="autosync_toast_failed_unsupported">הסנכרון נכשל: הסנכרון האוטומטי לא תומך בפורמט הכתוביות הזה.</string>
     <string name="autosync_label_synced">מסונכרן אוטומטית</string>
+    <string name="notflix_home_collection_title">דף הבית של Notflix</string>
+    <string name="notflix_home_folder_popular_movies">סרטים פופולריים</string>
+    <string name="notflix_home_folder_popular_series">סדרות פופולריות</string>
+    <string name="notflix_home_folder_animated_movies">סרטי אנימציה</string>
+    <string name="notflix_home_folder_new_movies">סרטים חדשים</string>
+    <string name="notflix_home_folder_new_series">סדרות חדשות</string>
+    <string name="notflix_home_folder_family_movies">סרטים משפחתיים</string>
+    <string name="notflix_home_folder_action">אקשן</string>
+    <string name="notflix_home_folder_comedy">קומדיה</string>
+    <string name="notflix_home_folder_sci_fi">מדע בדיוני</string>
+    <string name="notflix_home_folder_drama_series">סדרות דרמה</string>
+    <string name="notflix_home_folder_featured_movies">סרטים מומלצים</string>
+    <string name="notflix_collection_help">צרו את האוסף הרשמי %1$s עם אחד עשר תיקיות. אוספים ושינויים קיימים נשמרים.</string>
+    <string name="notflix_collection_create">יצירת %1$s</string>
+    <string name="notflix_collection_creating">יוצר את %1$s…</string>
 </resources>

@@ -3225,4 +3225,19 @@
     <string name="stream_test_video_bitrate">平均影片位元率：%1$s</string>
     <string name="stream_test_error_connection">連線失敗。上次播放的串流連結可能已過期或無法存取。請重新播放影片並重試。</string>
 
+    <string name="notflix_home_collection_title">Notflix 首頁</string>
+    <string name="notflix_home_folder_popular_movies">熱門電影</string>
+    <string name="notflix_home_folder_popular_series">熱門影集</string>
+    <string name="notflix_home_folder_animated_movies">動畫電影</string>
+    <string name="notflix_home_folder_new_movies">新電影</string>
+    <string name="notflix_home_folder_new_series">新影集</string>
+    <string name="notflix_home_folder_family_movies">家庭電影</string>
+    <string name="notflix_home_folder_action">動作</string>
+    <string name="notflix_home_folder_comedy">喜劇</string>
+    <string name="notflix_home_folder_sci_fi">科幻</string>
+    <string name="notflix_home_folder_drama_series">劇情影集</string>
+    <string name="notflix_home_folder_featured_movies">精選電影</string>
+    <string name="notflix_collection_help">建立包含十一個資料夾的官方 %1$s 合集。現有合集與修改會保留。</string>
+    <string name="notflix_collection_create">建立 %1$s</string>
+    <string name="notflix_collection_creating">正在建立 %1$s…</string>
 </resources>

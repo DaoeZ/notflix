@@ -6,7 +6,7 @@
     <string name="notflix_appearance_title">Appearance · this profile and device</string>
     <string name="notflix_appearance_active">Active: %1$s</string>
     <string name="notflix_save_failed">The change could not be saved</string>
-    <string name="notflix_home_motion_title">Home motion · %1$s</string>
+    <string name="notflix_home_motion_title">Home motion</string>
     <string name="notflix_home_motion_help">Applies only to Notflix Home. Reduced removes card zoom and animation; expanded information and focus stay available.</string>
     <string name="notflix_home_motion_normal">Normal</string>
     <string name="notflix_home_motion_reduced">Reduced</string>

@@ -3365,4 +3365,19 @@
     <string name="autosync_toast_failed_no_reference">Falha na sincronização: este vídeo não tem legendas internas para comparar.</string>
     <string name="autosync_toast_failed_unsupported">Falha na sincronização: este formato de legenda não é aceito.</string>
     <string name="autosync_label_synced">Sincronizado automaticamente</string>
+    <string name="notflix_home_collection_title">Início Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Filmes populares</string>
+    <string name="notflix_home_folder_popular_series">Séries populares</string>
+    <string name="notflix_home_folder_animated_movies">Filmes de animação</string>
+    <string name="notflix_home_folder_new_movies">Filmes novos</string>
+    <string name="notflix_home_folder_new_series">Séries novas</string>
+    <string name="notflix_home_folder_family_movies">Filmes para a família</string>
+    <string name="notflix_home_folder_action">Ação</string>
+    <string name="notflix_home_folder_comedy">Comédia</string>
+    <string name="notflix_home_folder_sci_fi">Ficção científica</string>
+    <string name="notflix_home_folder_drama_series">Séries de drama</string>
+    <string name="notflix_home_folder_featured_movies">Filmes em destaque</string>
+    <string name="notflix_collection_help">Crie a coleção oficial %1$s com onze pastas. As coleções e edições existentes são preservadas.</string>
+    <string name="notflix_collection_create">Criar %1$s</string>
+    <string name="notflix_collection_creating">Criando %1$s…</string>
 </resources>

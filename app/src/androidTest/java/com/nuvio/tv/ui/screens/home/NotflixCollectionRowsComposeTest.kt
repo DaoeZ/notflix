@@ -37,7 +37,7 @@ class NotflixCollectionRowsComposeTest {
     private val requests=CopyOnWriteArrayList<String>()
     private val gates=mutableMapOf<String,CompletableDeferred<Unit>>()
     private var itemsPerRow=3
-    private var collection=NotflixHomeCollectionPreset.create()
+    private var collection=notflixCollectionTestPreset()
     private lateinit var loader:NotflixCollectionRows
     private lateinit var nav:NavHostController
     private var ui by mutableStateOf(HomeUiState())

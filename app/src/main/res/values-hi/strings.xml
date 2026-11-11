@@ -995,4 +995,19 @@
     <string name="update_ignore">नज़रअंदाज़ करें</string>
     <string name="playback_player_auto">ऑटो (सामग्री के लिए सर्वश्रेष्ठ)</string>
     <string name="playback_player_auto_desc">ExoPlayer मूवीज़ और टीवी शोज़ के लिए · MPV एनीमे के लिए</string>
+    <string name="notflix_home_collection_title">Notflix होम</string>
+    <string name="notflix_home_folder_popular_movies">लोकप्रिय फ़िल्में</string>
+    <string name="notflix_home_folder_popular_series">लोकप्रिय सीरीज़</string>
+    <string name="notflix_home_folder_animated_movies">एनिमेटेड फ़िल्में</string>
+    <string name="notflix_home_folder_new_movies">नई फ़िल्में</string>
+    <string name="notflix_home_folder_new_series">नई सीरीज़</string>
+    <string name="notflix_home_folder_family_movies">पारिवारिक फ़िल्में</string>
+    <string name="notflix_home_folder_action">एक्शन</string>
+    <string name="notflix_home_folder_comedy">कॉमेडी</string>
+    <string name="notflix_home_folder_sci_fi">साइंस-फ़िक्शन</string>
+    <string name="notflix_home_folder_drama_series">ड्रामा सीरीज़</string>
+    <string name="notflix_home_folder_featured_movies">चुनिंदा फ़िल्में</string>
+    <string name="notflix_collection_help">ग्यारह फ़ोल्डरों के साथ आधिकारिक %1$s संग्रह बनाएँ। मौजूदा संग्रह और बदलाव सुरक्षित रहते हैं।</string>
+    <string name="notflix_collection_create">%1$s बनाएँ</string>
+    <string name="notflix_collection_creating">%1$s बनाया जा रहा है…</string>
 </resources>

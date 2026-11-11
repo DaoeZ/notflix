@@ -3026,4 +3026,19 @@
     <string name="web_stream_badge_imported">استُورد رابط الشارة.</string>
     <string name="web_stream_badge_importing">جارٍ الاستيراد\u2026</string>
     <string name="web_stream_badge_load_error">تعذر تحميل إعدادات شارات البث</string>
+    <string name="notflix_home_collection_title">رئيسية Notflix</string>
+    <string name="notflix_home_folder_popular_movies">أفلام شائعة</string>
+    <string name="notflix_home_folder_popular_series">مسلسلات شائعة</string>
+    <string name="notflix_home_folder_animated_movies">أفلام رسوم متحركة</string>
+    <string name="notflix_home_folder_new_movies">أفلام جديدة</string>
+    <string name="notflix_home_folder_new_series">مسلسلات جديدة</string>
+    <string name="notflix_home_folder_family_movies">أفلام عائلية</string>
+    <string name="notflix_home_folder_action">أكشن</string>
+    <string name="notflix_home_folder_comedy">كوميديا</string>
+    <string name="notflix_home_folder_sci_fi">خيال علمي</string>
+    <string name="notflix_home_folder_drama_series">مسلسلات دراما</string>
+    <string name="notflix_home_folder_featured_movies">أفلام مميزة</string>
+    <string name="notflix_collection_help">أنشئ مجموعة %1$s الرسمية بإحدى عشرة مجلدًا. تُحفظ المجموعات الحالية وتعديلاتها.</string>
+    <string name="notflix_collection_create">إنشاء %1$s</string>
+    <string name="notflix_collection_creating">جارٍ إنشاء %1$s…</string>
 </resources>

@@ -101,9 +101,11 @@ class NotflixHomeCollectionCreationTest {
                                 }
                             }
                             Column(Modifier.verticalScroll(rememberScrollState())){
+                                val texts=notflixHomeCollectionTexts()
                                 AppearanceSelectionContent(ap,onSelect=appearance::select,collectionCreator={
                                     NotflixHomeCollectionCreationContent(ap,creating.forAppearance(ap),
-                                        onCreate={creator.create(ap,appearance::authorizesCollectionCreation)},
+                                        homeName=texts.title,
+                                        onCreate={creator.create(ap,texts,java.time.Year.now().value,appearance::authorizesCollectionCreation)},
                                         onManage={nav.navigate("inert-manager")},
                                         manageFocusRequester=if(restoringAtEntry)entryFocus else null,
                                         restoreFocusToken=if(token!=handled)token else 0,onFocusRestored={handled=it},access=access)
@@ -137,12 +139,12 @@ class NotflixHomeCollectionCreationTest {
 
     @Test fun createAndRepeatUseActualStoreAndKeepFocusedButtonWithoutDuplication(){
         show();activate("notflix-create-home");created()
-        assertEquals(listOf(NotflixHomeCollectionPreset.create()),all())
+        assertEquals(listOf(notflixCollectionTestPreset()),all())
         compose.onNodeWithTag("notflix-create-home").assertIsFocused()
         activate("notflix-create-home")
         compose.waitUntil(10000){creator.state.value.result==NotflixCollectionResult.EXISTS}
-        assertEquals(listOf(NotflixHomeCollectionPreset.create()),all())
-        compose.onNodeWithTag("notflix-collection-result").assertTextContains("already exists",substring=true)
+        assertEquals(listOf(notflixCollectionTestPreset()),all())
+        compose.onNodeWithTag("notflix-collection-result",useUnmergedTree=true).assertTextContains("already exists",substring=true)
     }
     @Test fun managerBackRestoresProductiveManageControlWithoutDoubleNavigation(){
         show();activate("notflix-manage-collections")
@@ -162,13 +164,13 @@ class NotflixHomeCollectionCreationTest {
     }
     @Test fun spanishLabelsAndCollisionPreserveExistingEditsWithoutGlobalLocaleChange(){
         val original=instrumentation.targetContext.resources.configuration.locales.toLanguageTags()
-        val edited=NotflixHomeCollectionPreset.create().copy(pinToTop=false,folders=NotflixHomeCollectionPreset.create().folders.reversed())
+        val edited=notflixCollectionTestPreset().copy(pinToTop=false,folders=notflixCollectionTestPreset().folders.reversed())
         show(edited);compose.runOnIdle{language="es"};compose.waitForIdle()
-        compose.onNodeWithTag("notflix-create-home").assertTextEquals("Crear Inicio Notflix")
-        compose.onNodeWithTag("notflix-manage-collections").assertTextEquals("Gestionar colecciones")
+        compose.onNodeWithTag("notflix-create-home").assertTextContains("Crear Inicio Notflix",substring=true)
+        compose.onNodeWithTag("notflix-manage-collections").assertTextContains("Gestionar colecciones",substring=true)
         activate("notflix-create-home")
         compose.waitUntil(10000){creator.state.value.result==NotflixCollectionResult.EXISTS};compose.waitForIdle()
-        compose.onNodeWithTag("notflix-collection-result").assertTextContains("Se han conservado sus cambios.",substring=true)
+        compose.onNodeWithTag("notflix-collection-result",useUnmergedTree=true).assertTextContains("Se han conservado sus cambios.",substring=true)
         assertEquals(listOf(edited),all())
         assertEquals(original,instrumentation.targetContext.resources.configuration.locales.toLanguageTags())
     }
@@ -179,10 +181,10 @@ class NotflixHomeCollectionCreationTest {
         auth.value=AuthState.FullAccount("fixture","fixture@example.invalid")
         compose.waitUntil(10000){creator.access.value==NotflixCollectionAccess.ACCOUNT_SYNC_PENDING};compose.waitForIdle()
         compose.onNodeWithTag("notflix-create-home").assertIsNotEnabled()
-        instrumentation.runOnMainSync{creator.create(appearance.state.value,appearance::authorizesCollectionCreation)}
+        instrumentation.runOnMainSync{creator.create(appearance.state.value,notflixCollectionTestTexts,java.time.Year.now().value,appearance::authorizesCollectionCreation)}
         compose.waitUntil(10000){creator.state.value.result==NotflixCollectionResult.ACCOUNT_SYNC_PENDING};compose.waitForIdle()
         assertTrue(all().isEmpty())
-        compose.onNodeWithTag("notflix-collection-result").assertTextContains("No collection has been changed.",substring=true)
+        compose.onNodeWithTag("notflix-collection-result",useUnmergedTree=true).assertTextContains("No collection has been changed.",substring=true)
     }
     @Test fun withdrawnAuthorizationRejectsAnAlreadyCapturedClick(){
         show();focus("notflix-create-home")

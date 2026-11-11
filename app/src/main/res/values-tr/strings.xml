@@ -3385,4 +3385,19 @@
     <string name="autosync_toast_failed_no_reference">Eşitleme başarısız: Bu videoda karşılaştırılacak gömülü altyazı yok.</string>
     <string name="autosync_toast_failed_unsupported">Eşitleme başarısız: Otomatik Eşitleme bu altyazı formatını desteklemiyor.</string>
     <string name="autosync_label_synced">Otomatik eşitlendi</string>
+    <string name="notflix_home_collection_title">Notflix Ana Sayfa</string>
+    <string name="notflix_home_folder_popular_movies">Popüler filmler</string>
+    <string name="notflix_home_folder_popular_series">Popüler diziler</string>
+    <string name="notflix_home_folder_animated_movies">Animasyon filmleri</string>
+    <string name="notflix_home_folder_new_movies">Yeni filmler</string>
+    <string name="notflix_home_folder_new_series">Yeni diziler</string>
+    <string name="notflix_home_folder_family_movies">Aile filmleri</string>
+    <string name="notflix_home_folder_action">Aksiyon</string>
+    <string name="notflix_home_folder_comedy">Komedi</string>
+    <string name="notflix_home_folder_sci_fi">Bilim kurgu</string>
+    <string name="notflix_home_folder_drama_series">Drama dizileri</string>
+    <string name="notflix_home_folder_featured_movies">Öne çıkan filmler</string>
+    <string name="notflix_collection_help">On bir klasörle resmi %1$s koleksiyonunu oluşturun. Mevcut koleksiyonlar ve düzenlemeler korunur.</string>
+    <string name="notflix_collection_create">%1$s oluştur</string>
+    <string name="notflix_collection_creating">%1$s oluşturuluyor…</string>
 </resources>

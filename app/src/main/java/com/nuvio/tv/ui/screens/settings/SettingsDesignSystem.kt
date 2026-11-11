@@ -1091,7 +1091,8 @@ internal fun SettingsActionRow(
     leadingIcon: ImageVector? = null,
     @RawRes leadingRawIconRes: Int? = null,
     leadingArtworkSize: Dp = NuvioTheme.spacing.xl,
-    valueColor: Color = NuvioTheme.colors.TextSecondary
+    valueColor: Color = NuvioTheme.colors.TextSecondary,
+    subtitleModifier: Modifier = Modifier
 ) {
     if (notflixSettingsActive()) {
         NotflixSettingsActionRowLayout(
@@ -1108,7 +1109,8 @@ internal fun SettingsActionRow(
             leadingIcon = leadingIcon,
             leadingRawIconRes = leadingRawIconRes,
             leadingArtworkSize = leadingArtworkSize,
-            valueColor = valueColor
+            valueColor = valueColor,
+            subtitleModifier = subtitleModifier
         )
         return
     }
@@ -1185,7 +1187,8 @@ internal fun SettingsActionRow(
                         style = MaterialTheme.typography.bodySmall,
                         color = NuvioTheme.colors.TextSecondary.copy(alpha = contentAlpha),
                         maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = subtitleModifier
                     )
                 }
             }
@@ -1233,6 +1236,7 @@ private fun NotflixSettingsRowText(
     titleTrailingIcon: ImageVector?,
     titleTrailingIconTint: Color,
     subtitleMaxLines: Int,
+    subtitleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier
 ) {
     val titleColor = (if (focused) Spec.Background else Spec.Text).copy(alpha = contentAlpha)
@@ -1269,7 +1273,8 @@ private fun NotflixSettingsRowText(
                 fontSize = NotflixSettingsStyle.RowSubtitleSize,
                 lineHeight = NotflixSettingsStyle.RowSubtitleLineHeight,
                 maxLines = subtitleMaxLines,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = subtitleModifier
             )
         }
     }
@@ -1360,7 +1365,8 @@ private fun NotflixSettingsActionRowLayout(
     leadingIcon: ImageVector?,
     leadingRawIconRes: Int?,
     leadingArtworkSize: Dp,
-    valueColor: Color
+    valueColor: Color,
+    subtitleModifier: Modifier
 ) {
     val contentAlpha = if (enabled) 1f else 0.4f
     var isFocused by remember { mutableStateOf(false) }
@@ -1437,6 +1443,7 @@ private fun NotflixSettingsActionRowLayout(
                     titleTrailingIcon = titleTrailingIcon,
                     titleTrailingIconTint = titleTrailingIconTint,
                     subtitleMaxLines = 3,
+                    subtitleModifier = subtitleModifier,
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(12.dp))

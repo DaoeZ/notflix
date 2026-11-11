@@ -2887,4 +2887,19 @@
     <string name="stream_test_error_prefix">Gabim: %1$s</string>
     <string name="stream_test_video_bitrate">Bitrate mesatar i videos: %1$s</string>
     <string name="stream_test_error_connection">Lidhja dështoi. Lidhja e transmetimit të luajtur së fundi mund të ketë skaduar ose të jetë e paarritshme. Ju lutemi luajeni videon përsëri dhe provoni sërish.</string>
+    <string name="notflix_home_collection_title">Kryefaqja Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Filma popullorë</string>
+    <string name="notflix_home_folder_popular_series">Serialet popullore</string>
+    <string name="notflix_home_folder_animated_movies">Filma të animuar</string>
+    <string name="notflix_home_folder_new_movies">Filma të rinj</string>
+    <string name="notflix_home_folder_new_series">Seriale të reja</string>
+    <string name="notflix_home_folder_family_movies">Filma familjarë</string>
+    <string name="notflix_home_folder_action">Aksion</string>
+    <string name="notflix_home_folder_comedy">Komedi</string>
+    <string name="notflix_home_folder_sci_fi">Fantashkencë</string>
+    <string name="notflix_home_folder_drama_series">Seriale drama</string>
+    <string name="notflix_home_folder_featured_movies">Filma të veçuar</string>
+    <string name="notflix_collection_help">Krijoni koleksionin zyrtar %1$s me njëmbëdhjetë dosje. Koleksionet dhe ndryshimet ekzistuese ruhen.</string>
+    <string name="notflix_collection_create">Krijo %1$s</string>
+    <string name="notflix_collection_creating">Po krijohet %1$s…</string>
 </resources>

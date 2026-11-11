@@ -143,9 +143,9 @@ class NotflixPreviewPresentationTest {
     private fun settings(spanish:Boolean) {
         val s=PreviewFixtureState().apply{this.spanish=spanish;settings=true};show(s)
         compose.onNodeWithText(if(spanish)"Tráilers en tarjetas" else "Card previews").performScrollTo().assertIsDisplayed()
-        activate("preview-sound-true");compose.onNodeWithTag("preview-enabled-true").assertIsSelected();compose.onNodeWithTag("preview-sound-true").assertIsSelected()
-        activate("preview-enabled-false");compose.onNodeWithTag("preview-enabled-false").assertIsSelected();compose.onNodeWithTag("preview-sound-true").assertIsSelected()
-        compose.onNodeWithTag("intro-enabled-true").assertIsSelected();compose.onNodeWithTag("intro-sound-true").assertIsSelected()
+        activate("preview-sound");compose.onNodeWithTag("preview-enabled").assertIsOn();compose.onNodeWithTag("preview-sound").assertIsOn()
+        activate("preview-enabled");compose.onNodeWithTag("preview-enabled").assertIsOff();compose.onNodeWithTag("preview-sound").assertIsOn()
+        compose.onNodeWithTag("intro-enabled").assertIsOn();compose.onNodeWithTag("intro-sound").assertIsOn()
         compose.runOnIdle{assertEquals(listOf(false),s.previewChoices);assertEquals(listOf(true),s.soundChoices);assertTrue(s.resolver.calls.isEmpty())}
     }
 }

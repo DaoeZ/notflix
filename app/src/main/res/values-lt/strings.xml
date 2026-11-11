@@ -999,4 +999,19 @@ Klaida: Bandomoji simuliuojama klaida — tai nėra tikras gedimas. Šaltinis gr
     <string name="watchlist_removed">Pašalinta iš žiūrėjimo sąrašo</string>
     <string name="playback_player_auto">Automatiškai (Geriausia turiniui)</string>
     <string name="playback_player_auto_desc">ExoPlayer filmams ir serialams · MPV animėms</string>
+    <string name="notflix_home_collection_title">Notflix pagrindinis</string>
+    <string name="notflix_home_folder_popular_movies">Populiarūs filmai</string>
+    <string name="notflix_home_folder_popular_series">Populiarios serijos</string>
+    <string name="notflix_home_folder_animated_movies">Animaciniai filmai</string>
+    <string name="notflix_home_folder_new_movies">Nauji filmai</string>
+    <string name="notflix_home_folder_new_series">Naujos serijos</string>
+    <string name="notflix_home_folder_family_movies">Šeimos filmai</string>
+    <string name="notflix_home_folder_action">Veiksmo</string>
+    <string name="notflix_home_folder_comedy">Komedijos</string>
+    <string name="notflix_home_folder_sci_fi">Mokslinė fantastika</string>
+    <string name="notflix_home_folder_drama_series">Dramos serialai</string>
+    <string name="notflix_home_folder_featured_movies">Rekomenduojami filmai</string>
+    <string name="notflix_collection_help">Sukurkite oficialią %1$s kolekciją su vienuolika aplankų. Esamos kolekcijos ir pakeitimai išsaugomi.</string>
+    <string name="notflix_collection_create">Sukurti %1$s</string>
+    <string name="notflix_collection_creating">Kuriama %1$s…</string>
 </resources>

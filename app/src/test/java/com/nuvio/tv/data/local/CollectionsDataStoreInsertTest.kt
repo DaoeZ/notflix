@@ -10,7 +10,7 @@ import com.nuvio.tv.core.profile.ProfileManager
 import com.nuvio.tv.core.sync.CollectionSyncService
 import com.nuvio.tv.domain.model.*
 import com.nuvio.tv.domain.repository.AddonRepository
-import com.nuvio.tv.ui.appearance.NotflixHomeCollectionPreset
+import com.nuvio.tv.ui.appearance.notflixCollectionFixturePreset
 import com.nuvio.tv.ui.screens.collection.CollectionEditorViewModel
 import com.nuvio.tv.ui.screens.collection.CollectionManagementViewModel
 import io.mockk.*
@@ -33,7 +33,7 @@ class CollectionsDataStoreInsertTest {
     private lateinit var store:CollectionsDataStore
     private val owner=ViewModelStore()
     private val key=stringPreferencesKey("collections_json")
-    private val preset get()=NotflixHomeCollectionPreset.create()
+    private val preset get()=notflixCollectionFixturePreset()
     @Before fun setup(){
         Dispatchers.setMain(UnconfinedTestDispatcher())
         every{context.filesDir} returns directory;every{context.applicationContext} returns context
@@ -66,7 +66,8 @@ class CollectionsDataStoreInsertTest {
         assertEquals(before,raw());assertEquals(edited,store.getCurrentCollections().single())
     }
     @Test fun titleCollisionNormalizesCaseWhitespaceAndUnicodeWithoutAdoptingId()=runBlocking{
-        val other=Collection("user-owned","  INICIO\u00a0  NOTFLIX  ")
+        // Case, extra whitespace and an NBSP all collapse to the preset title; the id stays user-owned.
+        val other=Collection("user-owned","  ${preset.title.uppercase().replace(" ", "\u00a0  ")}  ")
         store.addCollection(other);val before=raw()
         assertEquals(CollectionInsertResult.Exists("user-owned"),store.insertCollectionIfAbsent(2,preset){true})
         assertEquals(before,raw());assertEquals(other,store.getCurrentCollections().single())

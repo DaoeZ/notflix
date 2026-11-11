@@ -148,8 +148,8 @@ android {
         minSdk = 24
         targetSdk = 36
         // Above Nuvio's 1071 so lab builds still install over the ones already on the TV.
-        versionCode = 1072
-        versionName = "1.0.0-beta.1"
+        versionCode = 1073
+        versionName = "1.0.0-beta.2"
 
         buildConfigField("String", "PARENTAL_GUIDE_API_URL", "\"${localProperties.getProperty("PARENTAL_GUIDE_API_URL", "")}\"")
         buildConfigField("String", "TRAILER_API_URL", "\"${localProperties.getProperty("TRAILER_API_URL", "")}\"")

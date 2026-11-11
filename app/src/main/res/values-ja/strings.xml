@@ -2695,4 +2695,19 @@
     <string name="profile_default_name">プロフィール%1$d</string>
     <string name="detail_tmdb_fallback_title">TMDB %1$d</string>
     <string name="collections_editor_tmdb_collection_fallback">TMDBコレクション%1$d</string>
+    <string name="notflix_home_collection_title">Notflix ホーム</string>
+    <string name="notflix_home_folder_popular_movies">人気の映画</string>
+    <string name="notflix_home_folder_popular_series">人気のシリーズ</string>
+    <string name="notflix_home_folder_animated_movies">アニメ映画</string>
+    <string name="notflix_home_folder_new_movies">新着映画</string>
+    <string name="notflix_home_folder_new_series">新着シリーズ</string>
+    <string name="notflix_home_folder_family_movies">ファミリー映画</string>
+    <string name="notflix_home_folder_action">アクション</string>
+    <string name="notflix_home_folder_comedy">コメディ</string>
+    <string name="notflix_home_folder_sci_fi">SF</string>
+    <string name="notflix_home_folder_drama_series">ドラマシリーズ</string>
+    <string name="notflix_home_folder_featured_movies">注目の映画</string>
+    <string name="notflix_collection_help">11 個のフォルダーを含む公式の %1$s コレクションを作成します。既存のコレクションと編集内容は保持されます。</string>
+    <string name="notflix_collection_create">%1$s を作成</string>
+    <string name="notflix_collection_creating">%1$s を作成中…</string>
 </resources>

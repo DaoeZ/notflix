@@ -2,7 +2,7 @@ package com.nuvio.tv.ui.screens.home
 
 import com.nuvio.tv.domain.model.*
 import com.nuvio.tv.domain.model.Collection
-import com.nuvio.tv.ui.appearance.NotflixHomeCollectionPreset
+import com.nuvio.tv.ui.appearance.notflixCollectionFixturePreset
 import org.junit.Test
 import org.junit.Assert.*
 
@@ -14,11 +14,11 @@ class NotflixCollectionRowsTest {
     private fun row(id:String=addon.id,type:String="movie",base:String=addon.baseUrl)=CatalogRow(id,"Any title",base,"top","Not Popular",ContentType.fromString(type),rawType=type,items=listOf(meta()))
     private fun original(catalog:CatalogRow=row())=NotflixCatalogRow(catalog.stableKey(),catalog.legacyKey(),"Changed",NotflixRowPhase.READY,catalog)
     private fun projected(phase:NotflixRowPhase=NotflixRowPhase.READY,items:Boolean=true):NotflixCatalogRow {
-        val spec=notflixCollectionSpecs(listOf(NotflixHomeCollectionPreset.create()),listOf(addon),emptySet()).first()
+        val spec=notflixCollectionSpecs(listOf(notflixCollectionFixturePreset()),listOf(addon),emptySet()).first()
         return NotflixCatalogRow(spec.key,spec.key,spec.title,phase,if(items)row()else row().copy(items=emptyList()),folderTarget=spec.folder,sourceIdentity=spec.request)
     }
     @Test fun elevenDefinitionsUseSavedOrderTitlesAnd2026WithoutPresetRewrite() {
-        val c=NotflixHomeCollectionPreset.create()
+        val c=notflixCollectionFixturePreset()
         val specs=notflixCollectionSpecs(listOf(c),listOf(addon),emptySet())
         assertEquals(c.folders.map{it.title},specs.map{it.title})
         assertEquals(11,specs.size);assertEquals(11,specs.map{it.key}.toSet().size)
@@ -27,17 +27,17 @@ class NotflixCollectionRowsTest {
         assertEquals("My edit",notflixCollectionSpecs(listOf(edited),listOf(addon),emptySet()).first().title)
     }
     @Test fun hiddenCollectionAndOtherIdsDoNotProject() {
-        val c=NotflixHomeCollectionPreset.create()
+        val c=notflixCollectionFixturePreset()
         assertTrue(notflixCollectionSpecs(listOf(c),listOf(addon),setOf("collection_notflix-inicio")).isEmpty())
         assertTrue(notflixCollectionSpecs(listOf(c.copy(id="other")),listOf(addon),emptySet()).isEmpty())
     }
     @Test fun multipleSourcesRemainOfficialFolderInsteadOfIgnoringOne() {
-        val c=NotflixHomeCollectionPreset.create();val f=c.folders.first()
+        val c=notflixCollectionFixturePreset();val f=c.folders.first()
         val spec=notflixCollectionSpecs(listOf(c.copy(folders=listOf(f.copy(sources=f.sources+f.sources)))),listOf(addon),emptySet()).single()
         assertNull(spec.source);assertNull(spec.request);assertEquals(c.id to f.id,spec.folder)
     }
     @Test fun missingAddonRetainsFolderDestinationWithNoRequest() {
-        val spec=notflixCollectionSpecs(listOf(NotflixHomeCollectionPreset.create()),emptyList(),emptySet()).first()
+        val spec=notflixCollectionSpecs(listOf(notflixCollectionFixturePreset()),emptyList(),emptySet()).first()
         assertNotNull(spec.source);assertNull(spec.request)
     }
     @Test fun suppressionUsesExactProviderBaseTypeCatalogAndUsableData() {
@@ -90,7 +90,7 @@ class NotflixCollectionRowsTest {
         assertEquals(edited.sourceIdentity,result.notflixCatalog.rows.single().sourceIdentity)
     }
     @Test fun projectionRespectsPinOfficialOrderHiddenAndOtherCollectionFolders() {
-        val c=NotflixHomeCollectionPreset.create();val other=c.copy(id="other",pinToTop=false)
+        val c=notflixCollectionFixturePreset();val other=c.copy(id="other",pinToTop=false)
         val specs=notflixCollectionSpecs(listOf(c),listOf(addon),emptySet())
         val projected=specs.map{NotflixCatalogRow(it.key,it.key,it.title,NotflixRowPhase.PENDING,folderTarget=it.folder,sourceIdentity=it.request)}
         val captured=NotflixCatalogSnapshot(2,1,true,listOf(original()))

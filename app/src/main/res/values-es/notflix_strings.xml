@@ -3,7 +3,7 @@
     <string name="notflix_appearance_title">Apariencia · este perfil y dispositivo</string>
     <string name="notflix_appearance_active">Activa: %1$s</string>
     <string name="notflix_save_failed">No se pudo guardar el cambio</string>
-    <string name="notflix_home_motion_title">Movimiento de Inicio · %1$s</string>
+    <string name="notflix_home_motion_title">Movimiento de Inicio</string>
     <string name="notflix_home_motion_help">Solo afecta al Inicio Notflix. Reducido elimina el zoom y la animación de las tarjetas; conserva la información expandida y el foco.</string>
     <string name="notflix_home_motion_normal">Normal</string>
     <string name="notflix_home_motion_reduced">Reducido</string>

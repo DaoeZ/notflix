@@ -3408,4 +3408,19 @@
     <string name="player_chapter_remaining">Zostáva %1$s</string>
     <string name="stream_resume_from_time">Pokračovať od %1$s</string>
     <string name="stream_resume_from_percent">Pokračovať od %1$d%%</string>
+    <string name="notflix_home_collection_title">Domov Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Populárne filmy</string>
+    <string name="notflix_home_folder_popular_series">Populárne seriály</string>
+    <string name="notflix_home_folder_animated_movies">Animované filmy</string>
+    <string name="notflix_home_folder_new_movies">Nové filmy</string>
+    <string name="notflix_home_folder_new_series">Nové seriály</string>
+    <string name="notflix_home_folder_family_movies">Rodinné filmy</string>
+    <string name="notflix_home_folder_action">Akcia</string>
+    <string name="notflix_home_folder_comedy">Komédia</string>
+    <string name="notflix_home_folder_sci_fi">Sci-fi</string>
+    <string name="notflix_home_folder_drama_series">Dramatické seriály</string>
+    <string name="notflix_home_folder_featured_movies">Odporúčané filmy</string>
+    <string name="notflix_collection_help">Vytvorte oficiálnu kolekciu %1$s s jedenástimi priečinkami. Existujúce kolekcie a úpravy zostanú zachované.</string>
+    <string name="notflix_collection_create">Vytvoriť %1$s</string>
+    <string name="notflix_collection_creating">Vytváranie %1$s…</string>
 </resources>

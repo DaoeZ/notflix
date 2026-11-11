@@ -2829,4 +2829,19 @@
     <string name="stream_test_video_bitrate">Průměrný datový tok videa: %1$s</string>
     <string name="stream_test_error_connection">Připojení selhalo. Platnost posledního přehraného odkazu na stream mohla vypršet, nebo je nedostupný. Přehrajte prosím video znovu a zkuste to opět.</string>
 
+    <string name="notflix_home_collection_title">Domů Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Populární filmy</string>
+    <string name="notflix_home_folder_popular_series">Populární seriály</string>
+    <string name="notflix_home_folder_animated_movies">Animované filmy</string>
+    <string name="notflix_home_folder_new_movies">Nové filmy</string>
+    <string name="notflix_home_folder_new_series">Nové seriály</string>
+    <string name="notflix_home_folder_family_movies">Rodinné filmy</string>
+    <string name="notflix_home_folder_action">Akce</string>
+    <string name="notflix_home_folder_comedy">Komedie</string>
+    <string name="notflix_home_folder_sci_fi">Sci-fi</string>
+    <string name="notflix_home_folder_drama_series">Dramatické seriály</string>
+    <string name="notflix_home_folder_featured_movies">Doporučené filmy</string>
+    <string name="notflix_collection_help">Vytvořte oficiální kolekci %1$s s jedenácti složkami. Stávající kolekce a úpravy zůstanou zachovány.</string>
+    <string name="notflix_collection_create">Vytvořit %1$s</string>
+    <string name="notflix_collection_creating">Vytváření %1$s…</string>
 </resources>

@@ -675,20 +675,9 @@ fun SettingsScreen(
                         .width(220.dp)
                         .fillMaxHeight()
                 ) {
-                    // M50: the Notflix settings rail carries the wordmark; the official rail does not.
-                    val notflixRail = notflixSettingsActive()
-                    if (notflixRail) {
-                        com.nuvio.tv.ui.appearance.NotflixWordmark(
-                            height = 20.dp,
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(start = 14.dp, top = 6.dp)
-                        )
-                    }
                     LazyColumn(
                         state = railListState,
                         modifier = Modifier
-                            .padding(top = if (notflixRail) 34.dp else 0.dp)
                             .focusRequester(railContainerFocusRequester)
                             // Lets the rail resolve its own focus enter to the item that was on it when
                             // it last lost focus. Without this the enter is resolved by stepping on from

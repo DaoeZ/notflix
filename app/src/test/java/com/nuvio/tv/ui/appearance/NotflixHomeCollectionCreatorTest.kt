@@ -25,6 +25,8 @@ class NotflixHomeCollectionCreatorTest {
     private val owner = ViewModelStore()
     private lateinit var vm: NotflixHomeCollectionViewModel
     private val request = NotflixCollectionRequest(AppearanceContext(2, 7), 11, false)
+    private val texts = notflixCollectionFixtureTexts
+    private val year = 2031
     private val appearance get() = AppearanceState(context=request.context, requested=AppAppearance.NOTFLIX,
         effective=AppAppearance.NOTFLIX, selectionGeneration=request.selectionGeneration)
     @Before fun setup() {
@@ -40,49 +42,49 @@ class NotflixHomeCollectionCreatorTest {
     @After fun close(){owner.clear();Dispatchers.resetMain()}
 
     @Test fun effectiveInsertionUsesCapturedProfileAndOfficialPreset()=runTest(dispatcher) {
-        val result=NotflixHomeCollectionCreator(store).create(request){true}
+        val result=NotflixHomeCollectionCreator(store).create(request, texts, year){true}
         assertEquals(NotflixCollectionResult.CREATED_LOCAL,result)
-        coVerify(exactly=1){store.insertCollectionIfAbsent(2,NotflixHomeCollectionPreset.create(),any())}
+        coVerify(exactly=1){store.insertCollectionIfAbsent(2,NotflixHomeCollectionPreset.create(texts, year),any())}
     }
     @Test fun revokedContextNeverStartsStorage()=runTest(dispatcher) {
-        assertEquals(NotflixCollectionResult.CONTEXT_CHANGED,NotflixHomeCollectionCreator(store).create(request){false})
+        assertEquals(NotflixCollectionResult.CONTEXT_CHANGED,NotflixHomeCollectionCreator(store).create(request, texts, year){false})
         coVerify(exactly=0){store.insertCollectionIfAbsent(any(),any(),any())}
     }
     @Test fun accountIsBlockedBeforeWriteBecauseOfficialSyncCannotBindRequest()=runTest(dispatcher) {
         assertEquals(NotflixCollectionResult.ACCOUNT_SYNC_PENDING,
-            NotflixHomeCollectionCreator(store).create(request.copy(authenticated=true)){true})
+            NotflixHomeCollectionCreator(store).create(request.copy(authenticated=true), texts, year){true})
         coVerify(exactly=0){store.insertCollectionIfAbsent(any(),any(),any())}
     }
     @Test fun collisionAndIoHaveExplicitResultsWithoutRetryOrOverwrite()=runTest(dispatcher) {
         coEvery{store.insertCollectionIfAbsent(any(),any(),any())} returns CollectionInsertResult.Exists("edited")
-        assertEquals(NotflixCollectionResult.EXISTS,NotflixHomeCollectionCreator(store).create(request){true})
+        assertEquals(NotflixCollectionResult.EXISTS,NotflixHomeCollectionCreator(store).create(request, texts, year){true})
         coEvery{store.insertCollectionIfAbsent(any(),any(),any())} throws IOException("synthetic")
-        assertEquals(NotflixCollectionResult.FAILED,NotflixHomeCollectionCreator(store).create(request){true})
+        assertEquals(NotflixCollectionResult.FAILED,NotflixHomeCollectionCreator(store).create(request, texts, year){true})
         coVerify(exactly=2){store.insertCollectionIfAbsent(any(),any(),any())}
     }
     @Test fun cancellationRemainsCancellation()=runTest(dispatcher) {
         coEvery{store.insertCollectionIfAbsent(any(),any(),any())} throws CancellationException("synthetic")
-        try {NotflixHomeCollectionCreator(store).create(request){true};fail("Expected cancellation")}
+        try {NotflixHomeCollectionCreator(store).create(request, texts, year){true};fail("Expected cancellation")}
         catch(_:CancellationException){}
     }
     @Test fun rapidDoublePressStartsOneWriteAndKeepsCapturedContext()=runTest(dispatcher) {
-        vm.create(appearance){ctx,generation->ctx==request.context && generation==11L}
-        vm.create(appearance){_,_->true};assertTrue(vm.state.value.busy);runCurrent()
+        vm.create(appearance, texts, year){ctx,generation->ctx==request.context && generation==11L}
+        vm.create(appearance, texts, year){_,_->true};assertTrue(vm.state.value.busy);runCurrent()
         coVerify(exactly=1){store.insertCollectionIfAbsent(2,any(),any())}
         assertEquals(NotflixCollectionResult.CREATED_LOCAL,vm.state.value.result);assertFalse(vm.state.value.busy)
     }
     @Test fun queuedProfileChangeCannotRetargetOrPublishOldResult()=runTest(dispatcher) {
-        vm.create(appearance){_,_->true};active.value=3;runCurrent()
+        vm.create(appearance, texts, year){_,_->true};active.value=3;runCurrent()
         coVerify(exactly=0){store.insertCollectionIfAbsent(any(),any(),any())}
         assertNull(vm.state.value.result);assertNull(vm.state.value.request)
     }
     @Test fun queuedGenerationOrAppearanceRevocationCannotWrite()=runTest(dispatcher) {
-        var authorized=true;vm.create(appearance){_,_->authorized};authorized=false;runCurrent()
+        var authorized=true;vm.create(appearance, texts, year){_,_->authorized};authorized=false;runCurrent()
         coVerify(exactly=0){store.insertCollectionIfAbsent(any(),any(),any())}
         assertNull(vm.state.value.result)
     }
     @Test fun queuedAuthenticationChangeCannotWriteGuestDataIntoAccount()=runTest(dispatcher) {
-        vm.create(appearance){_,_->true};signed.value=AuthState.FullAccount("synthetic","synthetic@example.invalid");runCurrent()
+        vm.create(appearance, texts, year){_,_->true};signed.value=AuthState.FullAccount("synthetic","synthetic@example.invalid");runCurrent()
         coVerify(exactly=0){store.insertCollectionIfAbsent(any(),any(),any())}
         assertNull(vm.state.value.result)
     }
@@ -126,7 +128,7 @@ class NotflixHomeCollectionCreatorTest {
     @Test fun accountPullInsertPushCreatesAndSyncs()=runTest(dispatcher) {
         val sync=FakeSync()
         assertEquals(NotflixCollectionResult.CREATED_ACCOUNT,
-            NotflixHomeCollectionCreator(store,sync).create(request.copy(authenticated=true)){true})
+            NotflixHomeCollectionCreator(store,sync).create(request.copy(authenticated=true), texts, year){true})
         assertEquals(listOf("pull","push"),sync.calls)
         coVerify(exactly=1){store.insertCollectionIfAbsent(2,any(),any())}
         coVerify(exactly=0){store.removeCollection(any())}
@@ -134,7 +136,7 @@ class NotflixHomeCollectionCreatorTest {
     @Test fun failedPullWritesNothing()=runTest(dispatcher) {
         val sync=FakeSync(pulls=false)
         assertEquals(NotflixCollectionResult.FAILED,
-            NotflixHomeCollectionCreator(store,sync).create(request.copy(authenticated=true)){true})
+            NotflixHomeCollectionCreator(store,sync).create(request.copy(authenticated=true), texts, year){true})
         assertEquals(listOf("pull"),sync.calls)
         coVerify(exactly=0){store.insertCollectionIfAbsent(any(),any(),any())}
     }
@@ -142,14 +144,14 @@ class NotflixHomeCollectionCreatorTest {
         coEvery{store.removeCollection(any())} just Runs
         val sync=FakeSync(pushes=false)
         assertEquals(NotflixCollectionResult.FAILED,
-            NotflixHomeCollectionCreator(store,sync).create(request.copy(authenticated=true)){true})
-        coVerify(exactly=1){store.removeCollection(NotflixHomeCollectionPreset.create().id)}
+            NotflixHomeCollectionCreator(store,sync).create(request.copy(authenticated=true), texts, year){true})
+        coVerify(exactly=1){store.removeCollection(NotflixHomeCollectionPreset.create(texts, year).id)}
     }
     @Test fun existingCollectionIsNotPushedAgain()=runTest(dispatcher) {
         coEvery{store.insertCollectionIfAbsent(any(),any(),any())} returns CollectionInsertResult.Exists("edited")
         val sync=FakeSync()
         assertEquals(NotflixCollectionResult.EXISTS,
-            NotflixHomeCollectionCreator(store,sync).create(request.copy(authenticated=true)){true})
+            NotflixHomeCollectionCreator(store,sync).create(request.copy(authenticated=true), texts, year){true})
         assertEquals(listOf("pull"),sync.calls)
     }
 }

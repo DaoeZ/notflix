@@ -3369,4 +3369,19 @@
     <string name="stream_resume_from_time">Folytatás innen: %1$s</string>
     <string name="stream_resume_from_percent">Folytatás innen: %1$d%%</string>
 
+    <string name="notflix_home_collection_title">Notflix kezdőlap</string>
+    <string name="notflix_home_folder_popular_movies">Népszerű filmek</string>
+    <string name="notflix_home_folder_popular_series">Népszerű sorozatok</string>
+    <string name="notflix_home_folder_animated_movies">Animációs filmek</string>
+    <string name="notflix_home_folder_new_movies">Új filmek</string>
+    <string name="notflix_home_folder_new_series">Új sorozatok</string>
+    <string name="notflix_home_folder_family_movies">Családi filmek</string>
+    <string name="notflix_home_folder_action">Akció</string>
+    <string name="notflix_home_folder_comedy">Vígjáték</string>
+    <string name="notflix_home_folder_sci_fi">Sci-fi</string>
+    <string name="notflix_home_folder_drama_series">Drámasorozatok</string>
+    <string name="notflix_home_folder_featured_movies">Kiemelt filmek</string>
+    <string name="notflix_collection_help">Hozza létre a hivatalos %1$s gyűjteményt tizenegy mappával. A meglévő gyűjtemények és módosítások megmaradnak.</string>
+    <string name="notflix_collection_create">%1$s létrehozása</string>
+    <string name="notflix_collection_creating">%1$s létrehozása…</string>
 </resources>

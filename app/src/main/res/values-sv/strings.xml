@@ -1610,4 +1610,19 @@
     <string name="collections_card_subtitle">Gruppera kataloger i mappar på din hemskärm</string>
     <string name="collections_tab_all">Alla</string>
     <string name="collections_tab_combined">Kombinerat</string>
+    <string name="notflix_home_collection_title">Notflix Hem</string>
+    <string name="notflix_home_folder_popular_movies">Populära filmer</string>
+    <string name="notflix_home_folder_popular_series">Populära serier</string>
+    <string name="notflix_home_folder_animated_movies">Animerade filmer</string>
+    <string name="notflix_home_folder_new_movies">Nya filmer</string>
+    <string name="notflix_home_folder_new_series">Nya serier</string>
+    <string name="notflix_home_folder_family_movies">Familjefilmer</string>
+    <string name="notflix_home_folder_action">Action</string>
+    <string name="notflix_home_folder_comedy">Komedi</string>
+    <string name="notflix_home_folder_sci_fi">Sci-fi</string>
+    <string name="notflix_home_folder_drama_series">Dramaserier</string>
+    <string name="notflix_home_folder_featured_movies">Utvalda filmer</string>
+    <string name="notflix_collection_help">Skapa den officiella %1$s-samlingen med elva mappar. Befintliga samlingar och ändringar bevaras.</string>
+    <string name="notflix_collection_create">Skapa %1$s</string>
+    <string name="notflix_collection_creating">Skapar %1$s…</string>
 </resources>

@@ -2694,4 +2694,19 @@
     <string name="profile_default_name">Profil %1$d</string>
     <string name="detail_tmdb_fallback_title">TMDB %1$d</string>
     <string name="collections_editor_tmdb_collection_fallback">TMDB Collection %1$d</string>
+    <string name="notflix_home_collection_title">Notflix Hjem</string>
+    <string name="notflix_home_folder_popular_movies">Populære film</string>
+    <string name="notflix_home_folder_popular_series">Populære serier</string>
+    <string name="notflix_home_folder_animated_movies">Animationsfilm</string>
+    <string name="notflix_home_folder_new_movies">Nye film</string>
+    <string name="notflix_home_folder_new_series">Nye serier</string>
+    <string name="notflix_home_folder_family_movies">Familiefilm</string>
+    <string name="notflix_home_folder_action">Action</string>
+    <string name="notflix_home_folder_comedy">Komedie</string>
+    <string name="notflix_home_folder_sci_fi">Sci-fi</string>
+    <string name="notflix_home_folder_drama_series">Dramaserier</string>
+    <string name="notflix_home_folder_featured_movies">Fremhævede film</string>
+    <string name="notflix_collection_help">Opret den officielle %1$s-samling med elleve mapper. Eksisterende samlinger og ændringer bevares.</string>
+    <string name="notflix_collection_create">Opret %1$s</string>
+    <string name="notflix_collection_creating">Opretter %1$s…</string>
 </resources>

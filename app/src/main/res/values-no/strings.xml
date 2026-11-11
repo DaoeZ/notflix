@@ -1120,4 +1120,19 @@
     <string name="watchlist_removed">Fjernet fra ønskelisten</string>
     <string name="playback_player_auto">Automatisk (Best for innhold)</string>
     <string name="playback_player_auto_desc">ExoPlayer for filmer og serier · MPV for anime</string>
+    <string name="notflix_home_collection_title">Notflix Hjem</string>
+    <string name="notflix_home_folder_popular_movies">Populære filmer</string>
+    <string name="notflix_home_folder_popular_series">Populære serier</string>
+    <string name="notflix_home_folder_animated_movies">Animerte filmer</string>
+    <string name="notflix_home_folder_new_movies">Nye filmer</string>
+    <string name="notflix_home_folder_new_series">Nye serier</string>
+    <string name="notflix_home_folder_family_movies">Familiefilmer</string>
+    <string name="notflix_home_folder_action">Action</string>
+    <string name="notflix_home_folder_comedy">Komedie</string>
+    <string name="notflix_home_folder_sci_fi">Sci-fi</string>
+    <string name="notflix_home_folder_drama_series">Dramaserier</string>
+    <string name="notflix_home_folder_featured_movies">Utvalgte filmer</string>
+    <string name="notflix_collection_help">Opprett den offisielle %1$s-samlingen med elleve mapper. Eksisterende samlinger og endringer bevares.</string>
+    <string name="notflix_collection_create">Opprett %1$s</string>
+    <string name="notflix_collection_creating">Oppretter %1$s…</string>
 </resources>

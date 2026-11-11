@@ -130,8 +130,8 @@ class NotflixIntroPresentationTest {
         val s=IntroFixtureState().apply{this.spanish=spanish;settings=true;input=IntroDecisionInput()};show(s)
         compose.onNodeWithText(if(spanish)"Intro al iniciar" else "Intro at startup").assertIsDisplayed()
         compose.onNodeWithText(if(spanish)"Sonido de la intro" else "Intro sound").assertIsDisplayed()
-        activateTag("intro-sound-false");compose.onNodeWithTag("intro-sound-false").assertIsSelected();compose.onNodeWithTag("intro-enabled-true").assertIsSelected()
-        activateTag("intro-enabled-false");compose.onNodeWithTag("intro-enabled-false").assertIsSelected();compose.onNodeWithTag("intro-sound-false").assertIsSelected()
+        activateTag("intro-sound");compose.onNodeWithTag("intro-sound").assertIsOff();compose.onNodeWithTag("intro-enabled").assertIsOn()
+        activateTag("intro-enabled");compose.onNodeWithTag("intro-enabled").assertIsOff();compose.onNodeWithTag("intro-sound").assertIsOff()
         compose.runOnIdle{assertEquals(listOf(false),s.introChoices);assertEquals(listOf(false),s.soundChoices);assertEquals(0,s.decoder.created)}
     }
 }

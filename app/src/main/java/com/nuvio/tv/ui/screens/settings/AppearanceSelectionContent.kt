@@ -74,71 +74,67 @@ fun AppearanceSelectionContent(
         Text(stringResource(R.string.notflix_appearance_active, stringResource(if (state.effective == AppAppearance.NUVIO)
             R.string.notflix_appearance_nuvio else R.string.notflix_appearance_notflix)), Modifier.testTag("appearance-effective"))
         if (state.context != null && state.effective == AppAppearance.NOTFLIX) {
-            Text(stringResource(R.string.notflix_home_motion_title, stringResource(if (state.reduceHomeMotion)
-                R.string.notflix_home_motion_reduced else R.string.notflix_home_motion_normal)))
-            Text(stringResource(R.string.notflix_home_motion_help))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                listOf(false, true).forEach { reduced ->
-                    Button(onClick = { onSelectHomeMotion(reduced) },
-                        colors = ButtonDefaults.colors(containerColor = NuvioTheme.colors.SurfaceVariant,
-                            contentColor = NuvioTheme.colors.TextPrimary,
-                            focusedContainerColor = NuvioTheme.colors.Secondary,
-                            focusedContentColor = NuvioTheme.colors.OnSecondary),
-                        border = selectedBorder(state.reduceHomeMotion == reduced),
-                        modifier = Modifier.testTag(if (reduced) "home-motion-reduced" else "home-motion-normal")
-                            .semantics { selected = state.reduceHomeMotion == reduced }
-                    ) { Text(marked(state.reduceHomeMotion == reduced, stringResource(if (reduced) R.string.notflix_home_motion_reduced else R.string.notflix_home_motion_normal))) }
-                }
-            }
-            Text(stringResource(R.string.notflix_intro_enabled))
-            IntroOptionRow(state.introEnabled, "intro-enabled", onSelectIntroEnabled)
-            Text(stringResource(R.string.notflix_intro_sound))
-            IntroOptionRow(state.introSoundEnabled, "intro-sound", onSelectIntroSoundEnabled)
-            Text(stringResource(R.string.notflix_intro_help))
-            Text(stringResource(R.string.notflix_preview_enabled))
-            IntroOptionRow(state.previewEnabled, "preview-enabled", onSelectPreviewEnabled)
-            Text(stringResource(R.string.notflix_preview_sound))
-            IntroOptionRow(state.previewSoundEnabled, "preview-sound", onSelectPreviewSoundEnabled)
-            Text(stringResource(R.string.notflix_preview_help))
-            Text(stringResource(R.string.notflix_ui_sounds))
-            IntroOptionRow(state.uiSoundsEnabled, "ui-sounds", onSelectUiSoundsEnabled)
+            SettingsActionRow(
+                title = stringResource(R.string.notflix_home_motion_title),
+                subtitle = stringResource(R.string.notflix_home_motion_help),
+                value = stringResource(if (state.reduceHomeMotion) R.string.notflix_home_motion_reduced
+                    else R.string.notflix_home_motion_normal),
+                onClick = { onSelectHomeMotion(!state.reduceHomeMotion) },
+                modifier = Modifier.testTag(if (state.reduceHomeMotion) "home-motion-reduced" else "home-motion-normal")
+            )
+            SettingsToggleRow(
+                title = stringResource(R.string.notflix_intro_enabled),
+                subtitle = stringResource(R.string.notflix_intro_help),
+                checked = state.introEnabled,
+                onToggle = { onSelectIntroEnabled(!state.introEnabled) },
+                modifier = Modifier.testTag("intro-enabled"),
+                expandSubtitleOnFocus = true
+            )
+            SettingsToggleRow(
+                title = stringResource(R.string.notflix_intro_sound),
+                subtitle = null,
+                checked = state.introSoundEnabled,
+                onToggle = { onSelectIntroSoundEnabled(!state.introSoundEnabled) },
+                modifier = Modifier.testTag("intro-sound"),
+                expandSubtitleOnFocus = true
+            )
+            SettingsToggleRow(
+                title = stringResource(R.string.notflix_preview_enabled),
+                subtitle = stringResource(R.string.notflix_preview_help),
+                checked = state.previewEnabled,
+                onToggle = { onSelectPreviewEnabled(!state.previewEnabled) },
+                modifier = Modifier.testTag("preview-enabled"),
+                expandSubtitleOnFocus = true
+            )
+            SettingsToggleRow(
+                title = stringResource(R.string.notflix_preview_sound),
+                subtitle = null,
+                checked = state.previewSoundEnabled,
+                onToggle = { onSelectPreviewSoundEnabled(!state.previewSoundEnabled) },
+                modifier = Modifier.testTag("preview-sound"),
+                expandSubtitleOnFocus = true
+            )
+            SettingsToggleRow(
+                title = stringResource(R.string.notflix_ui_sounds),
+                subtitle = null,
+                checked = state.uiSoundsEnabled,
+                onToggle = { onSelectUiSoundsEnabled(!state.uiSoundsEnabled) },
+                modifier = Modifier.testTag("ui-sounds"),
+                expandSubtitleOnFocus = true
+            )
             if (com.nuvio.tv.ui.appearance.AppearancePolicy.NOTFLIX_AVAILABLE) {
-                Text(stringResource(R.string.notflix_wikipedia_enabled))
-                IntroOptionRow(state.wikipediaEnabled, "wikipedia-enabled", onSelectWikipediaEnabled)
-                Text(stringResource(R.string.notflix_wikipedia_help))
+                SettingsToggleRow(
+                    title = stringResource(R.string.notflix_wikipedia_enabled),
+                    subtitle = stringResource(R.string.notflix_wikipedia_help),
+                    checked = state.wikipediaEnabled,
+                    onToggle = { onSelectWikipediaEnabled(!state.wikipediaEnabled) },
+                    modifier = Modifier.testTag("wikipedia-enabled"),
+                    expandSubtitleOnFocus = true
+                )
                 collectionCreator()
             }
         }
         if (state.saveFailed) Text(stringResource(R.string.notflix_save_failed))
-    }
-}
-
-@Composable
-private fun IntroOptionRow(enabled: Boolean, tag: String, onSelect: (Boolean) -> Unit) {
-    if (com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active) {
-        Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
-            listOf(true, false).forEach { value ->
-                com.nuvio.tv.ui.appearance.notflix.NotflixSegment(
-                    label = stringResource(if (value) R.string.notflix_intro_on else R.string.notflix_intro_off),
-                    chosen = enabled == value,
-                    onClick = { onSelect(value) },
-                    testTag = "$tag-$value"
-                )
-            }
-        }
-        return
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        listOf(true, false).forEach { value ->
-            Button(onClick = { onSelect(value) },
-                colors = ButtonDefaults.colors(containerColor = NuvioTheme.colors.SurfaceVariant,
-                    contentColor = NuvioTheme.colors.TextPrimary, focusedContainerColor = NuvioTheme.colors.Secondary,
-                    focusedContentColor = NuvioTheme.colors.OnSecondary),
-                border = selectedBorder(enabled == value),
-                modifier = Modifier.testTag("$tag-$value").semantics { selected = enabled == value }) {
-                Text(marked(enabled == value, stringResource(if (value) R.string.notflix_intro_on else R.string.notflix_intro_off)))
-            }
-        }
     }
 }
 

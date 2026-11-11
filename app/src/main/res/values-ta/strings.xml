@@ -2253,4 +2253,19 @@
     <string name="trakt_comments_error_request_failed">ட்ராக்ட் கருத்துகள் கோரிக்கை தோல்வியடைந்தது</string>
     <string name="trakt_library_error_fetch_list_items">பட்டியல் உருப்படிகளைப் பெற முடியவில்லை</string>
 
+    <string name="notflix_home_collection_title">Notflix முகப்பு</string>
+    <string name="notflix_home_folder_popular_movies">பிரபல திரைப்படங்கள்</string>
+    <string name="notflix_home_folder_popular_series">பிரபல தொடர்கள்</string>
+    <string name="notflix_home_folder_animated_movies">அனிமேஷன் திரைப்படங்கள்</string>
+    <string name="notflix_home_folder_new_movies">புதிய திரைப்படங்கள்</string>
+    <string name="notflix_home_folder_new_series">புதிய தொடர்கள்</string>
+    <string name="notflix_home_folder_family_movies">குடும்ப திரைப்படங்கள்</string>
+    <string name="notflix_home_folder_action">அதிரடி</string>
+    <string name="notflix_home_folder_comedy">நகைச்சுவை</string>
+    <string name="notflix_home_folder_sci_fi">அறிவியல் புனைவு</string>
+    <string name="notflix_home_folder_drama_series">நாடக தொடர்கள்</string>
+    <string name="notflix_home_folder_featured_movies">சிறப்பு திரைப்படங்கள்</string>
+    <string name="notflix_collection_help">பதினொரு கோப்புறைகளுடன் அதிகாரப்பூர்வ %1$s தொகுப்பை உருவாக்கவும். ஏற்கனவே உள்ள தொகுப்புகளும் மாற்றங்களும் பாதுகாக்கப்படும்.</string>
+    <string name="notflix_collection_create">%1$s உருவாக்கு</string>
+    <string name="notflix_collection_creating">%1$s உருவாக்கப்படுகிறது…</string>
 </resources>

@@ -3112,4 +3112,19 @@
     <string name="stream_test_video_bitrate">Средний битрейт видео: %1$s</string>
     <string name="stream_test_error_connection">Ошибка соединения. Возможно, ссылка на последний воспроизведённый поток устарела или недоступна. Воспроизведите видео заново и повторите попытку.</string>
 
+    <string name="notflix_home_collection_title">Главная Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Популярные фильмы</string>
+    <string name="notflix_home_folder_popular_series">Популярные сериалы</string>
+    <string name="notflix_home_folder_animated_movies">Анимационные фильмы</string>
+    <string name="notflix_home_folder_new_movies">Новые фильмы</string>
+    <string name="notflix_home_folder_new_series">Новые сериалы</string>
+    <string name="notflix_home_folder_family_movies">Семейные фильмы</string>
+    <string name="notflix_home_folder_action">Боевики</string>
+    <string name="notflix_home_folder_comedy">Комедии</string>
+    <string name="notflix_home_folder_sci_fi">Научная фантастика</string>
+    <string name="notflix_home_folder_drama_series">Драматические сериалы</string>
+    <string name="notflix_home_folder_featured_movies">Избранные фильмы</string>
+    <string name="notflix_collection_help">Создайте официальную коллекцию %1$s с одиннадцатью папками. Существующие коллекции и изменения сохраняются.</string>
+    <string name="notflix_collection_create">Создать %1$s</string>
+    <string name="notflix_collection_creating">Создание %1$s…</string>
 </resources>

@@ -3276,4 +3276,19 @@
   <string name="autosync_toast_failed_no_reference">Ο συγχρονισμός απέτυχε: αυτό το βίντεο δεν έχει ενσωματωμένους υπότιτλους για σύγκριση.</string>
   <string name="autosync_toast_failed_unsupported">Ο συγχρονισμός απέτυχε: ο αυτόματος συγχρονισμός δεν υποστηρίζει αυτή τη μορφή υποτίτλων.</string>
   <string name="autosync_label_synced">Αυτόματα συγχρονισμένος</string>
+    <string name="notflix_home_collection_title">Αρχική Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Δημοφιλείς ταινίες</string>
+    <string name="notflix_home_folder_popular_series">Δημοφιλείς σειρές</string>
+    <string name="notflix_home_folder_animated_movies">Ταινίες κινουμένων σχεδίων</string>
+    <string name="notflix_home_folder_new_movies">Νέες ταινίες</string>
+    <string name="notflix_home_folder_new_series">Νέες σειρές</string>
+    <string name="notflix_home_folder_family_movies">Οικογενειακές ταινίες</string>
+    <string name="notflix_home_folder_action">Δράση</string>
+    <string name="notflix_home_folder_comedy">Κωμωδία</string>
+    <string name="notflix_home_folder_sci_fi">Επιστημονική φαντασία</string>
+    <string name="notflix_home_folder_drama_series">Σειρές δράματος</string>
+    <string name="notflix_home_folder_featured_movies">Προτεινόμενες ταινίες</string>
+    <string name="notflix_collection_help">Δημιουργήστε τη συλλογή %1$s με έντεκα φακέλους. Οι υπάρχουσες συλλογές και αλλαγές διατηρούνται.</string>
+    <string name="notflix_collection_create">Δημιουργία %1$s</string>
+    <string name="notflix_collection_creating">Δημιουργία %1$s…</string>
 </resources>

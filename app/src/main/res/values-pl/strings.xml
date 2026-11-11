@@ -3481,4 +3481,19 @@
     <string name="subtitle_style_brightness_hdr">Jasność (HDR)</string>
     <string name="subtitle_style_text_color_hdr">Kolor tekstu (HDR)</string>
     <string name="subtitle_style_text_opacity_hdr">Przezroczystość tekstu (HDR)</string>
+    <string name="notflix_home_collection_title">Strona główna Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Popularne filmy</string>
+    <string name="notflix_home_folder_popular_series">Popularne seriale</string>
+    <string name="notflix_home_folder_animated_movies">Filmy animowane</string>
+    <string name="notflix_home_folder_new_movies">Nowe filmy</string>
+    <string name="notflix_home_folder_new_series">Nowe seriale</string>
+    <string name="notflix_home_folder_family_movies">Filmy familijne</string>
+    <string name="notflix_home_folder_action">Akcja</string>
+    <string name="notflix_home_folder_comedy">Komedia</string>
+    <string name="notflix_home_folder_sci_fi">Sci-fi</string>
+    <string name="notflix_home_folder_drama_series">Seriale dramatyczne</string>
+    <string name="notflix_home_folder_featured_movies">Polecane filmy</string>
+    <string name="notflix_collection_help">Utwórz oficjalną kolekcję %1$s z jedenastoma folderami. Istniejące kolekcje i zmiany zostaną zachowane.</string>
+    <string name="notflix_collection_create">Utwórz %1$s</string>
+    <string name="notflix_collection_creating">Tworzenie %1$s…</string>
 </resources>

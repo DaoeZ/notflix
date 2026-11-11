@@ -2168,4 +2168,19 @@
     <string name="trakt_comments_error_request_failed">Zahteva za komentarje Trakt ni uspela</string>
     <string name="trakt_library_error_fetch_list_items">Pridobivanje elementov seznama ni uspelo</string>
 
+    <string name="notflix_home_collection_title">Domov Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Priljubljeni filmi</string>
+    <string name="notflix_home_folder_popular_series">Priljubljene serije</string>
+    <string name="notflix_home_folder_animated_movies">Animirani filmi</string>
+    <string name="notflix_home_folder_new_movies">Novi filmi</string>
+    <string name="notflix_home_folder_new_series">Nove serije</string>
+    <string name="notflix_home_folder_family_movies">Družinski filmi</string>
+    <string name="notflix_home_folder_action">Akcija</string>
+    <string name="notflix_home_folder_comedy">Komedija</string>
+    <string name="notflix_home_folder_sci_fi">Znanstvena fantastika</string>
+    <string name="notflix_home_folder_drama_series">Dramske serije</string>
+    <string name="notflix_home_folder_featured_movies">Izpostavljeni filmi</string>
+    <string name="notflix_collection_help">Ustvarite uradno zbirko %1$s z enajstimi mapami. Obstoječe zbirke in spremembe se ohranijo.</string>
+    <string name="notflix_collection_create">Ustvari %1$s</string>
+    <string name="notflix_collection_creating">Ustvarjanje %1$s…</string>
 </resources>

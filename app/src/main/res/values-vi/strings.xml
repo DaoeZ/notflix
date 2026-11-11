@@ -3397,4 +3397,19 @@
     <string name="autosync_label_synced">Đã tự động đồng bộ</string>
     <string name="stream_resume_from_time">Xem tiếp từ %1$s</string>
     <string name="stream_resume_from_percent">Xem tiếp từ %1$d%%</string>
+    <string name="notflix_home_collection_title">Trang chủ Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Phim phổ biến</string>
+    <string name="notflix_home_folder_popular_series">Phim bộ phổ biến</string>
+    <string name="notflix_home_folder_animated_movies">Phim hoạt hình</string>
+    <string name="notflix_home_folder_new_movies">Phim mới</string>
+    <string name="notflix_home_folder_new_series">Phim bộ mới</string>
+    <string name="notflix_home_folder_family_movies">Phim gia đình</string>
+    <string name="notflix_home_folder_action">Hành động</string>
+    <string name="notflix_home_folder_comedy">Hài</string>
+    <string name="notflix_home_folder_sci_fi">Khoa học viễn tưởng</string>
+    <string name="notflix_home_folder_drama_series">Phim bộ chính kịch</string>
+    <string name="notflix_home_folder_featured_movies">Phim nổi bật</string>
+    <string name="notflix_collection_help">Tạo bộ sưu tập %1$s chính thức với mười một thư mục. Các bộ sưu tập và chỉnh sửa hiện có được giữ nguyên.</string>
+    <string name="notflix_collection_create">Tạo %1$s</string>
+    <string name="notflix_collection_creating">Đang tạo %1$s…</string>
 </resources>

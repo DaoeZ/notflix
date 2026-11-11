@@ -2682,4 +2682,19 @@
     <string name="profile_default_name">Профил %1$d</string>
     <string name="detail_tmdb_fallback_title">TMDB %1$d</string>
     <string name="collections_editor_tmdb_collection_fallback">TMDB колекция %1$d</string>
+    <string name="notflix_home_collection_title">Начало Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Популярни филми</string>
+    <string name="notflix_home_folder_popular_series">Популярни сериали</string>
+    <string name="notflix_home_folder_animated_movies">Анимационни филми</string>
+    <string name="notflix_home_folder_new_movies">Нови филми</string>
+    <string name="notflix_home_folder_new_series">Нови сериали</string>
+    <string name="notflix_home_folder_family_movies">Семейни филми</string>
+    <string name="notflix_home_folder_action">Екшън</string>
+    <string name="notflix_home_folder_comedy">Комедия</string>
+    <string name="notflix_home_folder_sci_fi">Научна фантастика</string>
+    <string name="notflix_home_folder_drama_series">Драматични сериали</string>
+    <string name="notflix_home_folder_featured_movies">Препоръчани филми</string>
+    <string name="notflix_collection_help">Създайте официалната колекция %1$s с единадесет папки. Съществуващите колекции и редакции се запазват.</string>
+    <string name="notflix_collection_create">Създай %1$s</string>
+    <string name="notflix_collection_creating">Създаване на %1$s…</string>
 </resources>

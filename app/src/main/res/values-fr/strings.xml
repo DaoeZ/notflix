@@ -3369,4 +3369,19 @@
     <string name="autosync_toast_failed_no_reference">Échec de la synchronisation&#160;: cette vidéo ne contient aucun sous-titre intégré à comparer.</string>
     <string name="autosync_toast_failed_unsupported">Échec de la synchronisation&#160;: la synchronisation automatique ne prend pas en charge ce format de sous-titres.</string>
     <string name="autosync_label_synced">Synchronisé automatiquement</string>
+    <string name="notflix_home_collection_title">Accueil Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Films populaires</string>
+    <string name="notflix_home_folder_popular_series">Séries populaires</string>
+    <string name="notflix_home_folder_animated_movies">Films animés</string>
+    <string name="notflix_home_folder_new_movies">Nouveaux films</string>
+    <string name="notflix_home_folder_new_series">Nouvelles séries</string>
+    <string name="notflix_home_folder_family_movies">Films familiaux</string>
+    <string name="notflix_home_folder_action">Action</string>
+    <string name="notflix_home_folder_comedy">Comédie</string>
+    <string name="notflix_home_folder_sci_fi">Science-fiction</string>
+    <string name="notflix_home_folder_drama_series">Séries dramatiques</string>
+    <string name="notflix_home_folder_featured_movies">Films en vedette</string>
+    <string name="notflix_collection_help">Créez la collection officielle %1$s avec onze dossiers. Les collections existantes et leurs modifications sont conservées.</string>
+    <string name="notflix_collection_create">Créer %1$s</string>
+    <string name="notflix_collection_creating">Création de %1$s…</string>
 </resources>

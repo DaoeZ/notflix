@@ -1489,4 +1489,19 @@
     <string name="collections_tab_all">Sve</string>
     <string name="collections_tab_combined">Kombinovano</string>
 
+    <string name="notflix_home_collection_title">Notflix početna</string>
+    <string name="notflix_home_folder_popular_movies">Popularni filmovi</string>
+    <string name="notflix_home_folder_popular_series">Popularne serije</string>
+    <string name="notflix_home_folder_animated_movies">Animirani filmovi</string>
+    <string name="notflix_home_folder_new_movies">Novi filmovi</string>
+    <string name="notflix_home_folder_new_series">Nove serije</string>
+    <string name="notflix_home_folder_family_movies">Porodični filmovi</string>
+    <string name="notflix_home_folder_action">Akcija</string>
+    <string name="notflix_home_folder_comedy">Komedija</string>
+    <string name="notflix_home_folder_sci_fi">Naučna fantastika</string>
+    <string name="notflix_home_folder_drama_series">Dramske serije</string>
+    <string name="notflix_home_folder_featured_movies">Istaknuti filmovi</string>
+    <string name="notflix_collection_help">Napravi zvaničnu kolekciju %1$s sa jedanaest foldera. Postojeće kolekcije i izmjene se čuvaju.</string>
+    <string name="notflix_collection_create">Napravi %1$s</string>
+    <string name="notflix_collection_creating">Pravljenje %1$s…</string>
 </resources>

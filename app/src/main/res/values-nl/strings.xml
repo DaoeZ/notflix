@@ -3136,4 +3136,19 @@
     <string name="stream_test_video_bitrate">Gemiddelde videobitrate: %1$s</string>
     <string name="stream_test_error_connection">Verbinding mislukt. De link van de laatst afgespeelde stream is mogelijk verlopen of onbereikbaar. Speel de video opnieuw af en probeer het nogmaals.</string>
 
+    <string name="notflix_home_collection_title">Notflix-startpagina</string>
+    <string name="notflix_home_folder_popular_movies">Populaire films</string>
+    <string name="notflix_home_folder_popular_series">Populaire series</string>
+    <string name="notflix_home_folder_animated_movies">Animatiefilms</string>
+    <string name="notflix_home_folder_new_movies">Nieuwe films</string>
+    <string name="notflix_home_folder_new_series">Nieuwe series</string>
+    <string name="notflix_home_folder_family_movies">Familiefilms</string>
+    <string name="notflix_home_folder_action">Actie</string>
+    <string name="notflix_home_folder_comedy">Komedie</string>
+    <string name="notflix_home_folder_sci_fi">Sciencefiction</string>
+    <string name="notflix_home_folder_drama_series">Dramaseries</string>
+    <string name="notflix_home_folder_featured_movies">Uitgelichte films</string>
+    <string name="notflix_collection_help">Maak de officiële %1$s-collectie met elf mappen. Bestaande collecties en wijzigingen blijven behouden.</string>
+    <string name="notflix_collection_create">%1$s maken</string>
+    <string name="notflix_collection_creating">%1$s wordt gemaakt…</string>
 </resources>

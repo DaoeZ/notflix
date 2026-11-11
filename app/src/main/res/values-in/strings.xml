@@ -2441,4 +2441,19 @@
     <string name="trakt_comments_error_request_failed">Permintaan komentar Trakt gagal</string>
     <string name="trakt_library_error_fetch_list_items">Gagal mengambil item daftar</string>
 
+    <string name="notflix_home_collection_title">Beranda Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Film populer</string>
+    <string name="notflix_home_folder_popular_series">Serial populer</string>
+    <string name="notflix_home_folder_animated_movies">Film animasi</string>
+    <string name="notflix_home_folder_new_movies">Film baru</string>
+    <string name="notflix_home_folder_new_series">Serial baru</string>
+    <string name="notflix_home_folder_family_movies">Film keluarga</string>
+    <string name="notflix_home_folder_action">Aksi</string>
+    <string name="notflix_home_folder_comedy">Komedi</string>
+    <string name="notflix_home_folder_sci_fi">Fiksi ilmiah</string>
+    <string name="notflix_home_folder_drama_series">Serial drama</string>
+    <string name="notflix_home_folder_featured_movies">Film unggulan</string>
+    <string name="notflix_collection_help">Buat koleksi resmi %1$s dengan sebelas folder. Koleksi dan perubahan yang ada tetap dipertahankan.</string>
+    <string name="notflix_collection_create">Buat %1$s</string>
+    <string name="notflix_collection_creating">Membuat %1$s…</string>
 </resources>

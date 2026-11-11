@@ -6,6 +6,7 @@ import com.nuvio.tv.ui.theme.NuvioTheme
 import com.nuvio.tv.ui.appearance.LocalAppearanceViewModel
 import com.nuvio.tv.ui.appearance.AppearancePolicy
 import com.nuvio.tv.ui.appearance.NotflixHomeCollectionViewModel
+import com.nuvio.tv.ui.appearance.notflixHomeCollectionTexts
 import com.nuvio.tv.domain.model.AppAppearance
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableIntStateOf
@@ -231,8 +232,11 @@ fun ThemeSettingsContent(
                             val collectionCreator: NotflixHomeCollectionViewModel = hiltViewModel()
                             val collectionState by collectionCreator.state.collectAsStateWithLifecycle()
                             val collectionAccess by collectionCreator.access.collectAsStateWithLifecycle()
+                            val collectionTexts = notflixHomeCollectionTexts()
                             NotflixHomeCollectionCreationContent(appearanceState, collectionState.forAppearance(appearanceState),
-                                onCreate = { collectionCreator.create(appearanceState, appearanceController::authorizesCollectionCreation) },
+                                homeName = collectionTexts.title,
+                                onCreate = { collectionCreator.create(appearanceState, collectionTexts,
+                                    java.time.Year.now().value, appearanceController::authorizesCollectionCreation) },
                                 onManage = {
                                     appearanceState.context?.let { captured ->
                                         if (appearanceController.authorizesCollectionCreation(captured, appearanceState.selectionGeneration))

@@ -827,4 +827,19 @@
     <string name="update_ignore">Ignoră</string>
       <string name="playback_player_auto">Automat (Cel mai bun pentru conținut)</string>
     <string name="playback_player_auto_desc">ExoPlayer pentru Filme și Seriale · MPV pentru Anime</string>
+    <string name="notflix_home_collection_title">Acasă Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Filme populare</string>
+    <string name="notflix_home_folder_popular_series">Seriale populare</string>
+    <string name="notflix_home_folder_animated_movies">Filme animate</string>
+    <string name="notflix_home_folder_new_movies">Filme noi</string>
+    <string name="notflix_home_folder_new_series">Seriale noi</string>
+    <string name="notflix_home_folder_family_movies">Filme de familie</string>
+    <string name="notflix_home_folder_action">Acțiune</string>
+    <string name="notflix_home_folder_comedy">Comedie</string>
+    <string name="notflix_home_folder_sci_fi">Science-fiction</string>
+    <string name="notflix_home_folder_drama_series">Seriale dramatice</string>
+    <string name="notflix_home_folder_featured_movies">Filme recomandate</string>
+    <string name="notflix_collection_help">Creează colecția oficială %1$s cu unsprezece foldere. Colecțiile și modificările existente sunt păstrate.</string>
+    <string name="notflix_collection_create">Creează %1$s</string>
+    <string name="notflix_collection_creating">Se creează %1$s…</string>
 </resources>

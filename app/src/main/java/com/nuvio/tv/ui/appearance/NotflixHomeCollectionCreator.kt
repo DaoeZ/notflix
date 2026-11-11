@@ -3,6 +3,7 @@ package com.nuvio.tv.ui.appearance
 import com.nuvio.tv.data.local.CollectionInsertResult
 import com.nuvio.tv.data.local.CollectionsDataStore
 import com.nuvio.tv.domain.model.AppearanceContext
+import com.nuvio.tv.domain.model.Collection
 import kotlinx.coroutines.CancellationException
 
 internal data class NotflixCollectionRequest(
@@ -32,16 +33,21 @@ internal class NotflixHomeCollectionCreator(
     private val store: CollectionsDataStore,
     private val sync: NotflixCollectionSync? = null
 ) {
-    suspend fun create(request: NotflixCollectionRequest, authorized: () -> Boolean): NotflixCollectionResult {
+    suspend fun create(
+        request: NotflixCollectionRequest,
+        texts: NotflixHomeCollectionTexts,
+        year: Int,
+        authorized: () -> Boolean
+    ): NotflixCollectionResult {
         if (!authorized()) return NotflixCollectionResult.CONTEXT_CHANGED
-        if (!request.authenticated) return insertLocal(request, authorized)
+        val preset = NotflixHomeCollectionPreset.create(texts, year)
+        if (!request.authenticated) return insertLocal(request, preset, authorized)
         // Without a sync contract, an account collection would be a false promise: stay blocked.
         val sync = sync ?: return NotflixCollectionResult.ACCOUNT_SYNC_PENDING
         return try {
             if (!sync.pullActiveProfile()) return NotflixCollectionResult.FAILED
             if (!authorized()) return NotflixCollectionResult.CONTEXT_CHANGED
-            val preset = NotflixHomeCollectionPreset.create()
-            when (val inserted = insertLocal(request, authorized)) {
+            when (val inserted = insertLocal(request, preset, authorized)) {
                 NotflixCollectionResult.CREATED_LOCAL -> {
                     if (!authorized()) {
                         store.removeCollection(preset.id)
@@ -63,9 +69,13 @@ internal class NotflixHomeCollectionCreator(
         }
     }
 
-    private suspend fun insertLocal(request: NotflixCollectionRequest, authorized: () -> Boolean): NotflixCollectionResult =
+    private suspend fun insertLocal(
+        request: NotflixCollectionRequest,
+        preset: Collection,
+        authorized: () -> Boolean
+    ): NotflixCollectionResult =
         try {
-            when (store.insertCollectionIfAbsent(request.context.profileId, NotflixHomeCollectionPreset.create(), authorized)) {
+            when (store.insertCollectionIfAbsent(request.context.profileId, preset, authorized)) {
                 CollectionInsertResult.Inserted -> NotflixCollectionResult.CREATED_LOCAL
                 is CollectionInsertResult.Exists -> NotflixCollectionResult.EXISTS
                 CollectionInsertResult.NotAuthorized -> NotflixCollectionResult.CONTEXT_CHANGED

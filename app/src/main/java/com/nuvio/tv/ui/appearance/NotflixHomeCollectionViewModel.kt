@@ -65,7 +65,12 @@ internal class NotflixHomeCollectionViewModel private constructor(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, NotflixCollectionAccess.CHECKING)
     private fun currentAuth() = authStates.value
 
-    fun create(appearance: AppearanceState, authorizes: (AppearanceContext, Long) -> Boolean) {
+    fun create(
+        appearance: AppearanceState,
+        texts: NotflixHomeCollectionTexts,
+        year: Int,
+        authorizes: (AppearanceContext, Long) -> Boolean
+    ) {
         if (mutableState.value.busy) return
         val context = appearance.context ?: return
         val profile = currentProfile() ?: return
@@ -81,7 +86,7 @@ internal class NotflixHomeCollectionViewModel private constructor(
         mutableState.value = NotflixCollectionCreationState(request, busy = true)
         viewModelScope.launch {
             try {
-                val result = creator.create(request, current)
+                val result = creator.create(request, texts, year, current)
                 if (current()) mutableState.value = NotflixCollectionCreationState(request, result = result)
                 else mutableState.value = NotflixCollectionCreationState()
             } finally {

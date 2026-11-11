@@ -16,7 +16,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.Button
 import androidx.tv.material3.Text
 import com.nuvio.tv.R
 import com.nuvio.tv.domain.model.AppAppearance
@@ -30,6 +29,7 @@ import com.nuvio.tv.ui.appearance.NotflixCollectionAccess
 internal fun NotflixHomeCollectionCreationContent(
     appearance: AppearanceState,
     creation: NotflixCollectionCreationState,
+    homeName: String,
     onCreate: () -> Unit,
     onManage: () -> Unit,
     manageFocusRequester: FocusRequester? = null,
@@ -51,32 +51,41 @@ internal fun NotflixHomeCollectionCreationContent(
             }
         }
     }
+    val help = stringResource(R.string.notflix_collection_help, homeName)
+    val account = stringResource(when (access) {
+        NotflixCollectionAccess.CHECKING -> R.string.notflix_collection_account_checking
+        NotflixCollectionAccess.LOCAL -> R.string.notflix_collection_account_local
+        NotflixCollectionAccess.ACCOUNT_SYNC_PENDING -> R.string.notflix_collection_account_sync
+    })
+    val result = creation.result?.let {
+        stringResource(when (it) {
+            NotflixCollectionResult.CREATED_LOCAL -> R.string.notflix_collection_created_local
+            NotflixCollectionResult.CREATED_ACCOUNT -> R.string.notflix_collection_created_account
+            NotflixCollectionResult.EXISTS -> R.string.notflix_collection_exists
+            NotflixCollectionResult.CONTEXT_CHANGED -> R.string.notflix_collection_context_changed
+            NotflixCollectionResult.ACCOUNT_SYNC_PENDING -> R.string.notflix_collection_account_pending
+            NotflixCollectionResult.FAILED -> R.string.notflix_collection_failed
+        })
+    }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.notflix_collection_help))
-        Text(stringResource(when (access) {
-            NotflixCollectionAccess.CHECKING -> R.string.notflix_collection_account_checking
-            NotflixCollectionAccess.LOCAL -> R.string.notflix_collection_account_local
-            NotflixCollectionAccess.ACCOUNT_SYNC_PENDING -> R.string.notflix_collection_account_sync
-        }), Modifier.testTag("notflix-collection-account"))
-        // Keep this focused button attached while saving. The VM and atomic store also reject duplicate requests.
-        Button(onClick = { if (!creation.busy) onCreate() },
+        Text(account, Modifier.testTag("notflix-collection-account"))
+        // Keep this focused row attached while saving. The VM and atomic store also reject duplicate requests.
+        SettingsActionRow(
+            title = stringResource(if (creation.busy) R.string.notflix_collection_creating
+                else R.string.notflix_collection_create, homeName),
+            subtitle = result ?: help,
+            onClick = { if (!creation.busy) onCreate() },
             enabled = !appearance.readFailed && access != NotflixCollectionAccess.CHECKING,
-            modifier = Modifier.testTag("notflix-create-home")) {
-            Text(stringResource(if (creation.busy) R.string.notflix_collection_creating else R.string.notflix_collection_create))
-        }
-        creation.result?.let { result ->
-            Text(stringResource(when (result) {
-                NotflixCollectionResult.CREATED_LOCAL -> R.string.notflix_collection_created_local
-                NotflixCollectionResult.CREATED_ACCOUNT -> R.string.notflix_collection_created_account
-                NotflixCollectionResult.EXISTS -> R.string.notflix_collection_exists
-                NotflixCollectionResult.CONTEXT_CHANGED -> R.string.notflix_collection_context_changed
-                NotflixCollectionResult.ACCOUNT_SYNC_PENDING -> R.string.notflix_collection_account_pending
-                NotflixCollectionResult.FAILED -> R.string.notflix_collection_failed
-            }), Modifier.testTag("notflix-collection-result"))
-        }
-        Button(onClick = { if (!creation.busy) onManage() }, enabled = !creation.busy,
-            modifier = Modifier.testTag("notflix-manage-collections").focusRequester(manageFocus).bringIntoViewRequester(bringIntoView)) {
-            Text(stringResource(R.string.notflix_collection_manage))
-        }
+            modifier = Modifier.testTag("notflix-create-home"),
+            subtitleModifier = if (result != null) Modifier.testTag("notflix-collection-result") else Modifier
+        )
+        SettingsActionRow(
+            title = stringResource(R.string.notflix_collection_manage),
+            subtitle = null,
+            onClick = { if (!creation.busy) onManage() },
+            enabled = !creation.busy,
+            modifier = Modifier.testTag("notflix-manage-collections")
+                .focusRequester(manageFocus).bringIntoViewRequester(bringIntoView)
+        )
     }
 }

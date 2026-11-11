@@ -2266,4 +2266,19 @@
     <string name="trakt_comments_error_request_failed">Trakt comments request failed</string>
     <string name="trakt_library_error_fetch_list_items">Failed to fetch list items</string>
 
+    <string name="notflix_home_collection_title">Notflix-Startseite</string>
+    <string name="notflix_home_folder_popular_movies">Beliebte Filme</string>
+    <string name="notflix_home_folder_popular_series">Beliebte Serien</string>
+    <string name="notflix_home_folder_animated_movies">Animationsfilme</string>
+    <string name="notflix_home_folder_new_movies">Neue Filme</string>
+    <string name="notflix_home_folder_new_series">Neue Serien</string>
+    <string name="notflix_home_folder_family_movies">Familienfilme</string>
+    <string name="notflix_home_folder_action">Action</string>
+    <string name="notflix_home_folder_comedy">Komödie</string>
+    <string name="notflix_home_folder_sci_fi">Sci-Fi</string>
+    <string name="notflix_home_folder_drama_series">Dramaserien</string>
+    <string name="notflix_home_folder_featured_movies">Empfohlene Filme</string>
+    <string name="notflix_collection_help">Erstelle die offizielle Sammlung %1$s mit elf Ordnern. Bestehende Sammlungen und Änderungen bleiben erhalten.</string>
+    <string name="notflix_collection_create">%1$s erstellen</string>
+    <string name="notflix_collection_creating">%1$s wird erstellt…</string>
 </resources>

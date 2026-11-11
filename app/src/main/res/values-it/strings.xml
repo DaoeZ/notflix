@@ -3363,4 +3363,19 @@
     <string name="autosync_label_synced">Sincronizzato automaticamente</string>
     <string name="stream_resume_from_time">Riprendi da %1$s</string>
     <string name="stream_resume_from_percent">Riprendi dal %1$d%%</string>
+    <string name="notflix_home_collection_title">Pagina iniziale Notflix</string>
+    <string name="notflix_home_folder_popular_movies">Film popolari</string>
+    <string name="notflix_home_folder_popular_series">Serie popolari</string>
+    <string name="notflix_home_folder_animated_movies">Film animati</string>
+    <string name="notflix_home_folder_new_movies">Nuovi film</string>
+    <string name="notflix_home_folder_new_series">Nuove serie</string>
+    <string name="notflix_home_folder_family_movies">Film per famiglie</string>
+    <string name="notflix_home_folder_action">Azione</string>
+    <string name="notflix_home_folder_comedy">Commedia</string>
+    <string name="notflix_home_folder_sci_fi">Fantascienza</string>
+    <string name="notflix_home_folder_drama_series">Serie drammatiche</string>
+    <string name="notflix_home_folder_featured_movies">Film in evidenza</string>
+    <string name="notflix_collection_help">Crea la raccolta ufficiale %1$s con undici cartelle. Le raccolte e le modifiche esistenti vengono conservate.</string>
+    <string name="notflix_collection_create">Crea %1$s</string>
+    <string name="notflix_collection_creating">Creazione di %1$s…</string>
 </resources>

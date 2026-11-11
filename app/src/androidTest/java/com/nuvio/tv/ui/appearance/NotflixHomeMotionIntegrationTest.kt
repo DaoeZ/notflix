@@ -75,11 +75,12 @@ class NotflixHomeMotionIntegrationTest {
         val previousNav = nav; val previousStore = viewModels; val previousProbe = probe
         key("appearance-notflix")
         compose.waitUntil(10_000) { vm.state.value.effective == AppAppearance.NOTFLIX }
-        compose.onNodeWithTag("home-motion-normal").assertIsSelected()
-        key("home-motion-reduced")
+        compose.onNodeWithTag("home-motion-normal").assertExists()
+        key("home-motion-normal")
         compose.waitUntil(10_000) { vm.state.value.reduceHomeMotion }
-        compose.onNodeWithTag("home-motion-reduced").assertIsSelected().assertIsFocused()
-        compose.onNodeWithText("Home motion · Reduced").assertExists()
+        compose.onNodeWithTag("home-motion-reduced").assertIsFocused()
+        compose.onNodeWithText("Home motion").assertExists()
+        compose.onNodeWithTag("home-motion-reduced").assertTextContains("Reduced ›")
         compose.runOnIdle {
             assertSame(previousNav, nav); assertSame(previousStore, viewModels); assertSame(previousProbe, probe)
             assertFalse(probe.cleared); assertEquals("settings", nav.currentBackStackEntry?.destination?.route)
@@ -90,7 +91,7 @@ class NotflixHomeMotionIntegrationTest {
         assertTrue(vm.state.value.reduceHomeMotion)
         key("appearance-notflix")
         compose.waitUntil(10_000) { vm.state.value.effective == AppAppearance.NOTFLIX }
-        compose.onNodeWithTag("home-motion-reduced").assertIsSelected()
+        compose.onNodeWithTag("home-motion-reduced").assertExists()
         runBlocking {
             own.profiles.upsertProfile(UserProfile(2, "Motion fixture2", "#112233"))
             own.profiles.setActiveProfile(2)
@@ -102,7 +103,7 @@ class NotflixHomeMotionIntegrationTest {
         assertFalse(vm.state.value.reduceHomeMotion)
         key("appearance-notflix")
         compose.waitUntil(10_000) { vm.state.value.effective == AppAppearance.NOTFLIX }
-        compose.onNodeWithTag("home-motion-normal").assertIsSelected()
+        compose.onNodeWithTag("home-motion-normal").assertExists()
         compose.runOnIdle { assertSame(previousNav, nav); assertSame(previousStore, viewModels); assertSame(previousProbe, probe); assertFalse(probe.cleared) }
     }
 
@@ -120,15 +121,16 @@ class NotflixHomeMotionIntegrationTest {
                 NuvioTheme { AppearanceSelectionContent(state.value, onSelectHomeMotion = { state.value = state.value.copy(reduceHomeMotion = it) }, onSelect = {}) }
             }
         }
-        compose.onNodeWithText("Home motion · Reduced").assertExists()
+        compose.onNodeWithText("Home motion").assertExists()
+        compose.onNodeWithTag("home-motion-reduced").assertTextContains("Reduced ›")
         compose.onNodeWithText("Applies only to Notflix Home. Reduced removes card zoom and animation; expanded information and focus stay available.").assertExists()
-        compose.onNodeWithTag("home-motion-reduced").assertIsSelected()
+        compose.onNodeWithTag("home-motion-reduced").assertExists()
         compose.runOnIdle { language.value = "es" }
-        compose.onNodeWithText("Movimiento de Inicio · Reducido").assertExists()
-        compose.onNodeWithText("Reducido").assertExists()
-        key("home-motion-normal")
-        compose.onNodeWithTag("home-motion-normal").assertIsSelected().assertIsFocused()
-        compose.onNodeWithText("Movimiento de Inicio · Normal").assertExists()
+        compose.onNodeWithText("Movimiento de Inicio").assertExists()
+        compose.onNodeWithTag("home-motion-reduced").assertTextContains("Reducido ›")
+        key("home-motion-reduced")
+        compose.onNodeWithTag("home-motion-normal").assertIsFocused()
+        compose.onNodeWithTag("home-motion-normal").assertTextContains("Normal ›")
         assertFalse(state.value.reduceHomeMotion)
         assertEquals(locales, base.resources.configuration.locales.toLanguageTags())
     }

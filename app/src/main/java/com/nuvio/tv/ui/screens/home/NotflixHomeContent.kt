@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,6 +57,7 @@ import com.nuvio.tv.core.ui.rememberNotflixConfirmSound
 import com.nuvio.tv.ui.components.ContinueWatchingOptionsDialog
 import com.nuvio.tv.ui.components.TrailerPlayer
 import com.nuvio.tv.domain.model.MetaPreview
+import com.nuvio.tv.domain.model.PosterShape
 import com.nuvio.tv.domain.model.stableItemKeys
 import com.nuvio.tv.ui.appearance.LocalNotflixPresentation
 import com.nuvio.tv.ui.appearance.NotflixNavigationState
@@ -98,7 +100,11 @@ internal data class NotflixTile(
     val newEpisodeBadge: NotflixNewEpisodeBadge? = null,
     val caption: String? = null,
     /** «Ver todo» tiles: the first posters of the row, drawn as a small fanned collage. */
-    val collage: List<String> = emptyList()
+    val collage: List<String> = emptyList(),
+    /** Collection folder tiles: the cover fields the official folder card already exposes. */
+    val coverEmoji: String? = null,
+    val tileShape: PosterShape = PosterShape.SQUARE,
+    val hideTitle: Boolean = false
 )
 internal data class NotflixDisplayRow(
     val key: String, val loadKey: String, val title: String, val phase: NotflixRowPhase,
@@ -176,7 +182,8 @@ internal fun notflixRows(state: HomeUiState, keepPendingCw: Boolean, cwTitle: St
     ordered.forEach { row ->
         val tiles = if (row.collection != null) row.collection.folders.map { folder ->
             NotflixTile(folder.id, "folder:${row.collection.id}:${folder.id}", folder.title,
-                folder.coverImageUrl, folder.heroBackdropUrl, folder = row.collection.id to folder.id)
+                folder.coverImageUrl, folder.heroBackdropUrl, folder = row.collection.id to folder.id,
+                coverEmoji = folder.coverEmoji, tileShape = folder.tileShape, hideTitle = folder.hideTitle)
         } else row.catalog?.let { catalog ->
             val ageItems = if (state.ageLimit == null) catalog.items else catalog.items.filter { state.allowsForAge(it) }
             val items = if (hiddenKeys.isEmpty()) ageItems else ageItems.filterNot { it.isHiddenTitle(hiddenKeys) }
@@ -1090,7 +1097,9 @@ private fun NotflixCard(tile: NotflixTile, identity: String, wide: Boolean, expa
             this[Spec.RenderedCardScale] = scale
             this[Spec.RenderedCardWidthDp] = width.value
         }) {
-        if (tile.meta == null && (tile.folder != null || tile.seeAllCatalog != null)) {
+        if (tile.meta == null && tile.folder != null) {
+            NotflixFolderArtwork(tile, focused, Modifier.fillMaxSize())
+        } else if (tile.meta == null && tile.seeAllCatalog != null) {
             NotflixSeeAllArtwork(tile, focused, Modifier.fillMaxSize())
         } else if (expanded && !wide && Spec.CARD_LANDSCAPE) Row(Modifier.fillMaxSize()) {
             // Landscape (M29): 16:9 art keeps its collapsed size and plays the preview; the panel opens to its right.
@@ -1411,9 +1420,40 @@ private fun NotflixAction(title: String, modifier: Modifier = Modifier, onClick:
         .padding(horizontal = 16.dp, vertical = 8.dp))
 }
 
+/** Folder card: official cover respecting the folder shape, emoji or the «Ver todo» drawing as fallback. */
+@Composable
+private fun NotflixFolderArtwork(tile: NotflixTile, focused: Boolean, modifier: Modifier) {
+    var imageFailed by remember(tile.poster) { mutableStateOf(false) }
+    val mode = notflixFolderArtworkMode(tile.poster, imageFailed, tile.coverEmoji, tile.tileShape)
+    if (mode == NotflixFolderArtworkMode.FALLBACK) {
+        NotflixSeeAllArtwork(tile, focused, modifier, showTitle = !tile.hideTitle)
+        return
+    }
+    Box(modifier.background(Spec.Surface), contentAlignment = Alignment.Center) {
+        when (mode) {
+            NotflixFolderArtworkMode.CROP -> AsyncImage(tile.poster, null, Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop, onError = { imageFailed = true })
+            NotflixFolderArtworkMode.FIT -> AsyncImage(tile.poster, null,
+                Modifier.fillMaxSize().padding(14.dp), contentScale = ContentScale.Fit,
+                onError = { imageFailed = true })
+            NotflixFolderArtworkMode.EMOJI -> Text(tile.coverEmoji.orEmpty(), color = Spec.Text,
+                fontFamily = Spec.BodyFont, fontSize = 56.sp)
+            NotflixFolderArtworkMode.FALLBACK -> Unit
+        }
+        if (!tile.hideTitle) {
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+                .55f to Color.Transparent, 1f to Spec.Background.copy(.85f))))
+            Text(tile.title, color = Spec.Text, fontFamily = Spec.BodyFont, fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 8.dp, vertical = 28.dp))
+        }
+    }
+}
+
 /** «Ver todo»: fanned collage of the row's first posters, an arrow and a clear label. */
 @Composable
-private fun NotflixSeeAllArtwork(tile: NotflixTile, focused: Boolean, modifier: Modifier) {
+private fun NotflixSeeAllArtwork(tile: NotflixTile, focused: Boolean, modifier: Modifier, showTitle: Boolean = true) {
     Box(modifier.background(Brush.verticalGradient(listOf(Spec.Surface, Spec.Background)))) {
         val fan = listOf(-1, 1, 0) // side posters first, the centre one on top
         tile.collage.take(3).forEachIndexed { index, url ->
@@ -1436,7 +1476,7 @@ private fun NotflixSeeAllArtwork(tile: NotflixTile, focused: Boolean, modifier: 
                 Text("→", color = if (focused) Color.Black else Spec.Text, fontSize = 22.sp,
                     fontWeight = FontWeight.SemiBold, fontFamily = Spec.BodyFont)
             }
-            Text(tile.title, color = Spec.Text, fontFamily = Spec.BodyFont, fontSize = 17.sp,
+            if (showTitle) Text(tile.title, color = Spec.Text, fontFamily = Spec.BodyFont, fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold)
         }
     }
