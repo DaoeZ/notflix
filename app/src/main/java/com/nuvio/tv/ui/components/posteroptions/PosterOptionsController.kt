@@ -18,12 +18,18 @@ import com.nuvio.tv.domain.repository.LibraryRepository
 import com.nuvio.tv.domain.repository.MetaRepository
 import com.nuvio.tv.domain.repository.WatchProgressRepository
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -32,6 +38,20 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/**
+ * M67: estado oficial de los botones Mi lista y Visto de una tarjeta de colección. `null` = todavía
+ * no se conoce; el panel lo dibuja como «Comprobando…» hasta que llega el dato.
+ */
+data class PosterCardStatus(
+    val inLibrary: Boolean? = null,
+    val watched: Boolean? = null,
+    val libraryPending: Boolean = false,
+    val watchedPending: Boolean = false
+)
+
+/** Clave estable del estado por título de una tarjeta (M67). */
+fun posterCardStatusKey(apiType: String, id: String): String = "${apiType.trim().lowercase()}|${id.trim()}"
 
 /**
  * Reusable controller for the long-press / hold-down poster options menu.
@@ -51,12 +71,27 @@ class PosterOptionsController @Inject constructor(
     private val _state = MutableStateFlow(PosterOptionsState())
     val state: StateFlow<PosterOptionsState> = _state.asStateFlow()
 
+    /**
+     * M67: estado por título de los botones Mi lista y Visto de la tarjeta abierta. El menú largo
+     * solo conoce su objetivo; una rejilla necesita el estado del título que abre cada tarjeta.
+     */
+    private val _cardStatus = MutableStateFlow<Map<String, PosterCardStatus>>(emptyMap())
+    val cardStatus: StateFlow<Map<String, PosterCardStatus>> = _cardStatus.asStateFlow()
+
+    private fun cardKey(item: MetaPreview): String = posterCardStatusKey(item.apiType, item.id)
+
     private val targetFlow = MutableStateFlow<MetaPreview?>(null)
 
     private var scope: CoroutineScope? = null
     private var bound = false
     private var showJob: kotlinx.coroutines.Job? = null
     private var pendingMembershipChanges: ListMembershipChanges? = null
+    private var pickerLoadJob: Job? = null
+    private var pickerVisit = 0L
+    private var cardStatusJob: Job? = null
+    private var cardStatusVisit = 0L
+    private var observedCard: MetaPreview? = null
+    private var canonicalCard: Pair<String, MetaPreview>? = null
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun bind(scope: CoroutineScope) {
@@ -200,18 +235,25 @@ class PosterOptionsController @Inject constructor(
         if (state.target == null) return
         if (state.isLibraryPending) return
         val scope = this.scope ?: return
+        val pendingKeys = menuCardKeys(state)
+        if (pendingKeys.any { _cardStatus.value[it]?.libraryPending == true }) return
+        setMenuCardPending(pendingKeys, library = true, pending = true)
 
         _state.update { it.copy(isLibraryPending = true) }
         scope.launch {
-            val canonical = ensureCanonical() ?: return@launch
-            runCatching {
-                libraryRepository.toggleDefault(
-                    canonical.toLibraryEntryInput(state.addonBaseUrl.takeIf { it.isNotBlank() })
-                )
-            }.onFailure { error ->
-                Log.w(TAG, "Failed to toggle library for ${canonical.id}: ${error.message}")
+            try {
+                val canonical = ensureCanonical() ?: return@launch
+                runCatching {
+                    libraryRepository.toggleDefault(
+                        canonical.toLibraryEntryInput(state.addonBaseUrl.takeIf { it.isNotBlank() })
+                    )
+                }.onFailure { error ->
+                    Log.w(TAG, "Failed to toggle library for ${canonical.id}: ${error.message}")
+                }
+            } finally {
+                _state.update { it.copy(isLibraryPending = false) }
+                setMenuCardPending(pendingKeys, library = true, pending = false)
             }
-            _state.update { it.copy(isLibraryPending = false) }
         }
     }
 
@@ -223,11 +265,26 @@ class PosterOptionsController @Inject constructor(
             dismiss()
             return
         }
+        startListPicker(item, state.addonBaseUrl)
+    }
+
+    /**
+     * M67: el selector de listas de la cuenta que ya usa el menú largo (mismo estado, mismo
+     * `PosterOptionsHost`), abierto tanto desde el menú como desde el botón Mi lista de la tarjeta.
+     */
+    private fun startListPicker(item: MetaPreview, addonBaseUrl: String) {
         val scope = this.scope ?: return
+        pickerLoadJob?.cancel()
+        val visit = ++pickerVisit
+        activeListPickerInput = null
+        pendingMembershipChanges = null
+        showJob?.cancel()
+        showJob = null
 
         _state.update { current ->
             current.copy(
                 target = null,
+                removalConfirmations = emptyList(),
                 listPickerActive = true,
                 listPickerTitle = item.name,
                 listPickerContentType = item.apiType,
@@ -241,13 +298,16 @@ class PosterOptionsController @Inject constructor(
         }
         targetFlow.value = null
 
-        scope.launch {
+        pickerLoadJob = scope.launch {
             val canonical = canonicalize(item)
-            val input = canonical.toLibraryEntryInput(state.addonBaseUrl.takeIf { it.isNotBlank() })
+            coroutineContext.ensureActive()
+            if (!pickerCurrent(visit)) return@launch
+            val input = canonical.toLibraryEntryInput(addonBaseUrl.takeIf { it.isNotBlank() })
             activeListPickerInput = input
             runCatching {
                 libraryRepository.getMembershipSnapshot(input)
             }.onSuccess { snapshot ->
+                if (!pickerCurrent(visit)) return@onSuccess
                 _state.update { current ->
                     current.copy(
                         listPickerPending = false,
@@ -259,6 +319,8 @@ class PosterOptionsController @Inject constructor(
                     )
                 }
             }.onFailure { error ->
+                if (error is CancellationException) throw error
+                if (!pickerCurrent(visit)) return@onFailure
                 Log.w(TAG, "Failed to load list picker for ${canonical.id}: ${error.message}")
                 _state.update { current ->
                     current.copy(
@@ -291,6 +353,8 @@ class PosterOptionsController @Inject constructor(
         if (state.librarySourceMode == LibrarySourceMode.LOCAL) return
         val input = activeListPickerInput ?: return
         val scope = this.scope ?: return
+        val visit = pickerVisit
+        val desiredMembership = state.listPickerMembership
 
         _state.update { it.copy(listPickerPending = true, listPickerError = null) }
         scope.launch {
@@ -298,13 +362,14 @@ class PosterOptionsController @Inject constructor(
                 libraryRepository.applyMembershipChanges(
                     item = input,
                     changes = ListMembershipChanges(
-                        desiredMembership = _state.value.listPickerMembership
+                        desiredMembership = desiredMembership
                     )
                 )
             }.onSuccess { result ->
+                if (!pickerCurrent(visit)) return@onSuccess
                 if (result.requiresRemovalConfirmation) {
                     pendingMembershipChanges = ListMembershipChanges(
-                        desiredMembership = _state.value.listPickerMembership
+                        desiredMembership = desiredMembership
                     )
                     _state.update {
                         it.copy(
@@ -316,6 +381,8 @@ class PosterOptionsController @Inject constructor(
                     closeListPickerAfterSave()
                 }
             }.onFailure { error ->
+                if (error is CancellationException) throw error
+                if (!pickerCurrent(visit)) return@onFailure
                 Log.w(TAG, "Failed to save list picker: ${error.message}")
                 _state.update {
                     it.copy(
@@ -327,7 +394,13 @@ class PosterOptionsController @Inject constructor(
         }
     }
 
+    private fun pickerCurrent(visit: Long): Boolean =
+        pickerVisit == visit && _state.value.listPickerActive
+
     fun dismissListPicker() {
+        pickerVisit++
+        pickerLoadJob?.cancel()
+        pickerLoadJob = null
         activeListPickerInput = null
         pendingMembershipChanges = null
         _state.update {
@@ -347,6 +420,7 @@ class PosterOptionsController @Inject constructor(
         val changes = pendingMembershipChanges ?: return
         val confirmations = _state.value.removalConfirmations
         val scope = this.scope ?: return
+        val visit = pickerVisit
         _state.update { it.copy(listPickerPending = true) }
         scope.launch {
             runCatching {
@@ -356,6 +430,7 @@ class PosterOptionsController @Inject constructor(
                     confirmedRemovalProviders = confirmations.mapTo(linkedSetOf(), TrackingMembershipRemovalConfirmation::providerId)
                 )
             }.onSuccess { result ->
+                if (!pickerCurrent(visit)) return@onSuccess
                 if (result.requiresRemovalConfirmation) {
                     _state.update {
                         it.copy(
@@ -367,6 +442,8 @@ class PosterOptionsController @Inject constructor(
                     closeListPickerAfterSave()
                 }
             }.onFailure { error ->
+                if (error is CancellationException) throw error
+                if (!pickerCurrent(visit)) return@onFailure
                 _state.update {
                     it.copy(
                         listPickerPending = false,
@@ -385,6 +462,7 @@ class PosterOptionsController @Inject constructor(
     }
 
     private fun closeListPickerAfterSave() {
+        pickerVisit++
         activeListPickerInput = null
         pendingMembershipChanges = null
         _state.update {
@@ -405,6 +483,9 @@ class PosterOptionsController @Inject constructor(
         if (!item.apiType.equals("movie", ignoreCase = true)) return
         if (state.isWatchedPending) return
         val scope = this.scope ?: return
+        val pendingKeys = menuCardKeys(state)
+        if (pendingKeys.any { _cardStatus.value[it]?.watchedPending == true }) return
+        setMenuCardPending(pendingKeys, library = false, pending = true)
 
         val currentlyWatched = state.isWatched
         // Collect all known ID variants: original UI id (e.g. "tmdb:123"),
@@ -419,19 +500,23 @@ class PosterOptionsController @Inject constructor(
 
         _state.update { it.copy(isWatchedPending = true) }
         scope.launch {
-            val canonical = ensureCanonical() ?: return@launch
-            runCatching {
-                if (currentlyWatched) {
-                    watchProgressRepository.removeFromHistory(canonical.id, videoId = canonical.imdbId)
-                } else {
-                    watchProgressRepository.markAsCompleted(buildCompletedMovieProgress(canonical))
+            try {
+                val canonical = ensureCanonical() ?: return@launch
+                runCatching {
+                    if (currentlyWatched) {
+                        watchProgressRepository.removeFromHistory(canonical.id, videoId = canonical.imdbId)
+                    } else {
+                        watchProgressRepository.markAsCompleted(buildCompletedMovieProgress(canonical))
+                    }
+                }.onFailure { error ->
+                    Log.w(TAG, "Failed to toggle watched for ${canonical.id}: ${error.message}")
+                    // Revert optimistic update on failure
+                    watchProgressRepository.revertOptimisticWatchedMovie(optimisticIds, add = !currentlyWatched)
                 }
-            }.onFailure { error ->
-                Log.w(TAG, "Failed to toggle watched for ${canonical.id}: ${error.message}")
-                // Revert optimistic update on failure
-                watchProgressRepository.revertOptimisticWatchedMovie(optimisticIds, add = !currentlyWatched)
+            } finally {
+                _state.update { it.copy(isWatchedPending = false) }
+                setMenuCardPending(pendingKeys, library = false, pending = false)
             }
-            _state.update { it.copy(isWatchedPending = false) }
         }
     }
 
@@ -444,6 +529,9 @@ class PosterOptionsController @Inject constructor(
         if (!isSeries) return
         if (state.isWatchedPending) return
         val scope = this.scope ?: return
+        val pendingKeys = menuCardKeys(state)
+        if (pendingKeys.any { _cardStatus.value[it]?.watchedPending == true }) return
+        setMenuCardPending(pendingKeys, library = false, pending = true)
 
         val currentlyWatched = state.isWatched
 
@@ -454,20 +542,185 @@ class PosterOptionsController @Inject constructor(
 
         _state.update { it.copy(isWatchedPending = true) }
         scope.launch {
-            val canonical = ensureCanonical() ?: return@launch
-            runCatching {
-                if (currentlyWatched) {
-                    unmarkSeriesWatched(canonical)
-                } else {
-                    markSeriesWatched(canonical)
+            try {
+                val canonical = ensureCanonical() ?: return@launch
+                runCatching {
+                    if (currentlyWatched) {
+                        unmarkSeriesWatched(canonical)
+                    } else {
+                        markSeriesWatched(canonical)
+                    }
+                }.onFailure { error ->
+                    Log.w(TAG, "Failed to toggle series watched for ${canonical.id}: ${error.message}")
+                    // Revert only this title; another card may have changed a different series.
+                    watchedSeriesStateHolder.update(
+                        (watchedSeriesStateHolder.fullyWatchedSeriesIds.value - item.id) +
+                            currentIds.intersect(setOf(item.id))
+                    )
                 }
-            }.onFailure { error ->
-                Log.w(TAG, "Failed to toggle series watched for ${canonical.id}: ${error.message}")
-                // Revert optimistic update on failure
-                watchedSeriesStateHolder.update(currentIds)
+            } finally {
+                _state.update { it.copy(isWatchedPending = false) }
+                setMenuCardPending(pendingKeys, library = false, pending = false)
             }
-            _state.update { it.copy(isWatchedPending = false) }
         }
+    }
+
+    // ---- M67: Mi lista y Visto desde el botón de la tarjeta. Mismos escritores oficiales que el
+    // menú largo (no se duplica ningún almacén ni se abre un segundo camino de escritura). ----
+
+    /** Observe just the expanded title, under the same canonical ID used by the official menu. */
+    fun refreshCardStatus(item: MetaPreview) {
+        val scope = this.scope ?: return
+        val key = cardKey(item)
+        val visit = ++cardStatusVisit
+        observedCard = item
+        cardStatusJob?.cancel()
+        canonicalCard = null
+        cardStatusJob = scope.launch {
+            val canonical = canonicalize(item)
+            coroutineContext.ensureActive()
+            if (visit != cardStatusVisit) return@launch
+            canonicalCard = key to canonical
+            val library = libraryRepository.isInLibrary(canonical.id, canonical.apiType)
+                .map { it as Boolean? }.catch { emit(null) }
+            val watched = if (canonical.isSeriesType()) {
+                watchedSeriesStateHolder.fullyWatchedSeriesIds.map { ids ->
+                    (canonical.id in ids || item.id in ids) as Boolean?
+                }
+            } else {
+                watchProgressRepository.isWatched(canonical.id, videoId = canonical.imdbId)
+                    .map { it as Boolean? }
+            }.catch { emit(null) }
+            combine(library, watched) { inLibrary, isWatched -> inLibrary to isWatched }
+                .collect { (inLibrary, isWatched) ->
+                    if (visit == cardStatusVisit) setCardStatus(key) { previous ->
+                        previous.copy(
+                            inLibrary = if (previous.libraryPending) previous.inLibrary else inLibrary,
+                            watched = if (previous.watchedPending) previous.watched else isWatched
+                        )
+                    }
+                }
+        }
+    }
+
+    fun stopCardStatus() {
+        cardStatusVisit++
+        cardStatusJob?.cancel()
+        cardStatusJob = null
+        canonicalCard = null
+        observedCard = null
+    }
+
+    private suspend fun canonicalCardItem(item: MetaPreview): MetaPreview =
+        canonicalCard?.takeIf { it.first == cardKey(item) }?.second?.let { item.copy(id = it.id) }
+            ?: canonicalize(item)
+
+    /** Card and long press use the same repository and the same account list picker. */
+    fun toggleLibraryFor(item: MetaPreview, addonBaseUrl: String?) {
+        if (_state.value.librarySourceMode != LibrarySourceMode.LOCAL) {
+            startListPicker(item, addonBaseUrl.orEmpty())
+            return
+        }
+        val key = cardKey(item)
+        if (_cardStatus.value[key]?.libraryPending == true) return
+        val scope = this.scope ?: return
+        setCardStatus(key) { it.copy(libraryPending = true) }
+        scope.launch {
+            try {
+                val canonical = canonicalCardItem(item)
+                coroutineContext.ensureActive()
+                libraryRepository.toggleDefault(canonical.toLibraryEntryInput(addonBaseUrl?.takeIf { it.isNotBlank() }))
+                val inLibrary = libraryRepository.isInLibrary(canonical.id, canonical.apiType).first()
+                setCardStatus(key) { it.copy(inLibrary = inLibrary) }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                Log.w(TAG, "Failed to toggle card library for ${item.id}: ${error.message}")
+            } finally {
+                setCardStatus(key) { it.copy(libraryPending = false) }
+            }
+        }
+    }
+
+    /** Official watched writes, preserving unrelated optimistic changes if this write fails. */
+    fun toggleWatchedFor(item: MetaPreview) {
+        val key = cardKey(item)
+        val status = _cardStatus.value[key] ?: PosterCardStatus()
+        if (status.watchedPending) return
+        val scope = this.scope ?: return
+        setCardStatus(key) { it.copy(watchedPending = true) }
+        scope.launch {
+            var optimisticIds = emptySet<String>()
+            var seriesIdsBefore = emptySet<String>()
+            var currentlyWatched = status.watched == true
+            val isSeries = item.isSeriesType()
+            try {
+                val canonical = canonicalCardItem(item)
+                coroutineContext.ensureActive()
+                seriesIdsBefore = watchedSeriesStateHolder.fullyWatchedSeriesIds.value
+                currentlyWatched = if (isSeries) canonical.id in seriesIdsBefore || item.id in seriesIdsBefore
+                    else watchProgressRepository.isWatched(canonical.id, videoId = canonical.imdbId).first()
+                optimisticIds = movieWatchedIds(item) + movieWatchedIds(canonical)
+                if (isSeries) {
+                    watchedSeriesStateHolder.update(
+                        if (currentlyWatched) seriesIdsBefore - optimisticIds else seriesIdsBefore + optimisticIds
+                    )
+                } else watchProgressRepository.applyOptimisticWatchedMovie(optimisticIds, add = !currentlyWatched)
+                setCardStatus(key) { it.copy(watched = !currentlyWatched) }
+                when {
+                    currentlyWatched -> if (isSeries) unmarkSeriesWatched(canonical)
+                        else watchProgressRepository.removeFromHistory(canonical.id, videoId = canonical.imdbId)
+                    isSeries -> markSeriesWatched(canonical)
+                    else -> watchProgressRepository.markAsCompleted(buildCompletedMovieProgress(canonical))
+                }
+            } catch (error: Exception) {
+                if (optimisticIds.isNotEmpty()) {
+                    if (isSeries) watchedSeriesStateHolder.update(
+                        (watchedSeriesStateHolder.fullyWatchedSeriesIds.value - optimisticIds) +
+                            seriesIdsBefore.intersect(optimisticIds)
+                    ) else watchProgressRepository.revertOptimisticWatchedMovie(optimisticIds, add = !currentlyWatched)
+                }
+                setCardStatus(key) { it.copy(watched = currentlyWatched) }
+                if (error is CancellationException) throw error
+                Log.w(TAG, "Failed to toggle card watched for ${item.id}: ${error.message}")
+            } finally {
+                setCardStatus(key) { it.copy(watchedPending = false) }
+            }
+        }
+    }
+
+    private fun menuCardKeys(state: PosterOptionsState): Set<String> {
+        val item = state.target ?: return emptySet()
+        return setOf(cardKey(item), posterCardStatusKey(item.apiType, state.originalItemId ?: item.id))
+    }
+
+    /** Long press and the expanded card share the in-flight guard, including ID aliases. */
+    private fun setMenuCardPending(keys: Set<String>, library: Boolean, pending: Boolean) {
+        keys.forEach { key ->
+            setCardStatus(key) {
+                if (library) it.copy(libraryPending = pending) else it.copy(watchedPending = pending)
+            }
+        }
+        if (!pending) observedCard?.takeIf { cardKey(it) in keys }?.let(::refreshCardStatus)
+    }
+
+    private inline fun setCardStatus(key: String, update: (PosterCardStatus) -> PosterCardStatus) {
+        _cardStatus.update { current ->
+            val next = current.toMutableMap()
+            next.remove(key)
+            next[key] = update(current[key] ?: PosterCardStatus())
+            while (next.size > MAX_CARD_STATUSES) {
+                val oldest = next.keys.firstOrNull { candidate ->
+                    candidate != key && candidate != observedCard?.let(::cardKey) && next[candidate]?.let { !it.libraryPending && !it.watchedPending } == true
+                } ?: break
+                next.remove(oldest)
+            }
+            next
+        }
+    }
+
+    private fun movieWatchedIds(item: MetaPreview): Set<String> = buildSet {
+        add(item.id)
+        item.imdbId?.takeIf(String::isNotBlank)?.let(::add)
     }
 
     private suspend fun markSeriesWatched(item: MetaPreview) {
@@ -528,6 +781,7 @@ class PosterOptionsController @Inject constructor(
     private var activeListPickerInput: LibraryEntryInput? = null
 
     companion object {
+        private const val MAX_CARD_STATUSES = 64
         private const val TAG = "PosterOptionsCtrl"
     }
 }
@@ -550,6 +804,12 @@ private fun buildCompletedMovieProgress(item: MetaPreview): WatchProgress {
         progressPercent = 100f
     )
 }
+
+/** M67: el mismo criterio de serie que usa el menú largo para elegir su escritor de Visto. */
+private fun MetaPreview.isSeriesType(): Boolean =
+    apiType.equals("series", ignoreCase = true) ||
+        apiType.equals("tv", ignoreCase = true) ||
+        apiType.equals("anime", ignoreCase = true)
 
 private fun MetaPreview.toLibraryEntryInput(addonBaseUrl: String?): LibraryEntryInput {
     val year = Regex("(\\d{4})").find(releaseInfo ?: "")

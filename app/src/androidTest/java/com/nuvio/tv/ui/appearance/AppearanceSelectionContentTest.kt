@@ -1,6 +1,7 @@
 package com.nuvio.tv.ui.appearance
 
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -10,12 +11,16 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.requestFocus
 import com.nuvio.tv.domain.model.AppAppearance
 import com.nuvio.tv.domain.model.AppearanceContext
+import com.nuvio.tv.domain.model.NotflixCardOpening
+import com.nuvio.tv.domain.model.NotflixCardSize
 import com.nuvio.tv.ui.screens.settings.AppearanceSelectionContent
 import org.junit.Rule
 import org.junit.Test
@@ -57,6 +62,37 @@ class AppearanceSelectionContentTest {
             .assertIsSelected()
         compose.onNodeWithTag("appearance-effective").assertTextEquals(active("Nuvio"))
         compose.runOnIdle { assertEquals(listOf(AppAppearance.NOTFLIX, AppAppearance.NUVIO), selections) }
+    }
+
+    @Test fun appearanceListsSaveTheirActualValuesAndReturnFocusAfterRecreation() {
+        val restoration = StateRestorationTester(compose)
+        val state = mutableStateOf(AppearanceState(context = AppearanceContext(1, 1),
+            requested = AppAppearance.NOTFLIX, effective = AppAppearance.NOTFLIX))
+        restoration.setContent {
+            CompositionLocalProvider(LocalNotflixPresentation provides NotflixPresentation(active = true, reduceHomeMotion = true)) {
+                NotflixPresentationTheme(true) {
+                    AppearanceSelectionContent(state.value,
+                        onSelectHomeMotion = { state.value = state.value.copy(reduceHomeMotion = it) },
+                        onSelectCardOpening = { state.value = state.value.copy(cardOpening = it) },
+                        onSelectCardSize = { state.value = state.value.copy(cardSize = it) }, onSelect = {})
+                }
+            }
+        }
+        compose.onNodeWithTag("card-size-large").performClick()
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithTag("card-size-option-small").performClick()
+        compose.onNodeWithTag("card-size-small").assertIsFocused()
+        compose.onNodeWithTag("card-opening-normal").performClick()
+        compose.onNodeWithTag("card-opening-option-instant").performClick()
+        compose.onNodeWithTag("card-opening-instant").assertIsFocused()
+        compose.onNodeWithTag("home-motion-normal").performClick()
+        compose.onNodeWithTag("home-motion-option-reduced").performClick()
+        compose.onNodeWithTag("home-motion-reduced").assertIsFocused()
+        compose.runOnIdle {
+            assertEquals(NotflixCardSize.SMALL, state.value.cardSize)
+            assertEquals(NotflixCardOpening.INSTANT, state.value.cardOpening)
+            assertEquals(true, state.value.reduceHomeMotion)
+        }
     }
 
     /** Separates semantic activation/callback/recomposition from the D-pad input path. */

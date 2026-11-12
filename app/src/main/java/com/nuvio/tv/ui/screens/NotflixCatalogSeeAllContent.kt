@@ -16,6 +16,8 @@ import com.nuvio.tv.ui.appearance.notflix.toNotflixCategoryHeader
 import com.nuvio.tv.ui.appearance.notflix.toNotflixPosterSpec
 import com.nuvio.tv.ui.components.posteroptions.PosterOptionsController
 import com.nuvio.tv.ui.components.posteroptions.PosterOptionsHost
+import com.nuvio.tv.ui.screens.home.NotflixCardActionsHost
+import com.nuvio.tv.ui.screens.home.NotflixPreviewSession
 
 /**
  * Etiqueta del add-on que ya pinta la pantalla oficial («de <add-on>»). Se respeta el ajuste
@@ -69,7 +71,12 @@ internal fun NotflixCatalogSeeAllScreen(
     onOpen: (MetaPreview) -> Unit,
     onLongPress: (MetaPreview) -> Unit,
     onNavigateToDetail: (String, String, String) -> Unit,
-    posterController: PosterOptionsController
+    posterController: PosterOptionsController,
+    /** M63: misma tarjeta abierta y mismo tráiler que la carpeta de colección. */
+    previewSession: NotflixPreviewSession? = null,
+    cardActions: NotflixCardActionsHost? = null,
+    onCardPlay: ((MetaPreview) -> Unit)? = null,
+    canPlay: Boolean = false
 ) {
     val posterOptionsState by posterController.state.collectAsState()
     val keys = remember(items) { notflixCategoryPosterKeys(items) }
@@ -78,7 +85,6 @@ internal fun NotflixCatalogSeeAllScreen(
         item.toNotflixPosterSpec(watched = watched(item))
             .copy(key = keys.getOrElse(index) { "${item.apiType}:${item.id}" })
     }
-
     when {
         isLoading && items.isEmpty() -> NotflixCategorySkeleton()
 
@@ -113,7 +119,12 @@ internal fun NotflixCatalogSeeAllScreen(
             onLoadMore = { onLoadMore() },
             onRetry = {},
             emptyTitle = stringResource(R.string.catalog_see_all_empty_title),
-            emptyMessage = stringResource(R.string.catalog_see_all_empty_subtitle)
+            emptyMessage = stringResource(R.string.catalog_see_all_empty_subtitle),
+            itemsByKey = itemsByKey,
+            cardActions = cardActions,
+            previewSession = previewSession,
+            onCardPlay = onCardPlay,
+            canPlay = canPlay
         )
     }
 

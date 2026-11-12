@@ -5,6 +5,7 @@ import android.util.Log
 import com.nuvio.tv.core.network.NetworkResult
 import com.nuvio.tv.core.network.safeApiCall
 import com.nuvio.tv.core.poster.withCustomPosterUrls
+import com.nuvio.tv.data.mapper.catalogRatingSource
 import com.nuvio.tv.data.mapper.toDomainOrNull
 import com.nuvio.tv.data.mediaserver.ServerCatalog
 import com.nuvio.tv.data.mediaserver.messageRes
@@ -76,7 +77,7 @@ class CatalogRepositoryImpl @Inject constructor(
                 val enabledScreens = layoutPreferenceDataStore.customPosterEnabledScreens.first()
 
                 val items = result.data.metas
-                    .mapNotNull { it?.toDomainOrNull(type, addonBaseUrl) }
+                    .mapNotNull { it?.toDomainOrNull(type, addonBaseUrl, catalogRatingSource(addonId)) }
                     .distinctBy { it.id }
                     .withCustomPosterUrls(
                         com.nuvio.tv.core.poster.patternForScreen(posterPattern, posterScreen, enabledScreens)

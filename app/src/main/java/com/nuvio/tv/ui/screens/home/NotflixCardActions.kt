@@ -1,6 +1,8 @@
 package com.nuvio.tv.ui.screens.home
 
 import android.text.format.DateFormat
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -18,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -30,6 +33,8 @@ import androidx.tv.material3.Text
 import com.nuvio.tv.R
 import com.nuvio.tv.core.util.parseRuntimeMinutes
 import com.nuvio.tv.domain.model.MetaPreview
+import com.nuvio.tv.ui.appearance.LocalNotflixPresentation
+import com.nuvio.tv.ui.components.posteroptions.PosterCardStatus
 import com.nuvio.tv.ui.appearance.NotflixVisualSpec as Spec
 import java.util.Date
 import kotlinx.coroutines.delay
@@ -40,7 +45,36 @@ data class NotflixCardStatus(
     val watched: Boolean? = null, val watchedPending: Boolean = false
 )
 
-/** Official Home callbacks and state for the expanded card; Home owns every write. */
+/** M67: el estado que el controlador del menú largo ya conoce, tal como lo dibuja el panel. */
+internal fun PosterCardStatus.toNotflixCardStatus(): NotflixCardStatus =
+    NotflixCardStatus(
+        inLibrary = inLibrary,
+        libraryPending = libraryPending,
+        watched = watched,
+        watchedPending = watchedPending
+    )
+
+/**
+ * M67: host único del panel. Inicio, la carpeta de colección y «Ver todo» ofrecen las mismas
+ * acciones con los mismos escritores oficiales; ninguna pantalla puede recortar el panel.
+ */
+internal fun notflixCardActionHost(
+    status: (MetaPreview) -> NotflixCardStatus,
+    manageLists: Boolean,
+    onExpanded: (MetaPreview) -> Unit,
+    onLibrary: (MetaPreview, String) -> Unit,
+    onWatched: (MetaPreview) -> Unit,
+    onHide: (MetaPreview) -> Unit
+): NotflixCardActionsHost = NotflixCardActionsHost(
+    status = status,
+    manageLists = manageLists,
+    onExpanded = onExpanded,
+    onLibrary = onLibrary,
+    onWatched = onWatched,
+    onHide = onHide
+)
+
+/** Official callbacks and state of the expanded card; each screen brings its own official writes. */
 class NotflixCardActionsHost(
     val status: (MetaPreview) -> NotflixCardStatus,
     val manageLists: Boolean,
@@ -53,7 +87,9 @@ class NotflixCardActionsHost(
 internal enum class NotflixCardAction { PLAY, INFO, LIBRARY, WATCHED, SOUND, HIDE }
 
 internal data class NotflixCardActionUi(
-    val action: NotflixCardAction, val label: String, val state: String?, val enabled: Boolean, val icon: ImageVector
+    val action: NotflixCardAction, val label: String, val state: String?, val enabled: Boolean, val icon: ImageVector,
+    /** M56: this control is saving; a press cannot run it but must still answer. */
+    val busy: Boolean = false
 )
 
 /** Virtual action cursor; Compose focus never leaves the card, so expansion and preview lease survive. */
@@ -142,76 +178,105 @@ internal fun notflixRuntimeMinutes(runtime: String?): Int? = parseRuntimeMinutes
 
 internal fun notflixEndsAt(nowMillis: Long, minutes: Int?): Long? = minutes?.let { nowMillis + it * 60_000L }
 
+/**
+ * M67: acciones del panel y su orden, con una sola política para Inicio, la carpeta de colección y
+ * «Ver todo». Reproducir depende de que la pantalla sepa reproducir; Visto, de que el título sea
+ * una película o una serie; el sonido, de que haya tráiler. Mi lista y Ocultar están siempre.
+ */
+internal fun notflixCardActionOrder(
+    canPlay: Boolean,
+    watchable: Boolean,
+    hasSound: Boolean
+): List<NotflixCardAction> = buildList {
+    if (canPlay) add(NotflixCardAction.PLAY)
+    add(NotflixCardAction.INFO)
+    add(NotflixCardAction.LIBRARY)
+    if (watchable) add(NotflixCardAction.WATCHED)
+    if (hasSound) add(NotflixCardAction.SOUND)
+    add(NotflixCardAction.HIDE)
+}
+
 @Composable
 internal fun notflixCardActions(meta: MetaPreview, host: NotflixCardActionsHost, sound: PreviewSoundUi?, canPlay: Boolean): List<NotflixCardActionUi> {
     val status = host.status(meta)
     val pending = stringResource(R.string.notflix_card_pending)
-    return buildList {
-        if (canPlay) add(NotflixCardActionUi(NotflixCardAction.PLAY, stringResource(R.string.notflix_billboard_play), null, true, Icons.Filled.PlayArrow))
-        add(NotflixCardActionUi(NotflixCardAction.INFO, stringResource(R.string.notflix_billboard_info), null, true, Icons.Filled.Info))
-        run {
-            val inLibrary = status.inLibrary
-            add(NotflixCardActionUi(NotflixCardAction.LIBRARY,
-                when {
-                    host.manageLists -> stringResource(R.string.library_manage_lists)
-                    inLibrary == true -> stringResource(R.string.hero_remove_from_library)
-                    else -> stringResource(R.string.hero_add_to_library)
-                },
-                when {
-                    status.libraryPending -> pending
-                    inLibrary == null -> stringResource(R.string.notflix_card_library_checking)
-                    inLibrary -> stringResource(R.string.notflix_card_state_in_library)
-                    else -> stringResource(R.string.notflix_card_state_not_in_library)
-                },
-                !status.libraryPending && (inLibrary != null || host.manageLists),
-                if (inLibrary == true) Icons.Filled.Check else Icons.Filled.Add))
-            val watchable = meta.apiType.lowercase() in setOf("movie", "series", "tv")
-            if (watchable) {
-                // Titles outside the observed catalog rows have no status yet; like Nuvio's poster menu,
-                // treat them as unwatched so the action stays usable (promoter 08-11).
+    // Titles outside the observed catalog rows have no status yet; like Nuvio's poster menu,
+    // treat them as unwatched so the action stays usable (promoter 08-11).
+    val watchable = meta.apiType.lowercase() in setOf("movie", "series", "tv")
+    return notflixCardActionOrder(canPlay, watchable, sound != null).map { action ->
+        when (action) {
+            NotflixCardAction.PLAY -> NotflixCardActionUi(
+                NotflixCardAction.PLAY, stringResource(R.string.notflix_billboard_play), null, true, Icons.Filled.PlayArrow)
+            NotflixCardAction.INFO -> NotflixCardActionUi(
+                NotflixCardAction.INFO, stringResource(R.string.notflix_billboard_info), null, true, Icons.Filled.Info)
+            NotflixCardAction.LIBRARY -> {
+                val inLibrary = status.inLibrary
+                NotflixCardActionUi(NotflixCardAction.LIBRARY,
+                    when {
+                        host.manageLists -> stringResource(R.string.library_manage_lists)
+                        inLibrary == true -> stringResource(R.string.hero_remove_from_library)
+                        else -> stringResource(R.string.hero_add_to_library)
+                    },
+                    when {
+                        status.libraryPending -> pending
+                        inLibrary == null -> stringResource(R.string.notflix_card_library_checking)
+                        inLibrary -> stringResource(R.string.notflix_card_state_in_library)
+                        else -> stringResource(R.string.notflix_card_state_not_in_library)
+                    },
+                    !status.libraryPending && (inLibrary != null || host.manageLists),
+                    if (inLibrary == true) Icons.Filled.Check else Icons.Filled.Add, busy = status.libraryPending)
+            }
+            NotflixCardAction.WATCHED -> {
                 val watched = status.watched ?: false
-                add(NotflixCardActionUi(NotflixCardAction.WATCHED,
-                    if (watched == true) stringResource(R.string.hero_mark_unwatched) else stringResource(R.string.hero_mark_watched),
+                NotflixCardActionUi(NotflixCardAction.WATCHED,
+                    if (watched) stringResource(R.string.hero_mark_unwatched) else stringResource(R.string.hero_mark_watched),
                     when {
                         status.watchedPending -> pending
                         watched -> stringResource(R.string.notflix_card_state_watched)
                         else -> stringResource(R.string.notflix_card_state_unwatched)
                     },
                     !status.watchedPending,
-                    if (watched == true) Icons.Filled.VisibilityOff else Icons.Filled.Visibility))
+                    if (watched) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    busy = status.watchedPending)
             }
+            NotflixCardAction.SOUND -> when (val current = sound) {
+                null, PreviewSoundUi.Loading -> NotflixCardActionUi(NotflixCardAction.SOUND,
+                    stringResource(R.string.notflix_card_sound_on), stringResource(R.string.notflix_card_sound_loading),
+                    false, Icons.AutoMirrored.Filled.VolumeOff)
+                is PreviewSoundUi.Ready -> NotflixCardActionUi(NotflixCardAction.SOUND,
+                    stringResource(if (current.audible) R.string.notflix_card_sound_off else R.string.notflix_card_sound_on),
+                    stringResource(when {
+                        current.systemSilenced -> R.string.notflix_card_sound_system
+                        current.audible -> R.string.notflix_card_state_sound_on
+                        else -> R.string.notflix_card_state_muted
+                    }),
+                    !current.systemSilenced,
+                    if (current.audible && !current.systemSilenced) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff)
+            }
+            NotflixCardAction.HIDE -> NotflixCardActionUi(
+                NotflixCardAction.HIDE,
+                stringResource(R.string.notflix_hide_title),
+                null,
+                true,
+                Icons.Filled.VisibilityOff
+            )
         }
-        when (sound) {
-            null -> Unit
-            PreviewSoundUi.Loading -> add(NotflixCardActionUi(NotflixCardAction.SOUND,
-                stringResource(R.string.notflix_card_sound_on), stringResource(R.string.notflix_card_sound_loading), false, Icons.AutoMirrored.Filled.VolumeOff))
-            is PreviewSoundUi.Ready -> add(NotflixCardActionUi(NotflixCardAction.SOUND,
-                stringResource(if (sound.audible) R.string.notflix_card_sound_off else R.string.notflix_card_sound_on),
-                stringResource(when {
-                    sound.systemSilenced -> R.string.notflix_card_sound_system
-                    sound.audible -> R.string.notflix_card_state_sound_on
-                    else -> R.string.notflix_card_state_muted
-                }),
-                !sound.systemSilenced,
-                if (sound.audible && !sound.systemSilenced) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff))
-        }
-        add(NotflixCardActionUi(
-            NotflixCardAction.HIDE,
-            stringResource(R.string.notflix_hide_title),
-            null,
-            true,
-            Icons.Filled.VisibilityOff
-        ))
     }
 }
 
-/** Expanded panel: actions row, then IMDb · year · runtime · ends-at, then genres. One minute clock per visible panel. */
+/** Expanded panel: actions row, then rating · year · runtime · ends-at, then genres. One minute clock per visible panel. */
+/** Width (dp) the panel needs so every 28 dp action, 5 dp apart, plus the options mark fits in one row. */
+internal fun notflixCardPanelMinWidth(actionCount: Int): Int =
+    actionCount * 28 + (actionCount - 1).coerceAtLeast(0) * 5 + 40 + Spec.PANEL_PADDING * 2
+
 @Composable
 internal fun NotflixCardPanel(
     meta: MetaPreview, identity: String, actions: List<NotflixCardActionUi>, cursor: Int?, hasOptions: Boolean,
-    noArtwork: Boolean, modifier: Modifier, onActivate: (Int) -> Unit, synopsisLines: Int = 0
+    noArtwork: Boolean, modifier: Modifier, onActivate: (Int) -> Unit, synopsisLines: Int = 0,
+    busyPulse: Int = 0, busyPulseIndex: Int = -1
 ) {
     val context = LocalContext.current
+    val reducedMotion = LocalNotflixPresentation.current.reduceHomeMotion
     val minutes = notflixRuntimeMinutes(meta.runtime)
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(minutes) {
@@ -229,8 +294,27 @@ internal fun NotflixCardPanel(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
             actions.forEachIndexed { index, action ->
                 val selected = cursor == index
+                // M56: with no action selected, Play carries a thin hint ring: OK plays right now.
+                val playHint = cursor == null && action.action == NotflixCardAction.PLAY && action.enabled
+                val pulse = remember { Animatable(1f) }
+                LaunchedEffect(busyPulse, busyPulseIndex) {
+                    if (!reducedMotion && busyPulse > 0 && busyPulseIndex == index) {
+                        pulse.snapTo(1f)
+                        pulse.animateTo(0.92f, tween(60))
+                        pulse.animateTo(1f, tween(60))
+                    } else if (pulse.value != 1f) {
+                        // M56 C1: an interrupted pulse (another button pulsing) must not leave this
+                        // one shrunk; any key change re-runs the effect and restores the scale.
+                        pulse.snapTo(1f)
+                    }
+                }
                 Box(Modifier.size(28.dp)
-                    .border(if (selected) 2.dp else 1.dp, if (selected) Spec.Text else Spec.Secondary.copy(.55f), CircleShape)
+                    .graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }
+                    .border(if (selected) 2.dp else 1.dp, when {
+                        selected -> Spec.Text
+                        playHint -> Spec.Text.copy(alpha = .6f)
+                        else -> Spec.Secondary.copy(.55f)
+                    }, CircleShape)
                     .background(if (action.action == NotflixCardAction.PLAY) Spec.Text else Spec.Background.copy(.6f), CircleShape)
                     .semantics(mergeDescendants = true) {
                         role = Role.Button
@@ -258,7 +342,7 @@ internal fun NotflixCardPanel(
             color = Spec.Text, fontFamily = Spec.BodyFont, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.testTag("notflix-card-action-label-$identity"))
         else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
-            RatingBadge(meta.imdbRating)
+            RatingBadge(meta.imdbRating, source = meta.ratingSource)
             val facts = listOfNotNull(meta.releaseInfo?.takeIf { it.isNotBlank() },
                 minutes?.let { stringResource(R.string.notflix_runtime_minutes, it) }).joinToString(" · ")
             // The end time never truncates on the narrow card; year/runtime yield space first.

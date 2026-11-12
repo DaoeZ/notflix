@@ -7,6 +7,16 @@
     <string name="notflix_home_motion_help">Solo afecta al Inicio Notflix. Reducido elimina el zoom y la animación de las tarjetas; conserva la información expandida y el foco.</string>
     <string name="notflix_home_motion_normal">Normal</string>
     <string name="notflix_home_motion_reduced">Reducido</string>
+    <string name="notflix_card_open_title">Apertura de tarjetas</string>
+    <string name="notflix_card_open_help">Cuánto tiempo debe permanecer enfocado un título antes de que se abra su tarjeta. Solo afecta al Inicio Notflix.</string>
+    <string name="notflix_card_open_instant">Instantánea</string>
+    <string name="notflix_card_open_normal">Normal</string>
+    <string name="notflix_card_open_slow">Lenta</string>
+    <string name="notflix_card_size_title">Tamaño de las tarjetas</string>
+    <string name="notflix_card_size_help">Solo afecta al Inicio Notflix. Cambia el tamaño de los pósters y de «Continuar viendo»; los detalles de la tarjeta siguen legibles.</string>
+    <string name="notflix_card_size_small">Pequeño</string>
+    <string name="notflix_card_size_medium">Mediano</string>
+    <string name="notflix_card_size_large">Grande</string>
     <string name="notflix_continue_watching">Continuar viendo</string>
     <string name="notflix_episode">T%1$s · E%2$s</string>
     <string name="notflix_loading_catalogs">Cargando catálogos…</string>
@@ -173,4 +183,23 @@
     <string name="notflix_licenses_notflix_title">Notflix — GPL-3.0</string>
     <string name="notflix_licenses_notflix_body">Código de Notflix, con licencia GNU General Public License v3.0.</string>
     <string name="notflix_licenses_nuvio_title">Basado en NuvioTV, de NuvioMedia — GPL-3.0</string>
+    <!-- M58: aviso por dispositivo tras actualizar; una línea por función publicada. -->
+    <string name="notflix_whats_new_title">Novedades de Notflix</string>
+    <string name="notflix_whats_new_version">Versión %1$s</string>
+    <string name="notflix_whats_new_ack">Entendido</string>
+    <string name="notflix_whats_new_about_title">Novedades de esta versión</string>
+    <string name="notflix_whats_new_about_subtitle">Consulta los cambios de la versión %1$s</string>
+    <string-array name="notflix_whats_new_items">
+        <item>Elige el tamaño de las tarjetas: pequeño, mediano o grande.</item>
+        <item>Elige cuánto tarda en abrirse una tarjeta, y sus botones se ven mejor.</item>
+        <item>Las tarjetas también se abren y muestran el tráiler dentro de las colecciones.</item>
+        <item>Las notas indican si son de IMDb o de TMDB.</item>
+        <item>Reproducción automática por idiomas: elige varios, ordénalos y decide si manda la calidad o el idioma.</item>
+        <item>Títulos y descripciones en el idioma de la app (con clave de TMDB).</item>
+        <item>Notflix está traducido a todos los idiomas de la app.</item>
+        <item>Ajustes más limpios: las opciones se eligen en listas y se ocultan las que no afectan a Notflix.</item>
+        <item>Los perfiles KIDS tienen su propio Inicio con dibujos y títulos familiares (necesita clave de TMDB).</item>
+        <item>Simkl ya se puede conectar.</item>
+        <item>Trakt: ahora se conecta solo con un código, sin configurar nada.</item>
+    </string-array>
 </resources>

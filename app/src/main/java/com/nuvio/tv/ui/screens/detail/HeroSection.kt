@@ -64,6 +64,7 @@ import com.nuvio.tv.R
 import com.nuvio.tv.domain.model.ContentType
 import com.nuvio.tv.domain.model.Meta
 import com.nuvio.tv.domain.model.MDBListRatings
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.domain.model.Video
 import com.nuvio.tv.domain.model.NextToWatch
 import com.nuvio.tv.ui.components.ImdbRatingSourceLabel
@@ -231,8 +232,13 @@ fun HeroContentSection(
         }
     }
     if (notflix && !isTrailerPlaying) {
+        val standards = notflixStandardRatings(
+            standardRating = meta.imdbRating.takeUnless { hideMetaInfoImdb },
+            source = meta.ratingSource,
+            tmdbRating = tmdbRating
+        )
         val collectedRatings = notflixDetailRatings(mdbListRatings, mdbListRatingOrder,
-            standardImdb = meta.imdbRating.takeUnless { hideMetaInfoImdb }, standardTmdb = tmdbRating)
+            standardImdb = standards.imdb, standardTmdb = standards.tmdb)
         NotflixDetailHero(name = meta.name, logo = logoModel, showLogo = shouldShowLogo,
             onLogoError = { logoLoadFailed = true }, creditLine = creditLine,
             cast = meta.cast.ifEmpty { meta.castMembers.map { it.name } },

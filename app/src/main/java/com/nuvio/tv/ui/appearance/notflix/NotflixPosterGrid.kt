@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,6 +29,9 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -47,6 +51,8 @@ fun NotflixPosterGrid(
     onClick: (NotflixPosterSpec) -> Unit,
     modifier: Modifier = Modifier,
     columns: Int = NotflixPosterMetrics.COLUMNS,
+    posterWidth: Dp = NotflixPosterMetrics.Width,
+    posterHeight: Dp = NotflixPosterMetrics.Height,
     state: LazyGridState = rememberLazyGridState(),
     contentPadding: PaddingValues = PaddingValues(
         start = Spec.GUTTER.dp,
@@ -59,12 +65,20 @@ fun NotflixPosterGrid(
     requestInitialFocus: Boolean = true,
     header: (LazyGridScope.() -> Unit)? = null,
     onFocused: (NotflixPosterSpec) -> Unit = {},
-    onLongClick: ((NotflixPosterSpec) -> Unit)? = null
+    onLongClick: ((NotflixPosterSpec) -> Unit)? = null,
+    /** M63: teclas del mando de la tarjeta enfocada (cursor de botones de la tarjeta abierta). */
+    onCardKey: ((NotflixPosterSpec, androidx.compose.ui.input.key.KeyEvent) -> Boolean)? = null,
+    onActualFocus: ((NotflixPosterSpec, Boolean) -> Unit)? = null,
+    covered: ((NotflixPosterSpec) -> Boolean)? = null,
+    removedFocusKey: (() -> String?)? = null,
+    headerItemCount: Int = 0
 ) {
     val keys = remember(items) { items.map { it.key } }
     val requesters = remember(keys) { keys.associateWith { FocusRequester() } }
     var savedKey by rememberSaveable(saveKey) { mutableStateOf<String?>(null) }
     var initialFocusDone by remember(saveKey) { mutableStateOf(false) }
+    // M67: posición del póster enfocado, para heredarla cuando ese título desaparece (ocultar).
+    val focusedIndex = remember { mutableIntStateOf(-1) }
 
     LaunchedEffect(keys, requestInitialFocus) {
         if (initialFocusDone || !requestInitialFocus || keys.isEmpty()) return@LaunchedEffect
@@ -79,6 +93,24 @@ fun NotflixPosterGrid(
         val requester = requesters[target]
         if (requester != null && requester.requestFocusAfterFrames(frames = 1)) {
             initialFocusDone = true
+        }
+    }
+
+    // M67: si el título enfocado desaparece de la rejilla (Ocultar), el foco pasa a su vecino en
+    // lugar de perderse; no se toca la posición ni el resto de la cuadrícula.
+    LaunchedEffect(keys, initialFocusDone) {
+        if (!initialFocusDone) return@LaunchedEffect
+        val lost = removedFocusKey?.invoke()?.takeIf { it == savedKey } ?: return@LaunchedEffect
+        if (keys.isEmpty() || lost in keys || focusedIndex.intValue < 0) return@LaunchedEffect
+        val target = notflixPosterFocusAfterRemoval(focusedIndex.intValue, keys) ?: return@LaunchedEffect
+        val index = keys.indexOf(target)
+        // The next item may still be outside the lazy viewport (last row/column removal).
+        if (state.layoutInfo.visibleItemsInfo.none { it.key == target }) {
+            state.scrollToItem(index + headerItemCount.coerceAtLeast(0))
+        }
+        if (requesters[target]?.requestFocusAfterFrames(frames = 2) == true) {
+            savedKey = target
+            focusedIndex.intValue = index
         }
     }
 
@@ -98,9 +130,19 @@ fun NotflixPosterGrid(
             val requester = requesters[item.key] ?: remember(item.key) { FocusRequester() }
             NotflixPosterCard(
                 item = item,
-                modifier = Modifier.focusRequester(requester),
+                modifier = Modifier.focusRequester(requester)
+                    .then(if (onActualFocus != null) Modifier.onFocusChanged { onActualFocus(item, it.isFocused) } else Modifier)
+                    .then(if (covered != null) Modifier.graphicsLayer { alpha = if (covered(item)) 0f else 1f } else Modifier)
+                    .then(
+                    if (onCardKey != null) {
+                        Modifier.onPreviewKeyEvent { event -> onCardKey(item, event) }
+                    } else Modifier
+                ),
+                width = posterWidth,
+                height = posterHeight,
                 onFocused = {
                     savedKey = item.key
+                    focusedIndex.intValue = keys.indexOf(item.key)
                     onFocused(item)
                 },
                 onClick = { onClick(item) },
@@ -114,6 +156,14 @@ fun NotflixPosterGrid(
     }
     }
 }
+
+/**
+ * M67: vecino que hereda el foco cuando desaparece el póster enfocado (p. ej. al ocultarlo). Se
+ * queda la misma posición, que ya ocupa el siguiente título; en el final de la lista, el último.
+ */
+internal fun notflixPosterFocusAfterRemoval(previousIndex: Int, remainingKeys: List<String>): String? =
+    if (remainingKeys.isEmpty()) null
+    else remainingKeys[previousIndex.coerceIn(0, remainingKeys.lastIndex)]
 
 /** Scrolls by the minimum needed to show the focused item; nothing when it is already visible. */
 @OptIn(ExperimentalFoundationApi::class)

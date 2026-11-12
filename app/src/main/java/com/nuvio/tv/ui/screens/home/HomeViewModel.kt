@@ -290,7 +290,7 @@ class HomeViewModel @Inject constructor(
     internal var activeTrailerPreviewItemId: String? = null
     internal var trailerPreviewRequestVersion: Long = 0L
     internal var trailerPreviewJob: Job? = null
-    internal var currentTmdbSettings: TmdbSettings = TmdbSettings()
+    @Volatile internal var currentTmdbSettings: TmdbSettings = TmdbSettings()
     internal var currentMdbListSettings: MDBListSettings = MDBListSettings()
     internal var heroEnrichmentJob: Job? = null
     internal var lastHeroEnrichmentSignature: String? = null
@@ -467,10 +467,9 @@ class HomeViewModel @Inject constructor(
         // El límite de edad es local y puede cambiar sin cambiar de perfil.
         // Se reproyecta Inicio y se recarga Continuar viendo para que no queden títulos ocultos.
         viewModelScope.launch {
-            var previousAgeLimit = ageGate.currentLimit()
             ageGate.limit.collect { newLimit ->
-                if (newLimit != previousAgeLimit) {
-                    previousAgeLimit = newLimit
+                // The gate may have advanced while this ViewModel was initializing.
+                if (newLimit != _uiState.value.ageLimit) {
                     notflixCollectionVisit++
                     notflixCollectionRows.clear()
                     notflixMemory.clear()
@@ -985,6 +984,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refreshHomeCatalogsIfStale() {
+        refreshNotflixKidsTmdbAvailability()
         if (addonsCache.isEmpty()) return
         val now = android.os.SystemClock.elapsedRealtime()
         if (now - lastHomeCatalogRefreshAtMs < HOME_CATALOG_REFRESH_TTL_MS) return
@@ -1027,7 +1027,8 @@ class HomeViewModel @Inject constructor(
      * Called from the UI when a placeholder catalog row becomes visible.
      */
     fun requestLazyCatalogLoad(catalogKey: String) {
-        if (catalogKey.startsWith("collection_notflix-inicio:")) {
+        // M66: the KIDS home rows (collection_notflix-kids:...) load through the same Notflix rows.
+        if (catalogKey.startsWith("collection_notflix-inicio:") || catalogKey.startsWith("collection_notflix-kids:")) {
             configureNotflixCollectionRows()
             notflixCollectionRows.request(catalogKey)
             return

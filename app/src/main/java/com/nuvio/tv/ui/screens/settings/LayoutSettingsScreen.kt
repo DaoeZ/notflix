@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.tv.R
+import com.nuvio.tv.ui.appearance.LocalNotflixPresentation
 import com.nuvio.tv.ui.screens.addon.QrCodeOverlay
 
 @Composable
@@ -55,9 +56,11 @@ fun LayoutSettingsContent(
     val streamBadgeUiState by viewModel.streamBadgeUiState.collectAsStateWithLifecycle()
     val customPosterQrState by viewModel.customPosterQrState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val notflixAppearance = LocalNotflixPresentation.current.active
     val sections = visibleLayoutSections(
         essentialMode = essentialMode,
-        focusedPosterHasOptions = uiState.focusedPosterHasOptions()
+        focusedPosterHasOptions = uiState.focusedPosterHasOptions(),
+        notflixAppearance = notflixAppearance
     )
     var expandedSections by rememberSaveable(essentialMode) {
         mutableStateOf(if (essentialMode) listOf(LayoutSection.HOME_LAYOUT.name) else emptyList())

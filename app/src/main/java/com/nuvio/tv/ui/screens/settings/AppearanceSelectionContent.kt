@@ -21,6 +21,8 @@ import androidx.compose.ui.res.stringResource
 import com.nuvio.tv.R
 import com.nuvio.tv.ui.theme.NuvioTheme
 import com.nuvio.tv.domain.model.AppAppearance
+import com.nuvio.tv.domain.model.NotflixCardOpening
+import com.nuvio.tv.domain.model.NotflixCardSize
 import com.nuvio.tv.ui.appearance.AppearanceState
 import com.nuvio.tv.ui.appearance.NotflixWordmark
 import androidx.compose.ui.Alignment
@@ -35,6 +37,8 @@ fun AppearanceSelectionContent(
     state: AppearanceState,
     initialFocusRequester: FocusRequester? = null,
     onSelectHomeMotion: (Boolean) -> Unit = {},
+    onSelectCardOpening: (NotflixCardOpening) -> Unit = {},
+    onSelectCardSize: (NotflixCardSize) -> Unit = {},
     onSelectIntroEnabled: (Boolean) -> Unit = {},
     onSelectIntroSoundEnabled: (Boolean) -> Unit = {},
     onSelectPreviewEnabled: (Boolean) -> Unit = {},
@@ -74,13 +78,60 @@ fun AppearanceSelectionContent(
         Text(stringResource(R.string.notflix_appearance_active, stringResource(if (state.effective == AppAppearance.NUVIO)
             R.string.notflix_appearance_nuvio else R.string.notflix_appearance_notflix)), Modifier.testTag("appearance-effective"))
         if (state.context != null && state.effective == AppAppearance.NOTFLIX) {
-            SettingsActionRow(
+            // M60 PARTE 3: a choice is one row with the current value that opens a list, never a
+            // row of repeated buttons or an OK cycle.
+            SettingsSingleChoiceRow(
                 title = stringResource(R.string.notflix_home_motion_title),
                 subtitle = stringResource(R.string.notflix_home_motion_help),
                 value = stringResource(if (state.reduceHomeMotion) R.string.notflix_home_motion_reduced
                     else R.string.notflix_home_motion_normal),
-                onClick = { onSelectHomeMotion(!state.reduceHomeMotion) },
+                options = listOf(
+                    SettingsPickerOption(false, stringResource(R.string.notflix_home_motion_normal)),
+                    SettingsPickerOption(true, stringResource(R.string.notflix_home_motion_reduced))
+                ),
+                selectedValue = state.reduceHomeMotion,
+                onOptionSelected = onSelectHomeMotion,
+                stateKey = state.context,
+                optionTestTag = { if (it) "home-motion-option-reduced" else "home-motion-option-normal" },
                 modifier = Modifier.testTag(if (state.reduceHomeMotion) "home-motion-reduced" else "home-motion-normal")
+            )
+            SettingsSingleChoiceRow(
+                title = stringResource(R.string.notflix_card_open_title),
+                subtitle = stringResource(R.string.notflix_card_open_help),
+                value = stringResource(when (state.cardOpening) {
+                    NotflixCardOpening.INSTANT -> R.string.notflix_card_open_instant
+                    NotflixCardOpening.NORMAL -> R.string.notflix_card_open_normal
+                    NotflixCardOpening.SLOW -> R.string.notflix_card_open_slow
+                }),
+                options = listOf(
+                    SettingsPickerOption(NotflixCardOpening.INSTANT, stringResource(R.string.notflix_card_open_instant)),
+                    SettingsPickerOption(NotflixCardOpening.NORMAL, stringResource(R.string.notflix_card_open_normal)),
+                    SettingsPickerOption(NotflixCardOpening.SLOW, stringResource(R.string.notflix_card_open_slow))
+                ),
+                selectedValue = state.cardOpening,
+                onOptionSelected = onSelectCardOpening,
+                stateKey = state.context,
+                optionTestTag = { "card-opening-option-${it.name.lowercase()}" },
+                modifier = Modifier.testTag("card-opening-${state.cardOpening.name.lowercase()}")
+            )
+            SettingsSingleChoiceRow(
+                title = stringResource(R.string.notflix_card_size_title),
+                subtitle = stringResource(R.string.notflix_card_size_help),
+                value = stringResource(when (state.cardSize) {
+                    NotflixCardSize.SMALL -> R.string.notflix_card_size_small
+                    NotflixCardSize.MEDIUM -> R.string.notflix_card_size_medium
+                    NotflixCardSize.LARGE -> R.string.notflix_card_size_large
+                }),
+                options = listOf(
+                    SettingsPickerOption(NotflixCardSize.SMALL, stringResource(R.string.notflix_card_size_small)),
+                    SettingsPickerOption(NotflixCardSize.MEDIUM, stringResource(R.string.notflix_card_size_medium)),
+                    SettingsPickerOption(NotflixCardSize.LARGE, stringResource(R.string.notflix_card_size_large))
+                ),
+                selectedValue = state.cardSize,
+                onOptionSelected = onSelectCardSize,
+                stateKey = state.context,
+                optionTestTag = { "card-size-option-${it.name.lowercase()}" },
+                modifier = Modifier.testTag("card-size-${state.cardSize.name.lowercase()}")
             )
             SettingsToggleRow(
                 title = stringResource(R.string.notflix_intro_enabled),
@@ -136,6 +187,7 @@ fun AppearanceSelectionContent(
         }
         if (state.saveFailed) Text(stringResource(R.string.notflix_save_failed))
     }
+
 }
 
 // M29 (promoter): the chosen option must be visible, not only announced: accent border plus a check mark.

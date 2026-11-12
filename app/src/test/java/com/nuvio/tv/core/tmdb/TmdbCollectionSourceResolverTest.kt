@@ -18,6 +18,7 @@ import com.nuvio.tv.domain.model.TmdbCollectionMediaType
 import com.nuvio.tv.domain.model.TmdbCollectionSource
 import com.nuvio.tv.domain.model.TmdbCollectionSourceType
 import com.nuvio.tv.domain.model.TmdbSettings
+import com.nuvio.tv.domain.model.RatingSource
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -113,6 +114,8 @@ class TmdbCollectionSourceResolverTest {
         assertEquals("series", result.data.items[1].apiType)
         assertEquals(2, result.data.currentPage)
         assertTrue(result.data.hasMore)
+        // M57: TMDB lists carry TMDB's vote_average, so the origin must travel with the item.
+        assertTrue(result.data.items.all { it.ratingSource == RatingSource.TMDB })
     }
 
     @Test

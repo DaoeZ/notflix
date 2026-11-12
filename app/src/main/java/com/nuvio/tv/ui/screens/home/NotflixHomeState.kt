@@ -120,8 +120,11 @@ fun resolveNotflixFocus(saved: NotflixFocusRecord, rows: List<NotflixFocusRow>, 
     return NotflixFocusResolution.Top
 }
 
+/** Focus records of the empty-Home actions; they live outside the rows. */
+internal val NOTFLIX_EMPTY_ACTION_KEYS = setOf("retry", "kids-integrations")
+
 fun notflixFocusNeedsRepair(saved: NotflixFocusRecord?, rows: List<NotflixFocusRow>, configured: Boolean): Boolean {
-    if (saved == null || saved.rowKey in setOf("hero", "retry")) return false
+    if (saved == null || saved.rowKey == "hero" || saved.rowKey in NOTFLIX_EMPTY_ACTION_KEYS) return false
     val row = rows.firstOrNull { it.key == saved.rowKey }
     val stillPresent = if (saved.itemKey == "status") row != null && row.items.isEmpty() && row.phase != NotflixRowPhase.READY
         else row?.items?.any { it.key == saved.itemKey } == true

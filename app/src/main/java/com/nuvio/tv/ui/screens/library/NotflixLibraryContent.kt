@@ -2,6 +2,8 @@ package com.nuvio.tv.ui.screens.library
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +32,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -187,7 +191,7 @@ internal fun NotflixLibraryPage(
     }
 
     var focusedKey by remember(viewMode) { mutableStateOf<String?>(null) }
-    var panel by remember { mutableStateOf<NotflixLibraryPanel?>(null) }
+    var panel by rememberSaveable { mutableStateOf<NotflixLibraryPanel?>(null) }
     val sortRequester = remember { FocusRequester() }
     val filtersRequester = remember { FocusRequester() }
     val listRequester = remember { FocusRequester() }
@@ -207,7 +211,10 @@ internal fun NotflixLibraryPage(
                 NotflixLibraryPanel.CloudType -> typeRequester
             }
         }
-        if (target != null) scope.launch { runCatching { target.requestFocus() } }
+        if (target != null) scope.launch {
+            repeat(2) { withFrameNanos { } }
+            runCatching { target.requestFocus() }
+        }
     }
 
     val headerItem: NotflixHeaderItem? = if (saved) {
@@ -293,7 +300,7 @@ internal fun NotflixLibraryPage(
                 onAction = actions.onClearFilters
             )
 
-            saved && noSavedItems -> NotflixLibraryEmptyState(
+            saved && noSavedItems && filtersCount == 0 -> NotflixLibraryEmptyState(
                 actionRequester = emptyActionRequester,
                 onExplore = onNavigateToHome
             )
@@ -585,7 +592,7 @@ private fun NotflixLibraryModeRow(
 }
 
 @Composable
-private fun NotflixSavedFiltersRow(
+internal fun NotflixSavedFiltersRow(
     state: LibraryUiState,
     filtersLabel: String,
     listLabel: String?,
@@ -600,8 +607,11 @@ private fun NotflixSavedFiltersRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = Spec.GUTTER.dp, end = Spec.GUTTER.dp, bottom = 10.dp)
-            .onPreviewKeyEvent { event ->
+            .padding(start = Spec.GUTTER.dp, end = Spec.GUTTER.dp, bottom = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionUp) {
                     onUpToTopBar()
                     true
@@ -609,26 +619,35 @@ private fun NotflixSavedFiltersRow(
                     false
                 }
             },
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            state.availableTypeTabs.forEach { tab ->
-                NotflixChip(
-                    label = if (tab.key == LibraryTypeTab.ALL_KEY) {
-                        stringResource(R.string.library_type_all)
-                    } else {
-                        localizedContentType(tab.key)
-                    },
-                    selected = tab.key == state.selectedTypeTab?.key,
-                    onClick = { onSelectType(tab) },
-                    testTag = "notflix-library-type-${tab.key}"
+            Row(
+                modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                state.availableTypeTabs.forEach { tab ->
+                    NotflixChip(
+                        label = if (tab.key == LibraryTypeTab.ALL_KEY) {
+                            stringResource(R.string.library_type_all)
+                        } else {
+                            localizedContentType(tab.key)
+                        },
+                        selected = tab.key == state.selectedTypeTab?.key,
+                        onClick = { onSelectType(tab) },
+                        testTag = "notflix-library-type-${tab.key}"
+                    )
+                }
+                // M60 PARTE 2 (promotor 11-11): Filters lives next to the type chips, right after the
+                // last one and before the spacer.
+                NotflixFlatButton(
+                    label = filtersLabel,
+                    onClick = onOpenFilters,
+                    modifier = Modifier.focusRequester(filtersRequester),
+                    testTag = "notflix-library-filters"
                 )
             }
-            Spacer(Modifier.weight(1f))
             if (state.listManagement != null && state.isTrackingAuthenticated) {
                 NotflixFlatButton(
                     label = stringResource(R.string.library_manage_lists),
@@ -638,12 +657,13 @@ private fun NotflixSavedFiltersRow(
                 )
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (state.listTabs.size > 1 && listLabel != null) {
+        // The list button stays on its own row; do not draw an empty row when there is none.
+        if (state.listTabs.size > 1 && listLabel != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 NotflixFlatButton(
                     label = listLabel,
                     onClick = onOpenList,
@@ -651,12 +671,6 @@ private fun NotflixSavedFiltersRow(
                     testTag = "notflix-library-list"
                 )
             }
-            NotflixFlatButton(
-                label = filtersLabel,
-                onClick = onOpenFilters,
-                modifier = Modifier.focusRequester(filtersRequester),
-                testTag = "notflix-library-filters"
-            )
         }
     }
 }

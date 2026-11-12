@@ -38,7 +38,11 @@ data class TraktAuthState(
     val userCode: String? = null,
     val verificationUrl: String? = null,
     val expiresAt: Long? = null,
-    val pollInterval: Int? = null
+    val pollInterval: Int? = null,
+    /** Client ID of the Trakt app that issued the token; null for sessions made before it was stored. */
+    val tokenClientId: String? = null,
+    /** Client ID that started the pending device code. */
+    val deviceClientId: String? = null
 ) {
     val isAuthenticated: Boolean
         get() = !accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()
@@ -68,6 +72,8 @@ class TraktAuthDataStore @Inject constructor(
     private val verificationUrlKey = stringPreferencesKey("verification_url")
     private val expiresAtKey = longPreferencesKey("expires_at")
     private val pollIntervalKey = intPreferencesKey("poll_interval")
+    private val tokenClientIdKey = stringPreferencesKey("token_client_id")
+    private val deviceClientIdKey = stringPreferencesKey("device_client_id")
 
     private fun store(profileId: Int = profileManager.activeProfileId.value) =
         factory.get(profileId, FEATURE)
@@ -86,7 +92,9 @@ class TraktAuthDataStore @Inject constructor(
                 userCode = preferences[userCodeKey],
                 verificationUrl = preferences[verificationUrlKey],
                 expiresAt = preferences[expiresAtKey],
-                pollInterval = preferences[pollIntervalKey]
+                pollInterval = preferences[pollIntervalKey],
+                tokenClientId = preferences[tokenClientIdKey],
+                deviceClientId = preferences[deviceClientIdKey]
             )
         }
     }
@@ -113,12 +121,15 @@ class TraktAuthDataStore @Inject constructor(
             userCode = prefs[userCodeKey],
             verificationUrl = prefs[verificationUrlKey],
             expiresAt = prefs[expiresAtKey],
-            pollInterval = prefs[pollIntervalKey]
+            pollInterval = prefs[pollIntervalKey],
+            tokenClientId = prefs[tokenClientIdKey],
+            deviceClientId = prefs[deviceClientIdKey]
         )
     }
 
-    suspend fun saveToken(token: TraktTokenResponseDto) {
+    suspend fun saveToken(token: TraktTokenResponseDto, clientId: String? = null) {
         store().edit { preferences ->
+            if (clientId.isNullOrBlank()) preferences.remove(tokenClientIdKey) else preferences[tokenClientIdKey] = clientId
             preferences[accessTokenKey] = token.accessToken
             preferences[refreshTokenKey] = token.refreshToken
             preferences[tokenTypeKey] = token.tokenType
@@ -142,9 +153,10 @@ class TraktAuthDataStore @Inject constructor(
         }
     }
 
-    suspend fun saveDeviceFlow(data: TraktDeviceCodeResponseDto) {
+    suspend fun saveDeviceFlow(data: TraktDeviceCodeResponseDto, clientId: String? = null) {
         val now = System.currentTimeMillis()
         store().edit { preferences ->
+            if (clientId.isNullOrBlank()) preferences.remove(deviceClientIdKey) else preferences[deviceClientIdKey] = clientId
             preferences[deviceCodeKey] = data.deviceCode
             preferences[userCodeKey] = data.userCode
             preferences[verificationUrlKey] = data.verificationUrl
@@ -166,11 +178,14 @@ class TraktAuthDataStore @Inject constructor(
             preferences.remove(verificationUrlKey)
             preferences.remove(expiresAtKey)
             preferences.remove(pollIntervalKey)
+            preferences.remove(deviceClientIdKey)
         }
     }
 
     suspend fun clearAuth() {
         store().edit { preferences ->
+            preferences.remove(tokenClientIdKey)
+            preferences.remove(deviceClientIdKey)
             preferences.remove(accessTokenKey)
             preferences.remove(refreshTokenKey)
             preferences.remove(tokenTypeKey)

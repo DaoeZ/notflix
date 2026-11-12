@@ -49,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1515,6 +1516,60 @@ private fun NotflixSettingsTogglePill(
 }
 
 @Composable
+internal fun <T> SettingsSingleChoiceRow(
+    title: String,
+    value: String,
+    options: List<SettingsPickerOption<T>>,
+    selectedValue: T,
+    onOptionSelected: (T) -> Unit,
+    subtitle: String? = null,
+    modifier: Modifier = Modifier,
+    focusRequester: FocusRequester? = null,
+    stateKey: Any? = null,
+    optionTestTag: ((T) -> String)? = null
+) {
+    val currentKey = stateKey?.toString().orEmpty()
+    // rememberSaveable inputs reset live state, but do not validate a restored value's inputs.
+    // Save the binding too so a dialog from another profile cannot reopen after recreation.
+    var openedKey by rememberSaveable(currentKey) { mutableStateOf<String?>(null) }
+    val open = openedKey == currentKey
+    var restoreFocus by remember(stateKey) { mutableStateOf(false) }
+    val ownFocus = remember { FocusRequester() }
+    val rowFocus = focusRequester ?: ownFocus
+    LaunchedEffect(open) {
+        if (!open && restoreFocus) {
+            rowFocus.requestFocusAfterFrames(frames = 2)
+            restoreFocus = false
+        }
+    }
+    SettingsActionRow(
+        title = title,
+        subtitle = subtitle,
+        value = value,
+        onClick = { openedKey = currentKey },
+        modifier = modifier.focusRequester(rowFocus)
+    )
+    if (open) {
+        SettingsSingleChoiceDialog(
+            title = title,
+            subtitle = subtitle,
+            options = options,
+            selectedValue = selectedValue,
+            onOptionSelected = {
+                openedKey = null
+                restoreFocus = true
+                onOptionSelected(it)
+            },
+            onDismiss = {
+                openedKey = null
+                restoreFocus = true
+            },
+            optionTestTag = optionTestTag
+        )
+    }
+}
+
+@Composable
 internal fun <T> SettingsSingleChoiceDialog(
     title: String,
     options: List<SettingsPickerOption<T>>,
@@ -1523,7 +1578,8 @@ internal fun <T> SettingsSingleChoiceDialog(
     onDismiss: () -> Unit,
     subtitle: String? = null,
     width: Dp = 420.dp,
-    maxHeight: Dp = 320.dp
+    maxHeight: Dp = 320.dp,
+    optionTestTag: ((T) -> String)? = null
 ) {
     if (notflixSettingsActive()) {
         val keys = options.mapIndexed { index, option -> "$index-${option.value}" }
@@ -1540,7 +1596,8 @@ internal fun <T> SettingsSingleChoiceDialog(
                     NotflixPanelChoice(
                         key = keys[index],
                         label = notflixSettingsOptionLabel(option.title, option.trailing, option.description),
-                        selected = option.value == selectedValue
+                        selected = option.value == selectedValue,
+                        testTag = optionTestTag?.invoke(option.value)
                     )
                 },
                 onSelect = { choice ->
@@ -1582,10 +1639,12 @@ internal fun <T> SettingsSingleChoiceDialog(
                     key = { index, option -> "$index-${option.value}" }
                 ) { index, option ->
                     val isSelected = option.value == selectedValue
+                    val testTag = optionTestTag?.invoke(option.value)
                     Card(
                         onClick = { onOptionSelected(option.value) },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
                             .then(if (index == focusedIndex) Modifier.focusRequester(focusRequester) else Modifier),
                         colors = CardDefaults.colors(
                             containerColor = if (isSelected) NuvioTheme.colors.FocusBackground else NuvioTheme.colors.BackgroundCard,

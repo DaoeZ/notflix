@@ -56,11 +56,13 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.SideEffect
 import com.nuvio.tv.ui.appearance.IntroBinding
 import com.nuvio.tv.ui.appearance.IntroDecisionInput
+import com.nuvio.tv.ui.appearance.IntroPhase
 import com.nuvio.tv.ui.appearance.NotflixIntroProcess
 import com.nuvio.tv.ui.appearance.NotflixIntroLifetime
 import com.nuvio.tv.ui.appearance.NotflixIntroScene
 import com.nuvio.tv.ui.appearance.NotflixIntroOverlay
 import com.nuvio.tv.ui.appearance.NotflixIntroContentBoundary
+import com.nuvio.tv.ui.appearance.NotflixWhatsNewHost
 import com.nuvio.tv.core.ui.LocalNotflixSoundPlayer
 import com.nuvio.tv.core.ui.NotflixSoundPlayer
 import com.nuvio.tv.core.ui.NotflixUiSounds
@@ -77,6 +79,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -109,6 +112,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -182,6 +186,8 @@ import com.nuvio.tv.domain.model.DiscoverLocation
 import com.nuvio.tv.domain.model.ExperienceMode
 import com.nuvio.tv.domain.model.HomeLayout
 import com.nuvio.tv.domain.model.MemberAccess
+import com.nuvio.tv.domain.model.NotflixCardOpening
+import com.nuvio.tv.domain.model.NotflixCardSize
 import com.nuvio.tv.domain.model.ProfileBackgroundSelection
 import com.nuvio.tv.domain.model.resolveProfileBackgroundSelection
 import com.nuvio.tv.domain.model.SettingsUiStyle
@@ -524,6 +530,20 @@ open class MainActivity : ComponentActivity() {
             val appearanceState by appearanceViewModel.state.collectAsState()
             val notflixActive = appearanceState.context?.profileId == activeProfileId &&
                 appearanceState.effective == AppAppearance.NOTFLIX
+            // M58: device-wide last seen version; null until the store answers so an update notice
+            // is never mistaken for a new install.
+            val whatsNewVersionFlow = remember(appOnboardingDataStore) {
+                appOnboardingDataStore.notflixWhatsNewVersionCode.map<Int, Int?> { it }
+            }
+            val whatsNewLastSeen by whatsNewVersionFlow.collectAsState(initial = null)
+            // Updates over betas that never stored a version must still show the notes once.
+            val whatsNewUpdatedInstall = remember {
+                runCatching {
+                    val info = packageManager.getPackageInfo(packageName, 0)
+                    info.lastUpdateTime > info.firstInstallTime
+                }.getOrDefault(false)
+            }
+            val whatsNewScope = rememberCoroutineScope()
             val startupLoadingState = remember(activeProfileId, startupSession) { StartupLoadingState() }
             val profiles by profileManager.profiles.collectAsState()
             val hasEverSelectedProfile by profileManager.hasEverSelectedProfile.collectAsState()
@@ -1382,7 +1402,9 @@ open class MainActivity : ComponentActivity() {
                                 LocalNavViewModelStoreOwner provides navViewModelStoreOwner,
                                 LocalAppearanceViewModel provides appearanceViewModel,
                                 LocalNotflixPresentation provides NotflixPresentation(notflixActive, notflixNavigation,
-                                    reduceHomeMotion = notflixActive && appearanceState.reduceHomeMotion),
+                                    reduceHomeMotion = notflixActive && appearanceState.reduceHomeMotion,
+                                    cardOpening = if (notflixActive) appearanceState.cardOpening else NotflixCardOpening.DEFAULT,
+                                    cardSize = if (notflixActive) appearanceState.cardSize else NotflixCardSize.DEFAULT),
                                 LocalNotflixSoundPlayer provides notflixSoundPlayer
                             ) {
                                 val contentFocusRequester = remember { FocusRequester() }
@@ -1493,6 +1515,38 @@ open class MainActivity : ComponentActivity() {
                                     autoNextOverlay == null &&
                                     !isTrailerPlaying,
                                 onShown = { trailerPlayerPool.stop() }
+                            )
+                            // M58: one-shot device notice, only on Home and after the intro has
+                            // finished. A player, the card trailer or the update dialog suspend it
+                            // instead of stacking another window on top.
+                            val whatsNewPhase by NotflixIntroProcess.coordinator.state.collectAsState()
+                            val whatsNewAutoNext by externalPlaybackTracker.autoNextOverlay.collectAsState()
+                            val whatsNewTrailer by trailerPlayerPool.isTrailerPlaying.collectAsState()
+                            val whatsNewAmbient by ambientIdleController.isShowing.collectAsState()
+                            NotflixWhatsNewHost(
+                                enabled = notflixActive &&
+                                    activeProfileId != null &&
+                                    appearanceState.context?.profileId == activeProfileId &&
+                                    actualRoute == Screen.Home.route &&
+                                    whatsNewPhase is IntroPhase.Finished &&
+                                    !updateState.showUnknownSourcesDialog &&
+                                    whatsNewAutoNext == null &&
+                                    !whatsNewTrailer,
+                                canPresent = introSplashReady && !whatsNewAmbient,
+                                updatedInstall = whatsNewUpdatedInstall,
+                                lastSeenVersionCode = whatsNewLastSeen,
+                                currentVersionCode = BuildConfig.VERSION_CODE,
+                                versionName = BuildConfig.VERSION_NAME,
+                                items = stringArrayResource(R.array.notflix_whats_new_items).toList(),
+                                onSeen = { code ->
+                                    whatsNewScope.launch {
+                                        try {
+                                            appOnboardingDataStore.setNotflixWhatsNewVersionCode(code)
+                                        } catch (error: java.io.IOException) {
+                                            android.util.Log.w("NotflixWhatsNew", "Could not store seen version", error)
+                                        }
+                                    }
+                                }
                             )
                         }
                     }

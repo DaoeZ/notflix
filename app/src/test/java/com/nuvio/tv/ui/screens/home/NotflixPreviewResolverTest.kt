@@ -91,4 +91,9 @@ class NotflixPreviewResolverTest {
         val r=OfficialNotflixPreviewResolver(model);val result=async{r.resolve(lease()){authorized}};runCurrent();authorized=false;done.complete(Unit);runCurrent()
         assertNull(result.await());assertEquals("https://unit.invalid/cache",urls["id"])
     }
+    @Test fun `SeeAll may resolve outside Home while the Home adapter stays closed`() {
+        ui.value = ui.value.copy(notflixPresentationActive = false)
+        assertFalse(HomeNotflixPreviewRequestHost(model).previewRequestsAllowed)
+        assertTrue(HomeNotflixPreviewRequestHost(model, requiresHomePresentation = false).previewRequestsAllowed)
+    }
 }

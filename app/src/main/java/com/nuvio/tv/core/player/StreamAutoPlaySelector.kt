@@ -1,10 +1,12 @@
 package com.nuvio.tv.core.player
 
 import com.nuvio.tv.core.build.AppFeaturePolicy
+import com.nuvio.tv.data.local.AUDIO_LANGUAGES
 import com.nuvio.tv.data.local.StreamAutoPlayMode
 import com.nuvio.tv.data.local.StreamAutoPlayPriorityRule
 import com.nuvio.tv.data.local.StreamAutoPlayQuality
 import com.nuvio.tv.data.local.StreamAutoPlaySource
+import com.nuvio.tv.data.local.normalizeAudioLanguageCodes
 import com.nuvio.tv.domain.model.AddonStreams
 import com.nuvio.tv.domain.model.Stream
 import com.nuvio.tv.domain.model.StreamDebridCacheState
@@ -180,25 +182,47 @@ object StreamAutoPlaySelector {
     /**
      * The first playable stream that satisfies each rule, walking the user's list in order.
      * A null/blank add-on means any add-on. No match returns null, which is the manual result.
+     * M65: each stream is classified once (quality, cache and audio languages); the rules only read
+     * that result, so dozens of language/quality rules do not re-parse the same titles.
      */
     internal fun selectPriorityListStream(
         streams: List<Stream>,
         rules: List<StreamAutoPlayPriorityRule>
     ): Stream? {
         if (streams.isEmpty() || rules.isEmpty()) return null
+        val needCached = rules.any { it.cachedOnly }
+        val needAudio = rules.any { it.audioLanguage != null }
+        val prepared = streams.map { stream ->
+            PreparedPriorityStream(
+                stream = stream,
+                playable = isPlayable(stream),
+                quality = streamPriorityQuality(stream),
+                cached = needCached && isCachedForPriority(stream),
+                audio = if (needAudio) classifyPriorityAudio(stream)
+                    else PriorityAudioClassification(emptySet(), englishFallback = false)
+            )
+        }
         for (rule in rules) {
             val addon = rule.addonName?.trim().orEmpty()
-            val match = streams.firstOrNull { stream ->
-                isPlayable(stream) &&
-                    (addon.isEmpty() || stream.addonName == addon) &&
-                    streamPriorityQuality(stream) == rule.quality &&
-                    (!rule.cachedOnly || isCachedForPriority(stream)) &&
-                    (!rule.spanishOnly || isSpanishForPriority(stream))
+            val match = prepared.firstOrNull { candidate ->
+                candidate.playable &&
+                    (addon.isEmpty() || candidate.stream.addonName == addon) &&
+                    candidate.quality == rule.quality &&
+                    (!rule.cachedOnly || candidate.cached) &&
+                    candidate.audio.matches(rule.audioLanguage)
             }
-            if (match != null) return match
+            if (match != null) return match.stream
         }
         return null
     }
+
+    private data class PreparedPriorityStream(
+        val stream: Stream,
+        val playable: Boolean,
+        val quality: StreamAutoPlayQuality,
+        val cached: Boolean,
+        val audio: PriorityAudioClassification
+    )
 
     /**
      * Ready without a download: the debrid service already has it, or it is a direct link.
@@ -222,11 +246,58 @@ object StreamAutoPlaySelector {
     private val NOT_CACHED_LABEL = Regex("""(?i)(\bdownload\b|\buncached\b|\bnot\s*cached\b|⬇|⏳)""")
 
     /**
+     * Heuristic: the add-on names the audio language in the name, title or description. Empty
+     * [codes] accepts any stream. Spanish keeps exactly the previous patterns; the other languages
+     * use the shared [AUDIO_LANGUAGES] table. If English is selected, a stream with no audio-language
+     * mark at all counts as English, except when it says MULTI/Dual without naming a language.
+     */
+    internal fun matchesAudioLanguages(stream: Stream, codes: Set<String>): Boolean {
+        if (codes.isEmpty()) return true
+        val classification = classifyPriorityAudio(stream)
+        return normalizeAudioLanguageCodes(codes).any { classification.matches(it) }
+    }
+
+    /** M65: one classification per stream, reused by every rule. */
+    internal data class PriorityAudioClassification(
+        val languages: Set<String>,
+        val englishFallback: Boolean
+    ) {
+        fun matches(code: String?): Boolean {
+            if (code == null) return true
+            val normalized = if (code == "iw") "he" else code
+            return normalized in languages || (normalized == "en" && englishFallback)
+        }
+    }
+
+    internal fun classifyPriorityAudio(stream: Stream): PriorityAudioClassification {
+        val raw = audioSearchText(stream)
+        val text = AUDIO_SUBTITLE_SEGMENT.replace(raw, " ")
+        val explicit = AUDIO_LANGUAGES.asSequence()
+            .filter { it.code != "es" && it.matches(text, raw) }
+            .map { it.code }
+            .toSet()
+        val spanish = isSpanishForPriority(stream)
+        return PriorityAudioClassification(
+            languages = if (spanish) explicit + "es" else explicit,
+            englishFallback = !spanish && explicit.isEmpty() && !MULTI_DUAL_PATTERN.containsMatchIn(text)
+        )
+    }
+
+    private fun audioSearchText(stream: Stream): String =
+        listOfNotNull(stream.name, stream.title, stream.description).joinToString("\n")
+
+    private val MULTI_DUAL_PATTERN = Regex("""(?i)(?<!\p{L})(multi|dual)(?!\p{L})""")
+    // Keep the Spanish heuristic below intact; the other languages also see Portuguese/French
+    // subtitle markers. Explicitly named dubs are recovered by the language table from raw text.
+    private val AUDIO_SUBTITLE_SEGMENT =
+        Regex("""(?i)((?<!\p{L})(subs?|subtitles?|subt[ií]tulos?|subtitulad[oa]s?|multi[\s.-]?subs?|legendad[oa]s?|vost(?:fr|f)?)(?!\p{L})|💬|📜|🔤)[^\n|]*""")
+
+    /**
      * Heuristic: the add-on names the language in the name, title or description. Streams that say
      * nothing about language are not treated as Spanish.
      */
     internal fun isSpanishForPriority(stream: Stream): Boolean {
-        val raw = listOfNotNull(stream.name, stream.title, stream.description).joinToString("\n")
+        val raw = audioSearchText(stream)
         // Spanish subtitles are not Spanish audio (promoter 09-11): whatever follows a subtitle marker
         // on its line is ignored, and a VOSE release counts only when it also names a Spanish dub.
         val text = SUBTITLE_SEGMENT.replace(raw, " ")

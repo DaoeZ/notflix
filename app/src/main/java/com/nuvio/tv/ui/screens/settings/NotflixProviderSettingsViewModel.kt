@@ -9,6 +9,7 @@ import com.nuvio.tv.R
 import com.nuvio.tv.core.qr.QrCodeGenerator
 import com.nuvio.tv.core.server.DeviceIpAddress
 import com.nuvio.tv.core.server.NotflixKeysConfigServer
+import com.nuvio.tv.core.util.withAppLocale
 import com.nuvio.tv.data.local.NotflixIntegrationCredentials
 import com.nuvio.tv.data.local.NotflixIntegrationStore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -62,7 +63,7 @@ class NotflixProviderSettingsViewModel @Inject constructor(
         stopPhoneEntry()
         val ip = DeviceIpAddress.get(context)
         if (ip == null) {
-            mutablePhoneError.value = context.getString(R.string.notflix_provider_phone_error)
+            mutablePhoneError.value = context.withAppLocale().getString(R.string.notflix_provider_phone_error)
             return
         }
         val token = NotflixKeysConfigServer.newToken()
@@ -73,7 +74,7 @@ class NotflixProviderSettingsViewModel @Inject constructor(
             labels = { phonePageLabels() }
         )
         if (server == null) {
-            mutablePhoneError.value = context.getString(R.string.notflix_provider_phone_error)
+            mutablePhoneError.value = context.withAppLocale().getString(R.string.notflix_provider_phone_error)
             return
         }
         phoneServer = server
@@ -93,22 +94,25 @@ class NotflixProviderSettingsViewModel @Inject constructor(
         super.onCleared()
     }
 
-    private fun phonePageLabels(): Map<String, String> = mapOf(
-        "title" to context.getString(R.string.notflix_keys_page_title),
-        "subtitle" to context.getString(R.string.notflix_keys_page_subtitle),
-        "tmdb" to context.getString(R.string.notflix_keys_page_tmdb),
-        "traktId" to context.getString(R.string.notflix_keys_page_trakt_id),
-        "traktSecret" to context.getString(R.string.notflix_keys_page_trakt_secret),
-        "introDb" to context.getString(R.string.notflix_keys_page_introdb),
-        "clear" to context.getString(R.string.notflix_keys_page_clear),
-        "show" to context.getString(R.string.notflix_keys_page_show),
-        "save" to context.getString(R.string.notflix_keys_page_save),
-        "saved" to context.getString(R.string.notflix_keys_page_saved),
-        "error" to context.getString(R.string.notflix_keys_page_error),
-        "forbidden" to context.getString(R.string.notflix_keys_page_forbidden),
-        "none" to context.getString(R.string.notflix_keys_page_none),
-        "current" to context.getString(R.string.notflix_keys_page_current)
-    )
+    internal fun phonePageLabels(): Map<String, String> {
+        val localizedContext = context.withAppLocale()
+        return mapOf(
+            "title" to localizedContext.getString(R.string.notflix_keys_page_title),
+            "subtitle" to localizedContext.getString(R.string.notflix_keys_page_subtitle),
+            "tmdb" to localizedContext.getString(R.string.notflix_keys_page_tmdb),
+            "traktId" to localizedContext.getString(R.string.notflix_keys_page_trakt_id),
+            "traktSecret" to localizedContext.getString(R.string.notflix_keys_page_trakt_secret),
+            "introDb" to localizedContext.getString(R.string.notflix_keys_page_introdb),
+            "clear" to localizedContext.getString(R.string.notflix_keys_page_clear),
+            "show" to localizedContext.getString(R.string.notflix_keys_page_show),
+            "save" to localizedContext.getString(R.string.notflix_keys_page_save),
+            "saved" to localizedContext.getString(R.string.notflix_keys_page_saved),
+            "error" to localizedContext.getString(R.string.notflix_keys_page_error),
+            "forbidden" to localizedContext.getString(R.string.notflix_keys_page_forbidden),
+            "none" to localizedContext.getString(R.string.notflix_keys_page_none),
+            "current" to localizedContext.getString(R.string.notflix_keys_page_current)
+        )
+    }
 
     private fun update(transform: (NotflixIntegrationCredentials) -> NotflixIntegrationCredentials) {
         viewModelScope.launch {

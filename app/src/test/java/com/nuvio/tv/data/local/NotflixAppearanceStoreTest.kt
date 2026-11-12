@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.nuvio.tv.domain.model.AppAppearance
+import com.nuvio.tv.domain.model.NotflixCardOpening
+import com.nuvio.tv.domain.model.NotflixCardSize
 import com.nuvio.tv.ui.appearance.AppearancePolicy
 import io.mockk.every
 import io.mockk.mockk
@@ -112,6 +114,134 @@ class NotflixAppearanceStoreTest {
         every { otherContext.applicationContext } returns otherContext
         val other = NotflixAppearanceStore(ProfileDataStoreFactory(otherContext).also { factories += it })
         assertFalse(other.observe(capability(other, 2)).first().reduceHomeMotion)
+    }
+
+    @Test fun `card opening defaults to Normal and only the three approved waits are trusted`() = runBlocking {
+        val factory = factory()
+        val store = NotflixAppearanceStore(factory)
+        val context = capability(store)
+        val disk = factory.get(1, NotflixAppearanceStore.FEATURE)
+        assertEquals(NotflixCardOpening.NORMAL, store.observe(context).first().cardOpening)
+        store.selectCardOpening(context, NotflixCardOpening.SLOW).getOrThrow()
+        assertEquals(NotflixCardOpening.SLOW, store.observe(context).first().cardOpening)
+        assertEquals(2000, disk.data.first()[intPreferencesKey(NotflixAppearanceStore.CARD_OPENING_MS)])
+        // Corrupt values fail safe without being silently rewritten and without poisoning the rest.
+        disk.edit { it[intPreferencesKey(NotflixAppearanceStore.CARD_OPENING_MS)] = 777 }
+        assertEquals(NotflixCardOpening.NORMAL, store.observe(context).first().cardOpening)
+        assertEquals(777, disk.data.first()[intPreferencesKey(NotflixAppearanceStore.CARD_OPENING_MS)])
+        disk.edit { it[stringPreferencesKey(NotflixAppearanceStore.CARD_OPENING_MS)] = "2000" }
+        assertEquals(NotflixCardOpening.NORMAL, store.observe(context).first().cardOpening)
+        disk.edit {
+            it[intPreferencesKey(NotflixAppearanceStore.CARD_OPENING_MS)] = 150
+            it[intPreferencesKey("schema_version")] = 99
+        }
+        assertEquals(NotflixCardOpening.NORMAL, store.observe(context).first().cardOpening)
+    }
+
+    @Test fun `card opening persists per profile and installation through real reopen`() = runBlocking {
+        val first = factory()
+        val store = NotflixAppearanceStore(first)
+        store.selectCardOpening(capability(store, 2), NotflixCardOpening.INSTANT).getOrThrow()
+        assertEquals(NotflixCardOpening.NORMAL, store.observe(capability(store, 1)).first().cardOpening)
+        close(first)
+        val reopened = NotflixAppearanceStore(factory())
+        assertEquals(NotflixCardOpening.INSTANT, reopened.observe(capability(reopened, 2)).first().cardOpening)
+        assertEquals(NotflixCardOpening.NORMAL, reopened.observe(capability(reopened, 1)).first().cardOpening)
+        val otherContext = mockk<Context>(relaxed = true)
+        val otherDir = File(dir, "other-opening-installation").apply { mkdirs() }
+        every { otherContext.filesDir } returns otherDir
+        every { otherContext.applicationContext } returns otherContext
+        val other = NotflixAppearanceStore(ProfileDataStoreFactory(otherContext).also { factories += it })
+        assertEquals(NotflixCardOpening.NORMAL, other.observe(capability(other, 2)).first().cardOpening)
+    }
+
+    @Test fun `card size defaults to Large and only the three approved sizes are trusted`() = runBlocking {
+        val factory = factory()
+        val store = NotflixAppearanceStore(factory)
+        val context = capability(store)
+        val disk = factory.get(1, NotflixAppearanceStore.FEATURE)
+        assertEquals(NotflixCardSize.LARGE, store.observe(context).first().cardSize)
+        store.selectCardSize(context, NotflixCardSize.SMALL).getOrThrow()
+        assertEquals(NotflixCardSize.SMALL, store.observe(context).first().cardSize)
+        assertEquals(75, disk.data.first()[intPreferencesKey(NotflixAppearanceStore.CARD_SIZE_PERCENT)])
+        // Corrupt values fail safe without being silently rewritten and without poisoning the rest.
+        disk.edit { it[intPreferencesKey(NotflixAppearanceStore.CARD_SIZE_PERCENT)] = 42 }
+        assertEquals(NotflixCardSize.LARGE, store.observe(context).first().cardSize)
+        assertEquals(42, disk.data.first()[intPreferencesKey(NotflixAppearanceStore.CARD_SIZE_PERCENT)])
+        disk.edit { it[stringPreferencesKey(NotflixAppearanceStore.CARD_SIZE_PERCENT)] = "75" }
+        assertEquals(NotflixCardSize.LARGE, store.observe(context).first().cardSize)
+        disk.edit {
+            it[intPreferencesKey(NotflixAppearanceStore.CARD_SIZE_PERCENT)] = 87
+            it[intPreferencesKey("schema_version")] = 99
+        }
+        assertEquals(NotflixCardSize.LARGE, store.observe(context).first().cardSize)
+    }
+
+    @Test fun `card size persists per profile and installation through real reopen`() = runBlocking {
+        val first = factory()
+        val store = NotflixAppearanceStore(first)
+        store.selectCardSize(capability(store, 2), NotflixCardSize.SMALL).getOrThrow()
+        assertEquals(NotflixCardSize.LARGE, store.observe(capability(store, 1)).first().cardSize)
+        close(first)
+        val reopened = NotflixAppearanceStore(factory())
+        assertEquals(NotflixCardSize.SMALL, reopened.observe(capability(reopened, 2)).first().cardSize)
+        assertEquals(NotflixCardSize.LARGE, reopened.observe(capability(reopened, 1)).first().cardSize)
+        val otherContext = mockk<Context>(relaxed = true)
+        val otherDir = File(dir, "other-size-installation").apply { mkdirs() }
+        every { otherContext.filesDir } returns otherDir
+        every { otherContext.applicationContext } returns otherContext
+        val other = NotflixAppearanceStore(ProfileDataStoreFactory(otherContext).also { factories += it })
+        assertEquals(NotflixCardSize.LARGE, other.observe(capability(other, 2)).first().cardSize)
+    }
+
+    @Test fun `card size commit rechecks authorization and keeps the previous size on failure`() = runBlocking {
+        withTimeout(10_000) {
+            val factory = factory()
+            val store = NotflixAppearanceStore(factory)
+            val context = capability(store, 2)
+            store.selectCardSize(context, NotflixCardSize.LARGE).getOrThrow()
+            val disk = factory.get(2, NotflixAppearanceStore.FEATURE)
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val allowed = kotlinx.coroutines.flow.MutableStateFlow(true)
+            val blocker = async { disk.edit { entered.complete(Unit); release.await() } }
+            entered.await()
+            val save = async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+                store.selectCardSize(context, NotflixCardSize.SMALL) { allowed.value }
+            }
+            assertFalse(save.isCompleted)
+            allowed.value = false
+            release.complete(Unit)
+            blocker.await()
+            assertTrue(save.await().isFailure)
+            assertEquals(100, disk.data.first()[intPreferencesKey(NotflixAppearanceStore.CARD_SIZE_PERCENT)])
+            assertEquals(NotflixCardSize.LARGE, store.observe(context).first().cardSize)
+        }
+    }
+
+    @Test fun `card opening commit rechecks authorization and keeps the previous wait on failure`() = runBlocking {
+        withTimeout(10_000) {
+            val factory = factory()
+            val store = NotflixAppearanceStore(factory)
+            val context = capability(store, 2)
+            store.selectCardOpening(context, NotflixCardOpening.NORMAL).getOrThrow()
+            val disk = factory.get(2, NotflixAppearanceStore.FEATURE)
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val allowed = kotlinx.coroutines.flow.MutableStateFlow(true)
+            val blocker = async { disk.edit { entered.complete(Unit); release.await() } }
+            entered.await()
+            val save = async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+                store.selectCardOpening(context, NotflixCardOpening.SLOW) { allowed.value }
+            }
+            assertFalse(save.isCompleted)
+            allowed.value = false
+            release.complete(Unit)
+            blocker.await()
+            assertTrue(save.await().isFailure)
+            assertEquals(1200, disk.data.first()[intPreferencesKey(NotflixAppearanceStore.CARD_OPENING_MS)])
+            assertEquals(NotflixCardOpening.NORMAL, store.observe(context).first().cardOpening)
+        }
     }
 
     @Test fun `motion commit rechecks authorization after real DataStore queue wait`() = runBlocking {

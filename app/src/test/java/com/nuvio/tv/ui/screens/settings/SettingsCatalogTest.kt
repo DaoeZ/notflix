@@ -124,6 +124,25 @@ class SettingsCatalogTest {
         )
     }
 
+    @Test
+    fun `layout category can be hidden when it has no sections`() {
+        assertTrue(
+            SettingsCategory.LAYOUT in visibleSettingsCategories(
+                isPrimaryProfile = true,
+                isEssentialMode = false,
+                isDebugBuild = false
+            )
+        )
+        assertFalse(
+            SettingsCategory.LAYOUT in visibleSettingsCategories(
+                isPrimaryProfile = true,
+                isEssentialMode = false,
+                isDebugBuild = false,
+                isLayoutAvailable = false
+            )
+        )
+    }
+
     private fun allCombinations(): List<List<SettingsCategory>> =
         listOf(true, false).flatMap { primary ->
             listOf(true, false).flatMap { essential ->

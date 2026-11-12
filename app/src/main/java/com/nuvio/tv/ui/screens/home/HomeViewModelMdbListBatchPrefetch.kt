@@ -118,6 +118,7 @@ private fun MetaPreview.toMdbMeta(): Meta = Meta(
     description = description,
     releaseInfo = releaseInfo,
     imdbRating = imdbRating,
+    ratingSource = ratingSource,
     genres = genres,
     runtime = runtime,
     director = director,

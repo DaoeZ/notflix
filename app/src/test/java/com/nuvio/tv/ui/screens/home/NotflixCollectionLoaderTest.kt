@@ -122,4 +122,32 @@ class NotflixCollectionLoaderTest {
         assertEquals(0,calls);assertEquals(listOf(NotflixRowPhase.READY,NotflixRowPhase.ERROR),loader.snapshot().map{it.phase})
         assertTrue(loader.snapshot().all{it.folderTarget!=null})
     }
+    @Test fun profileChangeWhileTheAgeFilterSuspendsCannotPublishIntoTheNewKidsRows() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        var calls = 0
+        var filters = 0
+        val loader = NotflixCollectionRows(this, {
+            object : Flow<NetworkResult<CatalogRow>> {
+                override suspend fun collect(collector: FlowCollector<NetworkResult<CatalogRow>>) {
+                    val next = row(listOf(item("profile-${++calls}")))
+                    withContext(NonCancellable) { collector.emit(NetworkResult.Success(next)) }
+                }
+            }
+        }, { true }, {}, filterRow = { row ->
+            if (++filters == 1) gate.await()
+            row
+        })
+        val s = spec("kids-shared-id")
+        try {
+            loader.configure(scopeId.copy(ageLimit = com.nuvio.tv.core.profile.AgeLevel.TP), listOf(s))
+            loader.request(s.key); runCurrent()
+            loader.configure(scopeId.copy(profile = 3, ageLimit = com.nuvio.tv.core.profile.AgeLevel.TP), listOf(s))
+            loader.request(s.key); runCurrent()
+            assertEquals("profile-2", loader.snapshot().single().catalog!!.items.single().id)
+            gate.complete(Unit); advanceUntilIdle()
+            assertEquals("profile-2", loader.snapshot().single().catalog!!.items.single().id)
+        } finally {
+            gate.complete(Unit)
+        }
+    }
 }

@@ -36,6 +36,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -58,6 +59,7 @@ import com.nuvio.tv.ui.components.ContinueWatchingOptionsDialog
 import com.nuvio.tv.ui.components.TrailerPlayer
 import com.nuvio.tv.domain.model.MetaPreview
 import com.nuvio.tv.domain.model.PosterShape
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.domain.model.stableItemKeys
 import com.nuvio.tv.ui.appearance.LocalNotflixPresentation
 import com.nuvio.tv.ui.appearance.NotflixNavigationState
@@ -75,6 +77,13 @@ import java.time.format.TextStyle
 internal enum class NotflixNewEpisodeBadge { NEW_EPISODE, NEW_SEASON }
 
 internal const val NOTFLIX_AIRING_ROW_KEY = "airing"
+
+/**
+ * M66: a KIDS profile hides everything whose age rating cannot be resolved, and without the TMDB
+ * key nothing can be resolved. Home then explains why instead of showing a generic empty message.
+ */
+internal fun notflixKidsNeedsTmdbKey(ageLimit: com.nuvio.tv.core.profile.AgeLevel?, tmdbKeyAvailable: Boolean): Boolean =
+    com.nuvio.tv.core.profile.isKidsAgeLimit(ageLimit) && !tmdbKeyAvailable
 
 internal data class NotflixFullscreenTrailer(
     val identity: String,
@@ -125,6 +134,7 @@ internal fun notflixRows(state: HomeUiState, keepPendingCw: Boolean, cwTitle: St
     airingTitle: String = "", airingCaption: (AiringEntry) -> String = { "" },
     airingNow: java.time.Instant = java.time.Instant.now(),
     airingZone: java.time.ZoneId = java.time.ZoneId.systemDefault()): List<NotflixDisplayRow> = buildList {
+    if (notflixKidsNeedsTmdbKey(state.ageLimit, state.ageTmdbKeyAvailable)) return@buildList
     val hiddenKeys = state.hiddenTitleKeys
     val alertByContentId = state.continueWatchingItems.asSequence()
         .filterIsInstance<ContinueWatchingItem.NextUp>()
@@ -259,6 +269,8 @@ fun NotflixHomeContent(
     cardActions: NotflixCardActionsHost? = null,
     myListRow: NotflixCatalogRow? = null,
     becauseRow: NotflixCatalogRow? = null,
+    /** M66: settings shortcut from the KIDS notice; the host decides the destination. */
+    onOpenIntegrations: () -> Unit = {},
     onRetry: () -> Unit
 ) {
     val presentation = retainNotflixPresentation(state, memory)
@@ -289,18 +301,20 @@ fun NotflixHomeContent(
     val keepPendingCw by remember { derivedStateOf { focused?.rowKey == "cw" } }
     val rows = remember(presentation.notflixCatalog, presentation.continueWatchingItems, state.continueWatchingEnabled,
         state.notflixCwPhase, keepPendingCw, cwTitle, episodePattern, seeAll, myListRow, becauseRow,
-        state.ageLimit, state.ageRatings, state.watchedMovieIds, state.fullyWatchedSeriesIds,
+        state.ageLimit, state.ageTmdbKeyAvailable, state.ageRatings, state.watchedMovieIds, state.fullyWatchedSeriesIds,
         state.hiddenTitleKeys, state.disabledHomeCatalogKeys, airingTitle, airingCaption) {
         notflixRows(presentation, keepPendingCw, cwTitle, episodePattern, seeAll, myListRow, becauseRow,
             airingTitle, airingCaption)
     }
-    val heroes = if (state.heroSectionEnabled) {
+    val heroes = if (state.heroSectionEnabled && !notflixKidsNeedsTmdbKey(state.ageLimit, state.ageTmdbKeyAvailable)) {
         val source = presentation.notflixCatalog.heroItems
         val ageAllowed = if (state.ageLimit == null) source else source.filter { state.allowsForAge(it) }
         val visible = if (state.hiddenTitleKeys.isEmpty()) ageAllowed else ageAllowed.filterNot { it.isHiddenTitle(state.hiddenTitleKeys) }
         notflixBillboardItems(visible)
     } else emptyList()
     val reducedHome = LocalNotflixPresentation.current.reduceHomeMotion
+    val cardOpening = LocalNotflixPresentation.current.cardOpening
+    val cardOpenDelayMs by rememberUpdatedState(Spec.cardOpenDelayMs(cardOpening))
     val introPhase by com.nuvio.tv.ui.appearance.NotflixIntroProcess.coordinator.state.collectAsState()
     val idleHeaderReady = previewSession?.billboardReady == true &&
         (introPhase as? com.nuvio.tv.ui.appearance.IntroPhase.Finished)?.reason != com.nuvio.tv.ui.appearance.IntroFinishReason.SKIPPED
@@ -333,6 +347,8 @@ fun NotflixHomeContent(
     val heroRequester = remember { FocusRequester() }
     val heroPlayRequester = remember { FocusRequester() }
     val retryRequester = remember { FocusRequester() }
+    // M66: the KIDS notice without the TMDB key leads with «Integraciones»; retrying cannot fix it.
+    val kidsIntegrationsRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
     val moves = remember { NotflixFocusMoves() }
     val latestRows by rememberUpdatedState(rows)
@@ -522,6 +538,10 @@ fun NotflixHomeContent(
             else {
                 val first = rows.indexOfFirst { it.tiles.isNotEmpty() || it.phase != NotflixRowPhase.READY }
                 if (first >= 0) request(first, 0)
+                else if (notflixKidsNeedsTmdbKey(state.ageLimit, state.ageTmdbKeyAvailable)) {
+                    moves.expected = "kids-integrations|kids-integrations"
+                    runCatching { kidsIntegrationsRequester.requestFocus() }
+                }
                 else if (state.notflixCatalog.configured) {
                     moves.expected = "retry|retry"
                     runCatching { retryRequester.requestFocus() }
@@ -594,11 +614,13 @@ fun NotflixHomeContent(
                 initialPlacement = restore()
             } else if (initialPlacement && !navigation.topFocused && !isMoving) {
                 val saved = memory.focus
-                if (saved?.rowKey == "retry" && rows.any { it.tiles.isNotEmpty() }) focusHeroOrFirst()
-                else if (saved != null && saved.rowKey != "hero" && saved.rowKey != "retry" && rows.none { row ->
+                // The empty-state actions (Retry, KIDS Integrations) are not rows: never bounce them to the top bar.
+                val emptyAction = saved?.rowKey in NOTFLIX_EMPTY_ACTION_KEYS
+                if (emptyAction && rows.any { it.tiles.isNotEmpty() }) focusHeroOrFirst()
+                else if (saved != null && saved.rowKey != "hero" && !emptyAction && rows.none { row ->
                         row.key == saved.rowKey && row.tiles.any { it.key == saved.itemKey }
                     }) restore()
-                else if (saved != null && saved.rowKey != "hero" && saved.rowKey != "retry") {
+                else if (saved != null && saved.rowKey != "hero" && !emptyAction) {
                     val rowIndex = rows.indexOfFirst { it.key == saved.rowKey }
                     val index = rows.getOrNull(rowIndex)?.tiles?.indexOfFirst { it.key == saved.itemKey } ?: -1
                     if (index >= 0 && (saved.index != index || saved.rowIndex != rowIndex)) {
@@ -634,7 +656,7 @@ fun NotflixHomeContent(
                 val tile = row.tiles.find { it.key == saved.itemKey } ?: return@collectLatest
                 tile.meta?.let(latestOnFocusedMeta)
                 if (!row.wide && tile.meta != null && expanded != "${row.key}|${tile.key}") {
-                    delay(Spec.EXPAND_DELAY_MS)
+                    delay(cardOpenDelayMs)
                     if (!navigation.topFocused) {
                         expanded = "${row.key}|${tile.key}"
                         memory.focus = saved.copy(expanded = true)
@@ -861,15 +883,31 @@ fun NotflixHomeContent(
             if (rows.none { it.tiles.isNotEmpty() } && rows.none { it.phase == NotflixRowPhase.PENDING }) {
                 item("empty") {
                     Column(Modifier.padding(horizontal = Spec.GUTTER.dp, vertical = 36.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        val kidsNeedsKey = notflixKidsNeedsTmdbKey(state.ageLimit, state.ageTmdbKeyAvailable)
                         if (state.ageLimit != null) {
-                            Text(stringResource(R.string.notflix_age_empty), color = Spec.Secondary, fontSize = 18.sp)
-                            if (!state.ageTmdbKeyAvailable) {
-                                Text(stringResource(R.string.notflix_age_empty_no_tmdb), color = Spec.Secondary, fontSize = 16.sp)
+                            if (kidsNeedsKey) {
+                                Text(stringResource(R.string.notflix_kids_tmdb_required), color = Spec.Secondary, fontSize = 18.sp)
+                            } else {
+                                Text(stringResource(R.string.notflix_age_empty), color = Spec.Secondary, fontSize = 18.sp)
+                                if (!state.ageTmdbKeyAvailable) {
+                                    Text(stringResource(R.string.notflix_age_empty_no_tmdb), color = Spec.Secondary, fontSize = 16.sp)
+                                }
                             }
                         } else {
                             Text(if (!state.notflixCatalog.configured) stringResource(R.string.notflix_loading_catalogs)
                                 else state.error ?: stringResource(R.string.notflix_no_content),
                                 color = Spec.Secondary, fontSize = 18.sp)
+                        }
+                        if (kidsNeedsKey) {
+                            NotflixAction(stringResource(R.string.settings_integration),
+                                Modifier.focusRequester(kidsIntegrationsRequester).onFocusChanged {
+                                    if (it.isFocused && acceptFocus("kids-integrations|kids-integrations")) {
+                                        navigation.topFocused = false
+                                        focused = NotflixFocusRecord("kids-integrations", "kids-integrations", "", 0, -1)
+                                        memory.focus = focused
+                                    }
+                                }.testTag("notflix-kids-integrations"),
+                                onClick = onOpenIntegrations)
                         }
                         if (state.notflixCatalog.configured) NotflixAction(stringResource(R.string.notflix_retry), Modifier.focusRequester(retryRequester)
                             .onFocusChanged {
@@ -921,7 +959,7 @@ private fun rowCatalogBase(state: HomeUiState, key: String) = state.notflixCatal
 
 private val directions = setOf(Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight)
 
-private fun KeyEvent.toCardKey(): NotflixCardKey = when (nativeKeyEvent.keyCode) {
+internal fun KeyEvent.toCardKey(): NotflixCardKey = when (nativeKeyEvent.keyCode) {
     android.view.KeyEvent.KEYCODE_DPAD_UP -> NotflixCardKey.UP
     android.view.KeyEvent.KEYCODE_DPAD_DOWN -> NotflixCardKey.DOWN
     android.view.KeyEvent.KEYCODE_DPAD_LEFT -> NotflixCardKey.LEFT
@@ -943,13 +981,14 @@ private fun NotflixRow(
 ) {
     val density = LocalDensity.current
     val reducedMotion = LocalNotflixPresentation.current.reduceHomeMotion
-    LaunchedEffect(expanded, reducedMotion) {
+    val cardSize = LocalNotflixPresentation.current.cardSize
+    LaunchedEffect(expanded, reducedMotion, cardSize) {
         val target = row.tiles.indexOfFirst { "${row.key}|${it.key}" == expanded }
         if (target >= 0) {
             withFrameNanos { }
             val info = horizontal.layoutInfo.visibleItemsInfo.firstOrNull { it.index == target }
             if (info != null) {
-                val overflow = info.offset + with(density) { (Spec.EXPANDED_WIDTH + 8).dp.toPx() } - horizontal.layoutInfo.viewportEndOffset
+                val overflow = info.offset + with(density) { (Spec.expandedWidth(cardSize) + 8).dp.toPx() } - horizontal.layoutInfo.viewportEndOffset
                 if (overflow > 0) {
                     if (reducedMotion) horizontal.scrollBy(overflow) else horizontal.animateScrollBy(overflow)
                 }
@@ -1003,6 +1042,27 @@ private fun NotflixRow(
                 // Only the expanded card reads the cursor; its artwork border exists while the trailer plays.
                 val artworkCursor = withActions && cursor()?.let { it.identity == identity && it.artwork } == true
                 val trailerFocused = artworkCursor && preview?.artworkPlaying(identity) == true
+                var busyPulse by remember(identity) { mutableIntStateOf(0) }
+                var busyPulseIndex by remember(identity) { mutableIntStateOf(-1) }
+                // M56: a saving control cannot run a second write, but the press must answer.
+                fun activateAction(position: Int) {
+                    val action = actions.getOrNull(position) ?: return
+                    if (action.enabled) {
+                        confirmSound()
+                        onAction(tile, action.action)
+                    } else if (action.busy) {
+                        busyPulseIndex = position
+                        busyPulse++
+                    }
+                }
+                // M56: pending flips enabled and recomposes; an armed cursor must not survive that change.
+                val actionStates = actions.joinToString(",") { if (it.enabled) "1" else "0" }
+                LaunchedEffect(withActions, actionStates) {
+                    val current = cursor()
+                    if (current != null && current.identity == identity && current.armed) {
+                        onCursor(current.copy(armed = false))
+                    }
+                }
                 val cardModifier = Modifier.focusRequester(requester).onFocusChanged {
                     if (it.isFocused) onFocused(index, tile)
                     onActualFocus(identity, it.isFocused)
@@ -1019,7 +1079,7 @@ private fun NotflixRow(
                             if (next != current) onCursor(next)
                             if (result != NotflixCardKeyResult.Pass) {
                                 when (result) {
-                                    is NotflixCardKeyResult.Activate -> actions.getOrNull(result.index)?.takeIf { it.enabled }?.let { confirmSound(); onAction(tile, it.action) }
+                                    is NotflixCardKeyResult.Activate -> activateAction(result.index)
                                     NotflixCardKeyResult.ActivateArtwork -> onOpenFullscreen(tile, identity)
                                     NotflixCardKeyResult.ExitDown -> onKey(index, Key.DirectionDown)
                                     else -> Unit
@@ -1037,7 +1097,8 @@ private fun NotflixRow(
                         onClick = { actions.firstOrNull { it.action == NotflixCardAction.PLAY && it.enabled }?.let { onAction(tile, it.action) } ?: onClick(tile) },
                         preview = preview, actions = actions, cursorIndex = cursorIndex,
                         trailerFocused = trailerFocused,
-                        onActivate = { position -> actions.getOrNull(position)?.takeIf { it.enabled }?.let { confirmSound(); onAction(tile, it.action) } })
+                        busyPulse = busyPulse, busyPulseIndex = busyPulseIndex,
+                        onActivate = ::activateAction)
                 }
                 if (tile.caption.isNullOrBlank()) {
                     card()
@@ -1052,7 +1113,7 @@ private fun NotflixRow(
                             lineHeight = 16.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.width(Spec.POSTER_WIDTH.dp).padding(top = 4.dp, start = 2.dp, end = 2.dp)
+                            modifier = Modifier.width(Spec.posterWidth(cardSize).dp).padding(top = 4.dp, start = 2.dp, end = 2.dp)
                         )
                     }
                 }
@@ -1063,67 +1124,118 @@ private fun NotflixRow(
 }
 
 @Composable
-private fun NotflixCard(tile: NotflixTile, identity: String, wide: Boolean, expanded: Boolean, modifier: Modifier,
+internal fun NotflixCard(tile: NotflixTile, identity: String, wide: Boolean, expanded: Boolean, modifier: Modifier,
     onLongClick: (() -> Unit)?, onClick: () -> Unit, preview: NotflixPreviewSession? = null,
     actions: List<NotflixCardActionUi> = emptyList(), cursorIndex: Int? = null,
-    trailerFocused: Boolean = false, onActivate: (Int) -> Unit = {}) {
+    trailerFocused: Boolean = false, busyPulse: Int = 0, busyPulseIndex: Int = -1,
+    onActivate: (Int) -> Unit = {},
+    /** M63: la cuadrícula de colección abre el panel al lado, con el alto del póster de la rejilla. */
+    besidePanelHeight: Dp? = null,
+    /** M63: ancho del arte en esa apertura lateral: el del póster de la rejilla, no el de Inicio. */
+    besideArtWidth: Dp? = null,
+    /** Panel width beside the art; the collection grid passes one wide enough for every action. */
+    besidePanelWidth: Dp? = null,
+    /** M63: líneas de sinopsis del panel lateral; la rejilla pequeña no tiene alto para tres. */
+    besideSynopsisLines: Int = 3,
+    besidePanelAtStart: Boolean = false,
+    focusScaleOverride: Float? = null,
+    /** M63: la tarjeta dibujada encima de la rejilla no recibe foco; el cursor vive en el póster. */
+    interactive: Boolean = true, looksFocused: Boolean = false,
+    widthOverride: Dp? = null, heightOverride: Dp? = null, panelProgressOverride: Float? = null) {
     var focused by remember { mutableStateOf(false) }
     val longPress = rememberLongPressKeyTracker()
     val confirmSound = rememberNotflixConfirmSound()
     val reducedMotion = LocalNotflixPresentation.current.reduceHomeMotion
+    val cardSize = LocalNotflixPresentation.current.cardSize
     // M32: browsing branches already return identical sizes (NotflixVisualSpec), so this card no
     // longer reads homeBrowsing; the texture is the same and row items stop invalidating on it.
-    val targetWidth = (if (wide) Spec.CW_WIDTH else if (expanded) Spec.EXPANDED_WIDTH else Spec.POSTER_WIDTH).dp
-    val height = (if (wide) Spec.CW_HEIGHT else Spec.POSTER_HEIGHT).dp
+    val collapsedWidth = Spec.posterWidth(cardSize)
+    val targetWidth = (if (wide) Spec.wideWidth(cardSize) else if (expanded) Spec.expandedWidth(cardSize) else collapsedWidth).dp
+    // M64: the expanded card keeps its current height room so the panel never clips at Small.
+    val targetHeight = when {
+        wide -> Spec.wideHeight(cardSize).dp
+        expanded && besidePanelHeight != null -> besidePanelHeight
+        expanded -> Spec.expandedHeight(cardSize).dp
+        else -> Spec.posterHeight(cardSize).dp
+    }
     val animatedWidth by animateDpAsState(targetWidth,
         if (reducedMotion) snap() else tween(Spec.EXPAND_MS), label = "notflix-t1-width")
-    val animatedScale by animateFloatAsState(if (focused && !reducedMotion) 1.025f else 1f,
+    val animatedHeight by animateDpAsState(targetHeight,
+        if (reducedMotion) snap() else tween(Spec.EXPAND_MS), label = "notflix-t1-height")
+    val focusedLook = focused || looksFocused
+    val animatedScale by animateFloatAsState(if (focusedLook && !reducedMotion) 1.025f else 1f,
         if (reducedMotion) snap() else tween(Spec.FOCUS_MS), label = "notflix-focus")
     val contentAlpha by animateFloatAsState(
-        targetValue = if (tile.watched && !focused) 0.5f else 1f,
+        targetValue = if (tile.watched && !focusedLook) 0.5f else 1f,
         animationSpec = if (reducedMotion) snap() else tween(Spec.FOCUS_MS),
         label = "notflix-watched-alpha"
     )
-    val width = if (reducedMotion) targetWidth else animatedWidth
-    val scale = if (reducedMotion) 1f else animatedScale
-    Box(modifier.width(width).height(height)
+    val width = widthOverride ?: if (reducedMotion) targetWidth else animatedWidth
+    val height = heightOverride ?: if (reducedMotion) targetHeight else animatedHeight
+    val scale = focusScaleOverride ?: if (reducedMotion) 1f else animatedScale
+    // M56: the panel is laid out at its final width and revealed as the card grows; reduced motion jumps.
+    val panelProgress = panelProgressOverride ?: if (reducedMotion) 1f else ((width.value - collapsedWidth) /
+        (Spec.expandedWidth(cardSize) - collapsedWidth).toFloat()).coerceIn(0f, 1f)
+    val cardBox = modifier.width(width).height(height)
         .graphicsLayer { scaleX = scale; scaleY = scale }
         .onFocusChanged { focused = it.isFocused }.clip(RoundedCornerShape(5.dp))
-        .background(Spec.Surface).border(2.dp, if (focused) Spec.Text else Color.Transparent, RoundedCornerShape(5.dp))
-        .onPreviewKeyEvent { event ->
-            if (onLongClick == null) false else longPress.handle(event.nativeKeyEvent,
-                { it == android.view.KeyEvent.KEYCODE_DPAD_CENTER || it == android.view.KeyEvent.KEYCODE_ENTER || it == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER },
-                onLongClick)
-        }.clickable(role = Role.Button, onClick = { confirmSound(); onClick() }).semantics {
+        .background(Spec.Surface).border(2.dp, if (focusedLook) Spec.Text else Color.Transparent, RoundedCornerShape(5.dp))
+    Box(
+        (if (interactive) cardBox
+            .onPreviewKeyEvent { event ->
+                if (onLongClick == null) false else longPress.handle(event.nativeKeyEvent,
+                    { it == android.view.KeyEvent.KEYCODE_DPAD_CENTER || it == android.view.KeyEvent.KEYCODE_ENTER || it == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER },
+                    onLongClick)
+            }.clickable(role = Role.Button, onClick = { confirmSound(); onClick() })
+        else cardBox).semantics {
             contentDescription = tile.title
             this[Spec.RenderedCardScale] = scale
             this[Spec.RenderedCardWidthDp] = width.value
         }) {
         if (tile.meta == null && tile.folder != null) {
-            NotflixFolderArtwork(tile, focused, Modifier.fillMaxSize(), wide)
+            NotflixFolderArtwork(tile, focusedLook, Modifier.fillMaxSize(), wide)
         } else if (tile.meta == null && tile.seeAllCatalog != null) {
-            NotflixSeeAllArtwork(tile, focused, Modifier.fillMaxSize())
-        } else if (expanded && !wide && Spec.CARD_LANDSCAPE) Row(Modifier.fillMaxSize()) {
-            // Landscape (M29): 16:9 art keeps its collapsed size and plays the preview; the panel opens to its right.
-            CardArtwork(tile, tile.backdrop ?: tile.poster, true,
-                Modifier.width(Spec.POSTER_WIDTH.dp).fillMaxHeight().testTag("notflix-card-art-$identity"),
-                contentAlpha = contentAlpha, trailerFocused = trailerFocused) {
-                preview?.Artwork(identity, Modifier.matchParentSize())
+            NotflixSeeAllArtwork(tile, focusedLook, Modifier.fillMaxSize())
+        } else if (expanded && !wide && (besidePanelHeight != null || Spec.CARD_LANDSCAPE)) {
+            val artWidth = besideArtWidth ?: Spec.posterWidth(cardSize).dp
+            val panelWidth = besidePanelWidth ?: (Spec.expandedWidth(cardSize) - Spec.posterWidth(cardSize)).dp
+            val artwork: @Composable () -> Unit = {
+                CardArtwork(tile, tile.backdrop ?: tile.poster, true,
+                    Modifier.width(artWidth).fillMaxHeight().testTag("notflix-card-art-$identity"),
+                    contentAlpha = contentAlpha, trailerFocused = trailerFocused) {
+                    preview?.Artwork(identity, Modifier.matchParentSize())
+                }
             }
-            val panel = Modifier.weight(1f).fillMaxHeight().padding(8.dp).testTag("notflix-card-panel-$identity")
-            if (tile.meta != null) NotflixCardPanel(tile.meta, identity, actions, cursorIndex, onLongClick != null, false, panel, onActivate, synopsisLines = 3)
-            else Box(panel)
+            val panel: @Composable () -> Unit = {
+                val panelModifier = Modifier.width(panelWidth).fillMaxHeight()
+                    .graphicsLayer { alpha = panelProgress }.padding(Spec.PANEL_PADDING.dp)
+                    .testTag("notflix-card-panel-$identity")
+                if (tile.meta != null) NotflixCardPanel(tile.meta, identity, actions, cursorIndex, onLongClick != null, false,
+                    panelModifier, onActivate, synopsisLines = besideSynopsisLines,
+                    busyPulse = busyPulse, busyPulseIndex = busyPulseIndex)
+                else Box(panelModifier)
+            }
+            // Measure once at the final width; the outer card clips the reveal without reflow.
+            Row(Modifier.fillMaxHeight()
+                .wrapContentWidth(if (besidePanelAtStart) Alignment.End else Alignment.Start, unbounded = true)
+                .requiredWidth(artWidth + panelWidth)) {
+                if (besidePanelAtStart) { panel(); artwork() } else { artwork(); panel() }
+            }
         } else if (expanded && !wide) Column(Modifier.fillMaxSize()) {
             CardArtwork(tile, tile.backdrop ?: tile.poster, true,
-                Modifier.fillMaxWidth().weight(.58f).testTag("notflix-card-art-$identity"),
+                Modifier.fillMaxWidth().weight(1f - Spec.PANEL_WEIGHT).testTag("notflix-card-art-$identity"),
                 contentAlpha = contentAlpha, trailerFocused = trailerFocused,
-                sharpImage = if (tile.backdrop.isNullOrBlank() && focused && Spec.SHARPER_FOCUSED_POSTER)
+                sharpImage = if (tile.backdrop.isNullOrBlank() && focusedLook && Spec.SHARPER_FOCUSED_POSTER)
                     sharperPosterUrl(tile.poster) else null) {
                 preview?.Artwork(identity, Modifier.matchParentSize())
             }
-            val panel = Modifier.fillMaxWidth().weight(.42f).padding(8.dp).testTag("notflix-card-panel-$identity")
+            val panel = Modifier.weight(Spec.PANEL_WEIGHT)
+                .requiredWidth(Spec.expandedWidth(cardSize).dp)
+                .fillMaxHeight().graphicsLayer { alpha = panelProgress }.padding(Spec.PANEL_PADDING.dp)
+                .testTag("notflix-card-panel-$identity")
             // M29: the larger portrait panel had empty space (promoter); two synopsis lines fill it.
-            if (tile.meta != null) NotflixCardPanel(tile.meta, identity, actions, cursorIndex, onLongClick != null, tile.backdrop.isNullOrBlank(), panel, onActivate, synopsisLines = 2)
+            if (tile.meta != null) NotflixCardPanel(tile.meta, identity, actions, cursorIndex, onLongClick != null, tile.backdrop.isNullOrBlank(), panel, onActivate,
+                synopsisLines = 2, busyPulse = busyPulse, busyPulseIndex = busyPulseIndex)
             else Box(panel)
         } else {
             // Landscape tiles show backdrop + logo/title like Continue watching; portrait keeps the poster.
@@ -1135,7 +1247,7 @@ private fun NotflixCard(tile: NotflixTile, identity: String, wide: Boolean, expa
                 modifier = Modifier.fillMaxSize(),
                 contentAlpha = contentAlpha,
                 trailerFocused = trailerFocused,
-                sharpImage = if (!landscape && focused && Spec.SHARPER_FOCUSED_POSTER)
+                sharpImage = if (!landscape && focusedLook && Spec.SHARPER_FOCUSED_POSTER)
                     sharperPosterUrl(tile.poster) else null
             )
             Column(
@@ -1143,7 +1255,7 @@ private fun NotflixCard(tile: NotflixTile, identity: String, wide: Boolean, expa
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 tile.newEpisodeBadge?.let { NewEpisodeBadge(it) }
-                RatingBadge(tile.meta?.imdbRating)
+                RatingBadge(tile.meta?.imdbRating, source = tile.meta?.ratingSource ?: RatingSource.IMDB)
             }
         }
         tile.progress?.let { progress ->
@@ -1204,11 +1316,12 @@ private fun CardArtwork(tile: NotflixTile, image: String?, showTitle: Boolean, m
 }
 
 @Composable
-internal fun RatingBadge(value: Float?, modifier: Modifier = Modifier) {
+internal fun RatingBadge(value: Float?, modifier: Modifier = Modifier, source: RatingSource = RatingSource.IMDB) {
     val rating = notflixRating(value) ?: return
     Row(modifier.background(Color.Black.copy(.85f), RoundedCornerShape(2.dp)).padding(horizontal = 3.dp, vertical = 1.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text("IMDb", color = Color(0xFFF5C518), fontFamily = Spec.BodyFont, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Text(source.label, color = if (source == RatingSource.TMDB) Spec.Secondary else Color(0xFFF5C518),
+            fontFamily = Spec.BodyFont, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         Text(rating, color = Spec.Text, fontFamily = Spec.BodyFont, fontSize = 10.sp)
     }
 }
@@ -1363,17 +1476,24 @@ internal fun NotflixFullscreenTrailerOverlay(
 }
 
 @Composable
-internal fun HiddenTitleUndoNotice(undo: HiddenTitleUndo, onUndo: () -> Unit, modifier: Modifier = Modifier) {
+internal fun HiddenTitleUndoNotice(undo: HiddenTitleUndo, onUndo: () -> Unit, modifier: Modifier = Modifier, autoFocus: Boolean = true) {
     var focused by remember { mutableStateOf(false) }
     val requester = remember { FocusRequester() }
     val navigation = LocalNotflixPresentation.current.navigation
     // Home's D-pad routing never reaches the bottom notice, so the undo button takes focus while it is
     // shown and hands it back to the remembered Home position when it goes away.
-    LaunchedEffect(undo.key) {
+    LaunchedEffect(undo.key, autoFocus) {
+        if (!autoFocus) return@LaunchedEffect
         repeat(2) { withFrameNanos { } }
         runCatching { requester.requestFocus() }
     }
-    DisposableEffect(undo.key) { onDispose { if (focused) navigation?.homeDown?.invoke() } }
+    DisposableEffect(undo.key, autoFocus) {
+        onDispose {
+            if (focused) {
+                if (autoFocus) navigation?.homeDown?.invoke() else navigation?.focusTop()
+            }
+        }
+    }
     Row(
         modifier = modifier
             .background(Spec.Surface, RoundedCornerShape(4.dp))

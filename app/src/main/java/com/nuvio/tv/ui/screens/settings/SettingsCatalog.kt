@@ -28,13 +28,17 @@ internal fun visibleSettingsCategories(
     isPrimaryProfile: Boolean,
     isEssentialMode: Boolean,
     isDebugBuild: Boolean,
-    isWatchPartyAvailable: Boolean = false
+    isWatchPartyAvailable: Boolean = false,
+    isLayoutAvailable: Boolean = true
 ): List<SettingsCategory> = SettingsCategory.entries.filter { category ->
     when (category) {
         SettingsCategory.ACCOUNT,
         SettingsCategory.PROFILES -> isPrimaryProfile
         SettingsCategory.WATCH_PARTY -> isWatchPartyAvailable
         SettingsCategory.DEBUG -> isDebugBuild && !isEssentialMode
+        // M60 PARTE 1: with the Notflix appearance Design can stay without sections; then the
+        // category is hidden too.
+        SettingsCategory.LAYOUT -> isLayoutAvailable
         SettingsCategory.EXPERIENCE -> false
         else -> true
     }

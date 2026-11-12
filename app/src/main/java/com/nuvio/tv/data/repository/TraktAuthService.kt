@@ -128,7 +128,8 @@ class TraktAuthService @Inject constructor(
 
     fun hasRequiredCredentials(): Boolean = integrationConfig.isTraktConfigured()
 
-    suspend fun getCurrentAuthState(): TraktAuthState = traktAuthDataStore.getCurrentState()
+    suspend fun getCurrentAuthState(): TraktAuthState =
+        traktAuthDataStore.getCurrentState().also { integrationConfig.setTraktSessionClientId(it.tokenClientId) }
 
     suspend fun startDeviceAuth(): Result<TraktDeviceCodeResponseDto> {
         if (!hasRequiredCredentials()) {
@@ -162,9 +163,11 @@ class TraktAuthService @Inject constructor(
 
         // Issue a request, auto-retrying once on a transient 429 using the
         // Retry-After header when the server supplies a short back-off.
+        // A new connection always uses the current key; it is remembered for the token exchange.
+        val deviceClientId = integrationConfig.traktClientId()
         suspend fun requestOnce(): Response<TraktDeviceCodeResponseDto> =
             traktApi.requestDeviceCode(
-                TraktDeviceCodeRequestDto(clientId = integrationConfig.traktClientId())
+                TraktDeviceCodeRequestDto(clientId = deviceClientId)
             )
 
         var response = try {
@@ -187,7 +190,7 @@ class TraktAuthService @Inject constructor(
 
         val body = response.body()
         if (response.isSuccessful && body != null) {
-            traktAuthDataStore.saveDeviceFlow(body)
+            traktAuthDataStore.saveDeviceFlow(body, deviceClientId)
             return Result.success(body)
         }
 
@@ -219,8 +222,8 @@ class TraktAuthService @Inject constructor(
             traktApi.requestDeviceToken(
                 TraktDeviceTokenRequestDto(
                     code = deviceCode,
-                    clientId = integrationConfig.traktClientId(),
-                    clientSecret = integrationConfig.traktClientSecret().ifBlank { null }
+                    clientId = integrationConfig.traktClientIdFor(state.deviceClientId),
+                    clientSecret = integrationConfig.traktClientSecretFor(state.deviceClientId).ifBlank { null }
                 )
             )
         } catch (e: IOException) {
@@ -229,7 +232,9 @@ class TraktAuthService @Inject constructor(
 
         val tokenBody = response.body()
         if (response.isSuccessful && tokenBody != null) {
-            traktAuthDataStore.saveToken(tokenBody)
+            val issuedBy = integrationConfig.traktClientIdFor(state.deviceClientId)
+            traktAuthDataStore.saveToken(tokenBody, issuedBy)
+            integrationConfig.setTraktSessionClientId(issuedBy)
             authSessionNoticeDataStore.markTraktAuthenticated()
             resetCircuit()
             traktAuthDataStore.clearDeviceFlow()
@@ -282,8 +287,8 @@ class TraktAuthService @Inject constructor(
                 traktApi.refreshToken(
                     TraktRefreshTokenRequestDto(
                         refreshToken = refreshToken,
-                        clientId = integrationConfig.traktClientId(),
-                        clientSecret = integrationConfig.traktClientSecret().ifBlank { null },
+                        clientId = integrationConfig.traktClientIdFor(state.tokenClientId),
+                        clientSecret = integrationConfig.traktClientSecretFor(state.tokenClientId).ifBlank { null },
                         redirectUri = traktRedirectUri()
                     )
                 )
@@ -301,7 +306,8 @@ class TraktAuthService @Inject constructor(
                 return@withLock false
             }
 
-            traktAuthDataStore.saveToken(tokenBody)
+            // Keep the session on the app that issued it; legacy sessions (no stored ID) stay as before.
+            traktAuthDataStore.saveToken(tokenBody, state.tokenClientId)
             authSessionNoticeDataStore.markTraktAuthenticated()
             resetCircuit()
             trace("refreshTokenIfNeeded: success")
@@ -317,8 +323,8 @@ class TraktAuthService @Inject constructor(
                     traktApi.revokeToken(
                         TraktRevokeRequestDto(
                             token = accessToken,
-                            clientId = integrationConfig.traktClientId(),
-                            clientSecret = integrationConfig.traktClientSecret().ifBlank { null }
+                            clientId = integrationConfig.traktClientIdFor(state.tokenClientId),
+                            clientSecret = integrationConfig.traktClientSecretFor(state.tokenClientId).ifBlank { null }
                         )
                     )
                 }
@@ -326,6 +332,7 @@ class TraktAuthService @Inject constructor(
         }
         authSessionNoticeDataStore.markTraktExplicitLogout()
         traktAuthDataStore.clearAuth()
+        integrationConfig.setTraktSessionClientId(null)
     }
 
     suspend fun fetchUserSettings(): String? {
@@ -542,6 +549,7 @@ class TraktAuthService @Inject constructor(
     private suspend fun invalidateCredentials(statusCode: Int) {
         authSessionNoticeDataStore.markTraktReconnectRequired()
         traktAuthDataStore.clearAuth()
+        integrationConfig.setTraktSessionClientId(null)
         tripCircuit("Token refresh returned $statusCode")
     }
 }

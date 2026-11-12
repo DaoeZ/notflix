@@ -1007,6 +1007,14 @@
     <string name="autoplay_priority_cached_only_desc">Use only sources ready on your debrid service, such as Real-Debrid. Skips torrents that would need downloading.</string>
     <string name="autoplay_priority_spanish_only_title">Spanish only</string>
     <string name="autoplay_priority_spanish_only_desc">Use only sources whose name or title says Spanish (ES, Castellano, Latino, flag). Sources that say nothing are skipped.</string>
+    <string name="autoplay_priority_audio_languages_title">Audio languages</string>
+    <string name="autoplay_priority_audio_languages_desc">Choose one or more languages. If none is selected, any language is accepted.</string>
+    <string name="autoplay_priority_audio_languages_any">Any</string>
+    <string name="autoplay_priority_priority_title">Prioritize</string>
+    <string name="autoplay_priority_priority_desc">Quality keeps the current order. Language tries every quality of the first language before moving to the next.</string>
+    <string name="autoplay_priority_priority_quality">Quality</string>
+    <string name="autoplay_priority_priority_language">Language</string>
+    <string name="autoplay_priority_audio_order_title">Selected languages, in order</string>
     <string name="autoplay_scope_all_desc">Auto-play can use both installed addons and enabled plugins.</string>
     <string name="autoplay_scope_addons_desc">Auto-play only considers streams coming from your installed addons.</string>
     <string name="autoplay_scope_plugins_desc">Auto-play only considers streams coming from enabled plugins.</string>
@@ -1105,6 +1113,7 @@
     <string name="layout_cw_card_style_card">Card</string>
     <string name="layout_cw_card_style_wide">Wide</string>
     <string name="layout_cw_card_style_poster">Poster</string>
+    <string name="layout_cw_card_style_title">Continue Watching style</string>
     <string name="layout_cw_sort_mode">Sort Order</string>
     <string name="layout_cw_sort_mode_sub">How Continue Watching items are arranged</string>
     <string name="layout_cw_sort_default">Default</string>
@@ -3493,6 +3502,9 @@
     <string name="notflix_home_folder_sci_fi">Sci-fi</string>
     <string name="notflix_home_folder_drama_series">Drama series</string>
     <string name="notflix_home_folder_featured_movies">Featured movies</string>
+    <string name="notflix_kids_folder_animated_series">Animated series</string>
+    <string name="notflix_kids_folder_family_series">Family series</string>
+    <string name="notflix_kids_tmdb_required">KIDS profiles need a TMDB key to know the age rating of each title.</string>
     <string name="notflix_collection_help">Create the official %1$s collection with eleven folders. Existing collections and edits are preserved.</string>
     <string name="notflix_collection_create">Create %1$s</string>
     <string name="notflix_collection_creating">Creating %1$s…</string>

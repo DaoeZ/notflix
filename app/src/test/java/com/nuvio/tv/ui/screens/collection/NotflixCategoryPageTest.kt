@@ -3,10 +3,15 @@ package com.nuvio.tv.ui.screens.collection
 import com.nuvio.tv.domain.model.ContentType
 import com.nuvio.tv.domain.model.MetaPreview
 import com.nuvio.tv.domain.model.PosterShape
+import com.nuvio.tv.ui.appearance.notflix.notflixCategoryCardIdentity
+import com.nuvio.tv.ui.appearance.notflix.notflixCategoryClamp
+import com.nuvio.tv.ui.appearance.notflix.notflixCategoryExpandToStart
+import com.nuvio.tv.ui.appearance.notflix.notflixCategoryExpandedOriginX
 import com.nuvio.tv.ui.appearance.notflix.notflixCategoryFocusTarget
 import com.nuvio.tv.ui.appearance.notflix.notflixCategoryGridSaveKey
 import com.nuvio.tv.ui.appearance.notflix.notflixCategoryPosterKeys
 import com.nuvio.tv.ui.appearance.notflix.notflixCategoryShouldLoadMore
+import com.nuvio.tv.ui.appearance.notflix.notflixCategoryShouldPreview
 import com.nuvio.tv.ui.appearance.notflix.notflixCategoryShowTabs
 import com.nuvio.tv.ui.appearance.notflix.notflixCategoryTabIndex
 import org.junit.Assert.assertEquals
@@ -161,5 +166,72 @@ class NotflixCategoryPageTest {
             listOf("movie:7", "series:7"),
             notflixCategoryPosterKeys(listOf(meta("7"), meta("7", "series")))
         )
+    }
+
+    // ─── M63: tarjeta abierta de la rejilla ───
+
+    @Test
+    fun onlyTheLastColumnOpensTheCardTowardsTheStartEdge() {
+        // 6 columnas: la sexta es la última.
+        assertFalse(notflixCategoryExpandToStart(0, 6))
+        assertFalse(notflixCategoryExpandToStart(4, 6))
+        assertTrue(notflixCategoryExpandToStart(5, 6))
+        assertTrue(notflixCategoryExpandToStart(11, 6))
+        // M64: la rejilla pequeña usa 7 columnas y la regla la sigue.
+        assertFalse(notflixCategoryExpandToStart(5, 7))
+        assertTrue(notflixCategoryExpandToStart(6, 7))
+        // Sin columnas no hay lado: nunca se abre al revés.
+        assertFalse(notflixCategoryExpandToStart(0, 0))
+        assertFalse(notflixCategoryExpandToStart(-1, 6))
+    }
+
+    @Test
+    fun theOpenCardStaysAnchoredToItsPoster() {
+        // Hacia el final: el borde de inicio es el del póster; las vecinas de la derecha quedan tapadas.
+        assertEquals(100f, notflixCategoryExpandedOriginX(100f, 210f, 378f, openToStart = false), 0.01f)
+        // Hacia el inicio: el borde final es el del póster y la tarjeta crece hacia la izquierda.
+        assertEquals(-68f, notflixCategoryExpandedOriginX(100f, 210f, 378f, openToStart = true), 0.01f)
+        // Durante la apertura el ancho crece y el ancla sigue pegada al póster.
+        assertEquals(100f, notflixCategoryExpandedOriginX(100f, 210f, 210f, openToStart = true), 0.01f)
+    }
+
+    @Test
+    fun theTrailerIsOnlyAskedWithTheCardOpenAndTheGridStill() {
+        assertTrue(notflixCategoryShouldPreview(expanded = true, scrolling = false))
+        assertFalse(notflixCategoryShouldPreview(expanded = true, scrolling = true))
+        assertFalse(notflixCategoryShouldPreview(expanded = false, scrolling = false))
+    }
+
+    @Test
+    fun theCardIdentityIsStableAndDifferentPerTab() {
+        assertEquals("tab:tab-0-Acción|movie:1", notflixCategoryCardIdentity("tab-0-Acción", "movie:1"))
+        assertNotEquals(
+            notflixCategoryCardIdentity("tab-0-Acción", "movie:1"),
+            notflixCategoryCardIdentity("tab-1-Comedia", "movie:1")
+        )
+    }
+    @Test
+    fun repeatedTitleUsesTheSelectedTabsMetadataAndAddon() {
+        val first = NotflixFolderTabData(
+            com.nuvio.tv.ui.appearance.notflix.NotflixCategoryTab("first", "First"),
+            mapOf("movie:1" to meta("1").copy(name = "First name")), "https://first.invalid")
+        val second = NotflixFolderTabData(
+            com.nuvio.tv.ui.appearance.notflix.NotflixCategoryTab("second", "Second"),
+            mapOf("movie:1" to meta("1").copy(name = "Second name")), "https://second.invalid")
+        val selected = requireNotNull(notflixFolderSelectedTab(listOf(first, second), 1))
+        assertEquals("Second name", selected.itemsByKey.getValue("movie:1").name)
+        assertEquals("https://second.invalid", selected.addonBaseUrl)
+        assertEquals(first, notflixFolderSelectedTab(listOf(first, second), -1))
+        assertEquals(second, notflixFolderSelectedTab(listOf(first, second), 99))
+        assertNull(notflixFolderSelectedTab(emptyList(), 0))
+    }
+
+    @org.junit.Test
+    fun expandedCardStaysInsideTheGrid() {
+        // Fits: unchanged. Too far right/down: shifted back. Wider than the grid: pinned to the start.
+        assertEquals(100f, notflixCategoryClamp(100f, 300f, 68f, 1852f))
+        assertEquals(1552f, notflixCategoryClamp(1700f, 300f, 68f, 1852f))
+        assertEquals(68f, notflixCategoryClamp(10f, 300f, 68f, 1852f))
+        assertEquals(68f, notflixCategoryClamp(500f, 2000f, 68f, 1852f))
     }
 }

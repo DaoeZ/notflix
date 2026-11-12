@@ -95,6 +95,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.nuvio.tv.BuildConfig
 import com.nuvio.tv.R
+import com.nuvio.tv.ui.appearance.LocalNotflixPresentation
 import com.nuvio.tv.core.build.AppFeaturePolicy
 import com.nuvio.tv.domain.model.ExperienceMode
 import com.nuvio.tv.domain.model.SettingsUiStyle
@@ -185,7 +186,8 @@ fun SettingsScreen(
     experienceModeViewModel: ExperienceModeSettingsViewModel = hiltViewModel(),
     partyViewModel: PartyViewModel = hiltViewModel(),
     onNavigateToCollections: () -> Unit = {},
-    collectionManagerReturnToken: Int = 0
+    collectionManagerReturnToken: Int = 0,
+    initialNotflixIntegrations: Boolean = false
 ) {
     val isPrimaryProfileActive by profileViewModel.isPrimaryProfileActive.collectAsStateWithLifecycle()
     val isWatchPartyAvailable by partyViewModel.party.available.collectAsStateWithLifecycle()
@@ -208,21 +210,38 @@ fun SettingsScreen(
 
     val isEssentialMode = loadedExperienceMode == ExperienceMode.ESSENTIAL
 
-    val visibleCategories = remember(isPrimaryProfileActive, isEssentialMode, isWatchPartyAvailable) {
+    val isNotflixAppearance = LocalNotflixPresentation.current.active
+    val isLayoutAvailable = visibleLayoutSections(
+        essentialMode = isEssentialMode,
+        focusedPosterHasOptions = true,
+        notflixAppearance = isNotflixAppearance
+    ).isNotEmpty()
+
+    val visibleCategories = remember(
+        isPrimaryProfileActive,
+        isEssentialMode,
+        isWatchPartyAvailable,
+        isLayoutAvailable
+    ) {
         visibleSettingsCategories(
             isPrimaryProfile = isPrimaryProfileActive,
             isEssentialMode = isEssentialMode,
             isDebugBuild = BuildConfig.IS_DEBUG_BUILD,
-            isWatchPartyAvailable = isWatchPartyAvailable
+            isWatchPartyAvailable = isWatchPartyAvailable,
+            isLayoutAvailable = isLayoutAvailable
         )
     }
     val visibleSections = visibleCategories.map { category -> settingsSectionSpec(category) }
 
     val isRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
     val isHorizonStyle = NuvioTheme.settingsUiStyle == SettingsUiStyle.HORIZON
+    // M66: entry-scoped request; recreation preserves its destination and selected subsection.
+    val notflixIntegrationsRequested = initialNotflixIntegrations
     var selectedCategory by rememberSaveable {
         mutableStateOf(
-            visibleSections.firstOrNull()?.category ?: SettingsCategory.APPEARANCE
+            if (notflixIntegrationsRequested && visibleSections.any { it.category == SettingsCategory.INTEGRATION })
+                SettingsCategory.INTEGRATION
+            else visibleSections.firstOrNull()?.category ?: SettingsCategory.APPEARANCE
         )
     }
     val railFocusRequesters = remember(visibleSections) {
@@ -251,7 +270,12 @@ fun SettingsScreen(
     val integrationMdbListFocusRequester = remember { FocusRequester() }
     val integrationAnimeSkipFocusRequester = remember { FocusRequester() }
     val integrationNotflixFocusRequester = remember { FocusRequester() }
-    var integrationSection by remember { mutableStateOf(IntegrationSettingsSection.Hub) }
+    val integrationSectionState = if (notflixIntegrationsRequested) {
+        rememberSaveable { mutableStateOf(IntegrationSettingsSection.Notflix) }
+    } else {
+        remember { mutableStateOf(IntegrationSettingsSection.Hub) }
+    }
+    var integrationSection by integrationSectionState
     var pendingContentFocusCategory by remember { mutableStateOf<SettingsCategory?>(null) }
     var pendingContentFocusRequestId by remember { mutableLongStateOf(0L) }
     // Saveable so it survives a trip out to one of the screens a category opens. The pane bounces

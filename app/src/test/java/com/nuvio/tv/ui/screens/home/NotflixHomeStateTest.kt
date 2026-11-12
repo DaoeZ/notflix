@@ -59,4 +59,10 @@ class NotflixHomeStateTest {
         assertTrue(notflixFocusNeedsRepair(saved, listOf(row("b", "x")), true))
         assertFalse(notflixFocusNeedsRepair(saved, emptyList(), true))
     }
+    @Test fun emptyHomeActionsAreNotRowsAndNeverNeedRepair() {
+        // KIDS without a TMDB key: focus on «Integraciones» must stay there, like «Reintentar».
+        val kids = NotflixFocusRecord("kids-integrations", "kids-integrations", "", 0, -1)
+        assertFalse(notflixFocusNeedsRepair(kids, emptyList(), true))
+        assertFalse(notflixFocusNeedsRepair(kids.copy(rowKey = "retry", itemKey = "retry"), emptyList(), true))
+    }
 }

@@ -79,4 +79,24 @@ class NotflixRatingsPolicyTest {
         val r=notflixDetailRatings(MDBListRatings(imdb=1.0,letterboxd=5.0,metacritic=99.0),order)
         assertEquals(listOf(1.0,5.0,99.0),r.map{it.value});assertEquals(3,r.size)
     }
+    // M57: the standard value is routed by the origin it really has.
+    @Test fun tmdbOriginGoesToTheTmdbSlotWithItsNativeScale() {
+        val standards=notflixStandardRatings(8.5f,RatingSource.TMDB,null)
+        val r=notflixDetailRatings(null,order,standards.imdb,standards.tmdb)
+        assertNull(standards.imdb)
+        assertEquals(listOf("tmdb"),ids(r))
+        assertEquals("85/100",r.single().formatted(Locale.US))
+    }
+    @Test fun imdbOriginKeepsImdbAndTheSeparateTmdbRating() {
+        val standards=notflixStandardRatings(7.7f,RatingSource.IMDB,8.4f)
+        val r=notflixDetailRatings(null,order,standards.imdb,standards.tmdb)
+        assertEquals(listOf("imdb","tmdb"),ids(r))
+        assertEquals("7.7/10",r[0].formatted(Locale.US))
+        assertEquals("84/100",r[1].formatted(Locale.US))
+    }
+    @Test fun hidingTheStandardValueStillShowsAFetchedTmdbRating() {
+        val standards=notflixStandardRatings(null,RatingSource.TMDB,8.4f)
+        assertNull(standards.imdb)
+        assertEquals(8.4f,standards.tmdb)
+    }
 }

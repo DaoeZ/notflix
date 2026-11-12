@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -58,7 +59,8 @@ import com.nuvio.tv.ui.screens.detail.requestFocusAfterFrames
 data class NotflixPanelChoice(
     val key: String,
     val label: String,
-    val selected: Boolean = false
+    val selected: Boolean = false,
+    val testTag: String? = null
 )
 
 /**
@@ -137,10 +139,14 @@ fun NotflixPanelChoices(
     val initialKey = remember(keys) {
         choices.firstOrNull { it.selected }?.key ?: choices.firstOrNull()?.key
     }
+    val initialIndex = keys.indexOf(initialKey).coerceAtLeast(0)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
     LaunchedEffect(keys) {
+        listState.scrollToItem(initialIndex)
         initialKey?.let { key -> requesters[key]?.requestFocusAfterFrames(frames = 2) }
     }
     LazyColumn(
+        state = listState,
         modifier = modifier.fillMaxWidth().heightIn(max = 460.dp),
         contentPadding = PaddingValues(bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -178,7 +184,10 @@ fun NotflixPanelChoiceRow(
             .onFocusChanged { focused = it.isFocused }
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp)
-            .testTag("notflix-panel-choice-${choice.key}"),
+            .then(
+                choice.testTag?.let { Modifier.testTag(it) }
+                    ?: Modifier.testTag("notflix-panel-choice-${choice.key}")
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(

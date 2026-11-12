@@ -81,4 +81,90 @@ class SettingsStructureTest {
         assertFalse(LayoutSettingsUiState(selectedLayout = com.nuvio.tv.domain.model.HomeLayout.GRID).focusedPosterHasOptions())
         assertTrue(LayoutSettingsUiState(selectedLayout = com.nuvio.tv.domain.model.HomeLayout.CLASSIC).focusedPosterHasOptions())
     }
+
+    @Test
+    fun `notflix appearance hides the layout sections no notflix code reads`() {
+        val sections = visibleLayoutSections(
+            essentialMode = false,
+            focusedPosterHasOptions = true,
+            notflixAppearance = true
+        )
+        assertFalse(LayoutSection.HOME_LAYOUT in sections)
+        assertFalse(LayoutSection.FOCUSED_POSTER in sections)
+        assertEquals(
+            listOf(
+                LayoutSection.HOME_CONTENT,
+                LayoutSection.SIDEBAR,
+                LayoutSection.CONTINUE_WATCHING,
+                LayoutSection.POSTER_CARD,
+                LayoutSection.CARD_DEPTH,
+                LayoutSection.CUSTOM_POSTERS,
+                LayoutSection.DETAIL_PAGE,
+                LayoutSection.STREAMS
+            ),
+            sections
+        )
+        assertEquals(sections, visibleLayoutSections(false, focusedPosterHasOptions = false, notflixAppearance = true))
+    }
+
+    @Test
+    fun `nuvio appearance keeps the documented layout sections`() {
+        assertEquals(
+            listOf(
+                LayoutSection.HOME_LAYOUT, LayoutSection.HOME_CONTENT, LayoutSection.SIDEBAR,
+                LayoutSection.CONTINUE_WATCHING, LayoutSection.FOCUSED_POSTER, LayoutSection.POSTER_CARD,
+                LayoutSection.CARD_DEPTH, LayoutSection.CUSTOM_POSTERS, LayoutSection.DETAIL_PAGE, LayoutSection.STREAMS
+            ),
+            visibleLayoutSections(
+                essentialMode = false,
+                focusedPosterHasOptions = true,
+                notflixAppearance = false
+            )
+        )
+        assertEquals(
+            listOf(
+                LayoutSection.HOME_LAYOUT, LayoutSection.HOME_CONTENT, LayoutSection.SIDEBAR,
+                LayoutSection.CONTINUE_WATCHING, LayoutSection.POSTER_CARD, LayoutSection.CARD_DEPTH,
+                LayoutSection.CUSTOM_POSTERS, LayoutSection.DETAIL_PAGE, LayoutSection.STREAMS
+            ),
+            visibleLayoutSections(false, focusedPosterHasOptions = false, notflixAppearance = false)
+        )
+        assertEquals(
+            listOf(LayoutSection.HOME_LAYOUT),
+            visibleLayoutSections(
+                essentialMode = true,
+                focusedPosterHasOptions = true,
+                notflixAppearance = false
+            )
+        )
+    }
+
+    @Test
+    fun `notflix essential leaves design without sections`() {
+        assertTrue(
+            visibleLayoutSections(
+                essentialMode = true,
+                focusedPosterHasOptions = true,
+                notflixAppearance = true
+            ).isEmpty()
+        )
+    }
+
+    @Test
+    fun `design category follows the actual sections for both appearances and experience modes`() {
+        listOf(false, true).forEach { notflix ->
+            listOf(false, true).forEach { essential ->
+                listOf(false, true).forEach { focusedOptions ->
+                    val sections = visibleLayoutSections(essential, focusedOptions, notflix)
+                    val categories = visibleSettingsCategories(
+                        isPrimaryProfile = false,
+                        isEssentialMode = essential,
+                        isDebugBuild = false,
+                        isLayoutAvailable = sections.isNotEmpty()
+                    )
+                    assertEquals(!(notflix && essential), SettingsCategory.LAYOUT in categories)
+                }
+            }
+        }
+    }
 }

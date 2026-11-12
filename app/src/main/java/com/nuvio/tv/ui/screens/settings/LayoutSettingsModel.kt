@@ -34,9 +34,22 @@ internal enum class LayoutSection(
 
 internal fun visibleLayoutSections(
     essentialMode: Boolean,
-    focusedPosterHasOptions: Boolean
+    focusedPosterHasOptions: Boolean,
+    notflixAppearance: Boolean = false
 ): List<LayoutSection> =
-    if (essentialMode) {
+    if (notflixAppearance) {
+        // M60 PARTE 1 (promotor 11-11): with the Notflix appearance only the sections whose
+        // preferences are read by Notflix code stay visible. HOME_LAYOUT drives the Nuvio home
+        // grid/classic layouts and FOCUSED_POSTER the Nuvio focused-poster wait (M56 replaced it
+        // in Notflix); essential mode only offers HOME_LAYOUT, so it has nothing left.
+        if (essentialMode) {
+            emptyList()
+        } else {
+            LayoutSection.entries.filter { section ->
+                section != LayoutSection.HOME_LAYOUT && section != LayoutSection.FOCUSED_POSTER
+            }
+        }
+    } else if (essentialMode) {
         listOf(LayoutSection.HOME_LAYOUT)
     } else {
         LayoutSection.entries.filter { section ->

@@ -9,9 +9,11 @@ import com.nuvio.tv.domain.model.AddonStreams
 import com.nuvio.tv.domain.model.Stream
 import com.nuvio.tv.domain.model.StreamDebridCacheState
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -38,12 +40,14 @@ class DirectDebridStreamPreparer @Inject constructor(
         val limit = settings.instantPlaybackPreparationLimit
         if (!settings.canResolvePlayableLinks || limit <= 0) return
 
-        val candidates = prioritizeCandidates(
-            streams = streams,
-            limit = limit,
-            playerSettings = playerSettings,
-            installedAddonNames = installedAddonNames
-        )
+        val candidates = withContext(Dispatchers.Default) {
+            prioritizeCandidates(
+                streams = streams,
+                limit = limit,
+                playerSettings = playerSettings,
+                installedAddonNames = installedAddonNames
+            )
+        }
         for (stream in candidates) {
             if (!resolver.shouldResolveToPlayableStream(stream)) continue
             resolver.cachedPlayableStream(stream, season, episode)?.let { cached ->

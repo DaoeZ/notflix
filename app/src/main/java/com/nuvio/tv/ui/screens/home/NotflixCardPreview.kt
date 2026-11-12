@@ -147,8 +147,34 @@ class NotflixPreviewSession internal constructor(
 
 @Composable
 internal fun rememberNotflixPreviewSession(model: HomeViewModel, state: HomeUiState, dialog: Boolean): NotflixPreviewSession {
+    val resolver = remember(model) { OfficialNotflixPreviewResolver(model) }
+    val route = LocalNotflixPresentation.current.navigation?.selectedRoute
+    return rememberNotflixPreviewSession(
+        resolver = resolver,
+        dialog = dialog,
+        routeActive = route == "home",
+        validContext = { context ->
+            state.notflixCatalog.configured && state.notflixCatalog.context == context.profileId
+        }
+    )
+}
+
+/**
+ * M63: la misma sesión/coordinador para otra pantalla Notflix. El resolvedor lo pone la pantalla
+ * (Inicio o carpeta de colección); la validez de apariencia, perfil y ruta se comprueba igual.
+ */
+@Composable
+internal fun rememberNotflixPreviewSession(
+    resolver: NotflixPreviewResolver,
+    dialog: Boolean,
+    routeActive: Boolean,
+    validContext: (com.nuvio.tv.domain.model.AppearanceContext) -> Boolean,
+    lockContext: Boolean = false
+): NotflixPreviewSession {
     val appearance = LocalAppearanceViewModel.current?.let { it.state.collectAsStateWithLifecycle().value } ?: AppearanceState()
     val presentation = LocalNotflixPresentation.current
+    // M56: a slow opening also delays the clip; the preview never starts under a growing card.
+    val previewDwell = com.nuvio.tv.ui.appearance.NotflixVisualSpec.previewDwellMs(presentation.cardOpening)
     val pool = LocalTrailerPlayerPool.current
     val poolPlaying = pool?.let { it.isTrailerPlaying.collectAsState().value } ?: false
     val application = LocalContext.current.applicationContext
@@ -163,10 +189,11 @@ internal fun rememberNotflixPreviewSession(model: HomeViewModel, state: HomeUiSt
     val view = LocalView.current
     var windowFocused by remember(view) { mutableStateOf(view.hasWindowFocus()) }
     val binding = appearance.context?.let { PreviewBinding(it, appearance.selectionGeneration) }
+    val entryContext = remember(resolver) { appearance.context }
     val scope = rememberCoroutineScope()
-    val session = remember(model, pool, binding, external) {
+    val session = remember(resolver, pool, binding, external, previewDwell) {
         NotflixPreviewSession(binding,
-            NotflixPreviewCoordinator(scope, OfficialNotflixPreviewResolver(model), dwellMillis = com.nuvio.tv.ui.appearance.NotflixVisualSpec.PREVIEW_DWELL_MS),
+            NotflixPreviewCoordinator(scope, resolver, dwellMillis = previewDwell),
             OfficialNotflixPreviewRenderer(pool),
             liveBlocked = { external == null || external.isTracking || external.autoNextOverlay.value != null })
     }
@@ -190,12 +217,12 @@ internal fun rememberNotflixPreviewSession(model: HomeViewModel, state: HomeUiSt
     val environment = PreviewEnvironment(binding,
         enabled = appearance.previewEnabled, sound = appearance.previewSoundEnabled,
         valid = presentation.active && appearance.effective == AppAppearance.NOTFLIX && !appearance.readFailed &&
-            appearance.previewOptionsValid && binding != null && state.notflixCatalog.configured &&
-            state.notflixCatalog.context == binding.context.profileId,
+            appearance.previewOptionsValid && binding != null && validContext(binding!!.context) &&
+            (!lockContext || binding.context == entryContext),
         reduced = presentation.reduceHomeMotion,
         resumed = lifecycle.isAtLeast(Lifecycle.State.RESUMED), windowFocused = windowFocused,
         introActive = intro !is IntroPhase.Finished,
-        blocked = dialog || pool == null || !startupReady || presentation.navigation?.selectedRoute != "home",
+        blocked = dialog || pool == null || !startupReady || !routeActive,
         otherVideo = externalOverlay != null || (poolPlaying && !session.ownsVideo))
     SideEffect { session.environment(environment) }
     return session

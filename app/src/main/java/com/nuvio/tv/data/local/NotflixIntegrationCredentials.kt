@@ -101,6 +101,10 @@ class NotflixIntegrationStore @Inject constructor(
  * Injected read side. It is called per use, never captured in BuildConfig or a static val.
  */
 class NotflixIntegrationConfig(
+    /** Notflix's own Trakt app from the build; used only when the user has not typed a Client ID. */
+    private val builtInTraktClientId: String = com.nuvio.tv.BuildConfig.TRAKT_CLIENT_ID,
+    private val builtInTraktClientSecret: String = com.nuvio.tv.BuildConfig.TRAKT_CLIENT_SECRET,
+    // Last, so callers keep writing NotflixIntegrationConfig { credentials }.
     private val source: NotflixIntegrationValuesSource
 ) {
     fun tmdbApiKey(): String = source.read().tmdbApiKey.trim()
@@ -116,12 +120,38 @@ class NotflixIntegrationConfig(
 
     fun isIntroDbEnabled(): Boolean = introDbBaseUrl().isNotEmpty()
 
-    fun traktClientId(): String = source.read().traktClientId.trim()
+    fun traktClientId(): String =
+        source.read().traktClientId.trim().ifEmpty { builtInTraktClientId.trim() }
 
-    fun traktClientSecret(): String = source.read().traktClientSecret.trim()
+    /** The secret always belongs to the same app as the Client ID: never the user's ID with the built-in secret. */
+    fun traktClientSecret(): String {
+        val user = source.read()
+        return if (user.traktClientId.isNotBlank()) user.traktClientSecret.trim() else builtInTraktClientSecret.trim()
+    }
 
     fun isTraktConfigured(): Boolean =
         traktClientId().isNotEmpty()
+
+    /**
+     * Client ID of the app that issued the active session. Tokens only work with their own app, so a
+     * session made with an older key (development app, or the user's own) keeps using it after the
+     * build key changes; only new connections take the current one.
+     */
+    @Volatile
+    private var traktSessionClientId: String? = null
+
+    fun setTraktSessionClientId(clientId: String?) {
+        traktSessionClientId = clientId?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
+    /** Client ID for a session issued by [clientId] (blank = current key), and the secret that belongs to it. */
+    fun traktClientIdFor(clientId: String?): String = clientId?.trim()?.takeIf { it.isNotEmpty() } ?: traktClientId()
+
+    fun traktClientSecretFor(clientId: String?): String =
+        if (traktClientIdFor(clientId) == traktClientId()) traktClientSecret() else ""
+
+    /** Value of the trakt-api-key header: the active session's app, or the current key. */
+    fun traktApiClientId(): String = traktClientIdFor(traktSessionClientId)
 }
 
 internal fun normalizeNotflixProviderUrl(value: String): String {

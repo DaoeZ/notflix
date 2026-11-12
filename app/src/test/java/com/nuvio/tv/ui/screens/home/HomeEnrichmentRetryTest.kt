@@ -7,7 +7,9 @@ import com.nuvio.tv.domain.model.CatalogRow
 import com.nuvio.tv.domain.model.ContentType
 import com.nuvio.tv.domain.model.Meta
 import com.nuvio.tv.domain.model.MetaPreview
+import com.nuvio.tv.domain.model.MDBListRatings
 import com.nuvio.tv.domain.model.PosterShape
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.core.tmdb.TmdbEnrichment
 import com.nuvio.tv.core.tmdb.TmdbMetadataService
 import com.nuvio.tv.core.tmdb.TmdbService
@@ -313,6 +315,68 @@ class HomeEnrichmentRetryTest {
         focusAndSettle(viewModel, item(itemId))
 
         assertEquals("a not-found answer must not be refetched", 1, calls.get())
+    }
+
+    @Test
+    fun `external IMDb replaces the TMDB value and source together`() = runBlocking {
+        val repository = newMetaRepository()
+        coEvery { repository.getMetaFromAllAddons(any(), eq(itemId), eq(sourceUrl)) } returns
+            flowOf(NetworkResult.Success(meta().copy(imdbRating = 9.1f)))
+        val viewModel = newViewModel(repository)
+        val catalogItem = item(itemId).copy(imdbRating = 8.5f, ratingSource = RatingSource.TMDB)
+        viewModel.seedCatalog(catalogItem)
+
+        viewModel.onItemFocusPipeline(catalogItem)
+        withTimeout(5_000) {
+            while (viewModel.enrichedPreviews.value[itemId]?.imdbRating != 9.1f) delay(25)
+        }
+
+        val enriched = viewModel.enrichedPreviews.value.getValue(itemId)
+        assertEquals(RatingSource.IMDB, enriched.ratingSource)
+        assertEquals(enriched, viewModel.findCatalogItemById(itemId))
+    }
+
+    @Test
+    fun `external meta without a rating keeps the TMDB value and source`() = runBlocking {
+        val repository = newMetaRepository()
+        coEvery { repository.getMetaFromAllAddons(any(), eq(itemId), eq(sourceUrl)) } returns
+            flowOf(NetworkResult.Success(meta().copy(imdbRating = null)))
+        val viewModel = newViewModel(repository)
+        val catalogItem = item(itemId).copy(imdbRating = 8.5f, ratingSource = RatingSource.TMDB)
+        viewModel.seedCatalog(catalogItem)
+
+        viewModel.onItemFocusPipeline(catalogItem)
+        withTimeout(5_000) {
+            while (viewModel.enrichedPreviews.value[itemId]?.description != ENRICHED_DESCRIPTION) delay(25)
+        }
+
+        val enriched = viewModel.enrichedPreviews.value.getValue(itemId)
+        assertEquals(8.5f, enriched.imdbRating)
+        assertEquals(RatingSource.TMDB, enriched.ratingSource)
+    }
+
+    @Test
+    fun `MDBList and row rebuild keep the source belonging to the selected value`() {
+        for (imdb in listOf(null, 7.7)) {
+            val viewModel = newViewModel(newMetaRepository())
+            val catalogItem = item(itemId).copy(imdbRating = 8.5f, ratingSource = RatingSource.TMDB)
+            viewModel.seedCatalog(catalogItem)
+            viewModel.addEnrichedPreview(itemId, catalogItem)
+            viewModel.updateCatalogItemMdbListRatings(itemId, MDBListRatings(imdb = imdb, tmdb = 85.0))
+
+            val expectedSource = if (imdb == null) RatingSource.TMDB else RatingSource.IMDB
+            val expectedValue = imdb?.toFloat() ?: 8.5f
+            val enriched = viewModel.enrichedPreviews.value.getValue(itemId)
+            assertEquals(expectedValue, enriched.imdbRating)
+            assertEquals(expectedSource, enriched.ratingSource)
+
+            val row = requireNotNull(viewModel.readCatalogRow("seeded-row"))
+            viewModel.replaceCatalogRow("seeded-row", row.copy(items = listOf(catalogItem)))
+            val rebuilt = requireNotNull(viewModel.findCatalogItemById(itemId))
+            assertEquals(expectedValue, rebuilt.imdbRating)
+            assertEquals(expectedSource, rebuilt.ratingSource)
+            assertEquals(enriched.mdbListRatings, rebuilt.mdbListRatings)
+        }
     }
 
     private suspend fun focusAndSettle(viewModel: HomeViewModel, item: MetaPreview) {

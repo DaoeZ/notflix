@@ -31,6 +31,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -74,6 +80,8 @@ import kotlinx.coroutines.launch
 /** One grid for every catalog: the first appearance wins and an id never repeats. */
 private const val NOTFLIX_SEARCH_COLUMNS = 4
 private const val NOTFLIX_KEY_COLUMNS = 6
+/** M61: how many results per list are offered for a cached TMDB title lookup. */
+private const val NOTFLIX_TITLE_LOOKUPS = 96
 private const val NOTFLIX_PLACEHOLDER_PREFIX = "__placeholder_"
 private val NotflixSearchKeys: List<Char> = ('A'..'Z') + ('0'..'9')
 
@@ -145,6 +153,8 @@ fun NotflixSearchContent(
     onNavigateToDetail: (String, String, String) -> Unit,
     onItemFocused: (MetaPreview) -> Unit = {},
     onItemSelected: (MetaPreview) -> Unit = {},
+    localizedTitles: Map<String, String> = emptyMap(),
+    onRequestTitles: (List<MetaPreview>) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val trimmedQuery = query.trim()
@@ -158,6 +168,25 @@ fun NotflixSearchContent(
     val keyRequesters = remember { List(NotflixSearchKeys.size + 2) { FocusRequester() } }
     val firstResultRequester = remember { FocusRequester() }
     val resultsGridState = rememberLazyGridState()
+    val discoverGridState = rememberLazyGridState()
+    val lookupItems = if (hasValidQuery) results else discoverResults
+    val lookupGrid = if (hasValidQuery) resultsGridState else discoverGridState
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle, lookupItems, lookupGrid, onRequestTitles) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            try {
+                snapshotFlow {
+                    val first = lookupGrid.firstVisibleItemIndex.coerceIn(0, lookupItems.size)
+                    val count = minOf(NOTFLIX_TITLE_LOOKUPS, lookupItems.size - first)
+                    lookupItems.subList(first, first + count).toList()
+                }
+                    .distinctUntilChanged()
+                    .collect { onRequestTitles(it) }
+            } finally {
+                onRequestTitles(emptyList())
+            }
+        }
+    }
     val scope = rememberCoroutineScope()
     var lastFocusedKey by remember { mutableIntStateOf(0) }
 
@@ -243,12 +272,14 @@ fun NotflixSearchContent(
         Box(modifier = Modifier.weight(0.70f).fillMaxHeight()) {
             if (!hasValidQuery) {
                 NotflixSearchStart(
+                    gridState = discoverGridState,
                     recentSearches = recentSearches,
                     discoverResults = discoverResults,
                     onRecentSearchClick = onRecentSearchClick,
                     onItemFocused = onItemFocused,
                     onItemSelected = onItemSelected,
-                    onNavigateToDetail = onNavigateToDetail
+                    onNavigateToDetail = onNavigateToDetail,
+                    localizedTitles = localizedTitles
                 )
             } else {
                 NotflixSearchResults(
@@ -262,7 +293,8 @@ fun NotflixSearchContent(
                     onRetry = onRetry,
                     onItemFocused = onItemFocused,
                     onItemSelected = onItemSelected,
-                    onNavigateToDetail = onNavigateToDetail
+                    onNavigateToDetail = onNavigateToDetail,
+                    localizedTitles = localizedTitles
                 )
             }
         }
@@ -423,12 +455,14 @@ private fun NotflixMicButton(isVoiceListening: Boolean, onVoiceSearch: () -> Uni
 
 @Composable
 private fun NotflixSearchStart(
+    gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     recentSearches: List<String>,
     discoverResults: List<MetaPreview>,
     onRecentSearchClick: (String) -> Unit,
     onItemFocused: (MetaPreview) -> Unit,
     onItemSelected: (MetaPreview) -> Unit,
-    onNavigateToDetail: (String, String, String) -> Unit
+    onNavigateToDetail: (String, String, String) -> Unit,
+    localizedTitles: Map<String, String> = emptyMap()
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         if (recentSearches.isNotEmpty()) {
@@ -450,6 +484,7 @@ private fun NotflixSearchStart(
             Spacer(modifier = Modifier.height(if (recentSearches.isEmpty()) 0.dp else 18.dp))
             NotflixSectionTitle(stringResource(R.string.notflix_search_explore))
             LazyVerticalGrid(
+                state = gridState,
                 columns = GridCells.Fixed(NOTFLIX_SEARCH_COLUMNS),
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(top = 8.dp),
                 contentPadding = PaddingValues(bottom = 12.dp),
@@ -459,6 +494,7 @@ private fun NotflixSearchStart(
                 gridItems(discoverResults, key = { notflixDiscoverKey(it) }) { item ->
                     NotflixSearchPoster(
                         item = item,
+                        title = localizedTitles[notflixDiscoverKey(item)] ?: item.name,
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(2f / 3f)
@@ -487,7 +523,8 @@ private fun NotflixSearchResults(
     onRetry: () -> Unit,
     onItemFocused: (MetaPreview) -> Unit,
     onItemSelected: (MetaPreview) -> Unit,
-    onNavigateToDetail: (String, String, String) -> Unit
+    onNavigateToDetail: (String, String, String) -> Unit,
+    localizedTitles: Map<String, String> = emptyMap()
 ) {
     var gridFocused by remember { mutableStateOf(false) }
     // Typing reorders the results and LazyGrid follows its old first item down the list (promoter
@@ -523,6 +560,7 @@ private fun NotflixSearchResults(
                 itemsIndexed(results, key = { _, item -> item.id }) { index, item ->
                     NotflixSearchPoster(
                         item = item,
+                        title = localizedTitles["${item.apiType}:${item.id}"] ?: item.name,
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(2f / 3f)
@@ -567,6 +605,7 @@ private fun NotflixSearchResults(
 private fun NotflixSearchPoster(
     item: MetaPreview,
     modifier: Modifier = Modifier,
+    title: String = item.name,
     onFocused: () -> Unit = {},
     onClick: () -> Unit
 ) {
@@ -601,14 +640,14 @@ private fun NotflixSearchPoster(
         if (!item.poster.isNullOrBlank() && !posterFailed) {
             AsyncImage(
                 model = item.poster,
-                contentDescription = item.name,
+                contentDescription = title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 onError = { posterFailed = true }
             )
         } else {
             Text(
-                text = item.name,
+                text = title,
                 color = Spec.Text,
                 fontFamily = Spec.BodyFont,
                 fontSize = 12.sp,
@@ -620,6 +659,7 @@ private fun NotflixSearchPoster(
         }
         RatingBadge(
             value = item.imdbRating,
+            source = item.ratingSource,
             modifier = Modifier.align(Alignment.TopStart).padding(6.dp)
         )
     }

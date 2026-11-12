@@ -54,6 +54,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -116,6 +117,9 @@ fun ThemeSettingsContent(
     val appearanceController = LocalAppearanceViewModel.current
     val showAppearanceSelector = AppearancePolicy.NOTFLIX_AVAILABLE && appearanceController != null
     val appearanceState = appearanceController?.state?.collectAsStateWithLifecycle()?.value
+    val notflix = notflixSettingsActive()
+    val themeChoiceFocus = remember { FocusRequester() }
+    val styleChoiceFocus = remember { FocusRequester() }
     val ownCollectionManageFocus = remember { FocusRequester() }
     var handledCollectionReturn by rememberSaveable { mutableIntStateOf(0) }
     val restoringCollectionAtEntry = remember { collectionManagerReturnToken != handledCollectionReturn }
@@ -176,29 +180,32 @@ fun ThemeSettingsContent(
             val wasEditing = showCustomThemeDialog
             showCustomThemeDialog = false
             restoreCustomThemeFocus = false
-            if (wasEditing) firstThemeFocusRequester.requestFocusAfterFrames()
+            if (wasEditing) (if (notflix) themeChoiceFocus else firstThemeFocusRequester).requestFocusAfterFrames()
         } else if (!showCustomThemeDialog && restoreCustomThemeFocus) {
             restoreCustomThemeFocus = false
-            customThemeFocusRequester.requestFocusAfterFrames()
+            (if (notflix) themeChoiceFocus else customThemeFocusRequester).requestFocusAfterFrames()
         }
     }
     val appliedSettingsUiStyle = NuvioTheme.settingsUiStyle
     LaunchedEffect(Unit) {
         if (viewModel.consumeStyleFocusRestore()) {
-            styleFocusRequesters[appliedSettingsUiStyle]?.requestFocusAfterFrames()
+            (if (notflix) styleChoiceFocus else styleFocusRequesters[appliedSettingsUiStyle])?.requestFocusAfterFrames()
         }
     }
 
     val themeScrollState = rememberScrollState()
     val themeRowState = rememberLazyListState()
     var initialTheme by remember { mutableStateOf<AppTheme?>(null) }
-    LaunchedEffect(uiState.themesLoaded) {
-        if (!uiState.themesLoaded || initialTheme != null) return@LaunchedEffect
-        initialTheme = uiState.selectedTheme
+    LaunchedEffect(uiState.themesLoaded, notflix) {
+        if (!uiState.themesLoaded) return@LaunchedEffect
+        val firstLoad = initialTheme == null
+        if (firstLoad) initialTheme = uiState.selectedTheme
         val selectedIndex = uiState.availableThemes.indexOf(initialTheme)
         if (selectedIndex < 0) return@LaunchedEffect
-        themeRowState.scrollToItem(selectedIndex)
-        selectorInitialFocus?.requestFocusAfterFrames()
+        if (!notflix) {
+            themeRowState.scrollToItem(selectedIndex)
+            if (firstLoad) selectorInitialFocus?.requestFocusAfterFrames()
+        }
     }
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -222,6 +229,8 @@ fun ThemeSettingsContent(
                 SettingsGroupCard(modifier = Modifier.fillMaxWidth()) {
                     AppearanceSelectionContent(appearanceState, selectorInitialFocus,
                         onSelectHomeMotion = appearanceController::selectHomeMotion,
+                        onSelectCardOpening = appearanceController::selectCardOpening,
+                        onSelectCardSize = appearanceController::selectCardSize,
                         onSelectIntroEnabled = appearanceController::selectIntroEnabled,
                         onSelectIntroSoundEnabled = appearanceController::selectIntroSoundEnabled,
                 onSelectPreviewEnabled = appearanceController::selectPreviewEnabled,
@@ -254,53 +263,74 @@ fun ThemeSettingsContent(
                 title = stringResource(R.string.appearance_color_theme),
                 subtitle = stringResource(R.string.appearance_color_theme_subtitle)
             ) {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    LazyRow(
-                        state = themeRowState,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .settingsOptionRow(firstThemeFocusRequester),
-                        contentPadding = PaddingValues(horizontal = NuvioTheme.spacing.xs, vertical = NuvioTheme.spacing.xs),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        itemsIndexed(
-                            items = uiState.availableThemes,
-                            key = { _, theme -> theme.name }
-                        ) { themeIndex, theme ->
-                            ThemeSwatchChip(
-                                theme = theme,
-                                customColors = uiState.customThemeColors,
-                                isSelected = theme == uiState.selectedTheme,
-                                onClick = {
-                                    if (theme == AppTheme.CUSTOM) {
-                                        restoreCustomThemeFocus = true
-                                        showCustomThemeDialog = true
-                                    } else {
-                                        viewModel.onEvent(ThemeSettingsEvent.SelectTheme(theme))
-                                    }
-                                },
-                                modifier = if (
-                                    uiState.themesLoaded &&
-                                    theme == initialTheme &&
-                                    initialFocusRequester != null && !showAppearanceSelector
-                                ) {
-                                    Modifier.focusRequester(initialFocusRequester)
-                                } else {
-                                    Modifier
-                                }.then(
-                                    if (themeIndex == 0) {
-                                        Modifier.focusRequester(firstThemeFocusRequester)
+                if (notflix) {
+                    SettingsSingleChoiceRow(
+                        title = stringResource(R.string.appearance_color_theme),
+                        value = uiState.selectedTheme.localizedName(),
+                        options = uiState.availableThemes.map { SettingsPickerOption(it, it.localizedName()) },
+                        selectedValue = uiState.selectedTheme,
+                        onOptionSelected = { theme ->
+                            if (theme == AppTheme.CUSTOM) {
+                                restoreCustomThemeFocus = true
+                                showCustomThemeDialog = true
+                            } else {
+                                viewModel.onEvent(ThemeSettingsEvent.SelectTheme(theme))
+                            }
+                        },
+                        focusRequester = themeChoiceFocus,
+                        stateKey = appearanceState?.context,
+                        modifier = Modifier.testTag("appearance-color-theme"),
+                        optionTestTag = { "appearance-color-theme-option-${it.name.lowercase()}" }
+                    )
+                } else {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        LazyRow(
+                            state = themeRowState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .settingsOptionRow(firstThemeFocusRequester),
+                            contentPadding = PaddingValues(horizontal = NuvioTheme.spacing.xs, vertical = NuvioTheme.spacing.xs),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            itemsIndexed(
+                                items = uiState.availableThemes,
+                                key = { _, theme -> theme.name }
+                            ) { themeIndex, theme ->
+                                ThemeSwatchChip(
+                                    theme = theme,
+                                    customColors = uiState.customThemeColors,
+                                    isSelected = theme == uiState.selectedTheme,
+                                    onClick = {
+                                        if (theme == AppTheme.CUSTOM) {
+                                            restoreCustomThemeFocus = true
+                                            showCustomThemeDialog = true
+                                        } else {
+                                            viewModel.onEvent(ThemeSettingsEvent.SelectTheme(theme))
+                                        }
+                                    },
+                                    modifier = if (
+                                        uiState.themesLoaded &&
+                                        theme == initialTheme &&
+                                        initialFocusRequester != null && !showAppearanceSelector
+                                    ) {
+                                        Modifier.focusRequester(initialFocusRequester)
                                     } else {
                                         Modifier
-                                    }
-                                ).then(
-                                    if (theme == AppTheme.CUSTOM) Modifier.focusRequester(customThemeFocusRequester)
-                                    else Modifier
+                                    }.then(
+                                        if (themeIndex == 0) {
+                                            Modifier.focusRequester(firstThemeFocusRequester)
+                                        } else {
+                                            Modifier
+                                        }
+                                    ).then(
+                                        if (theme == AppTheme.CUSTOM) Modifier.focusRequester(customThemeFocusRequester)
+                                        else Modifier
+                                    )
                                 )
-                            )
+                            }
                         }
+                        SettingsHorizontalScrollIndicators(state = themeRowState)
                     }
-                    SettingsHorizontalScrollIndicators(state = themeRowState)
                 }
                 SettingsToggleRow(
                     title = stringResource(R.string.appearance_amoled_mode),
@@ -329,26 +359,42 @@ fun ThemeSettingsContent(
                 title = stringResource(R.string.appearance_settings_style),
                 subtitle = stringResource(R.string.appearance_settings_style_subtitle)
             ) {
-                val firstAvailableStyle = uiState.availableSettingsUiStyles.firstOrNull()
-                    ?: SettingsUiStyle.entries.first()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min)
-                        .padding(horizontal = NuvioTheme.spacing.xs, vertical = NuvioTheme.spacing.xs)
-                        .settingsOptionRow(styleFocusRequesters.getValue(firstAvailableStyle)),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    uiState.availableSettingsUiStyles.forEach { style ->
-                        SettingsStyleOptionCard(
-                            style = style,
-                            isSelected = style == uiState.settingsUiStyle,
-                            onClick = { viewModel.onEvent(ThemeSettingsEvent.SelectSettingsUiStyle(style)) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .focusRequester(styleFocusRequesters.getValue(style))
-                        )
+                if (notflix) {
+                    SettingsSingleChoiceRow(
+                        title = stringResource(R.string.appearance_settings_style),
+                        value = uiState.settingsUiStyle.localizedName(),
+                        options = uiState.availableSettingsUiStyles.map {
+                            SettingsPickerOption(it, it.localizedName(), description = it.localizedDescription())
+                        },
+                        selectedValue = uiState.settingsUiStyle,
+                        onOptionSelected = { viewModel.onEvent(ThemeSettingsEvent.SelectSettingsUiStyle(it)) },
+                        focusRequester = styleChoiceFocus,
+                        stateKey = appearanceState?.context,
+                        modifier = Modifier.testTag("appearance-settings-style"),
+                        optionTestTag = { "appearance-settings-style-option-${it.name.lowercase()}" }
+                    )
+                } else {
+                    val firstAvailableStyle = uiState.availableSettingsUiStyles.firstOrNull()
+                        ?: SettingsUiStyle.entries.first()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min)
+                            .padding(horizontal = NuvioTheme.spacing.xs, vertical = NuvioTheme.spacing.xs)
+                            .settingsOptionRow(styleFocusRequesters.getValue(firstAvailableStyle)),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        uiState.availableSettingsUiStyles.forEach { style ->
+                            SettingsStyleOptionCard(
+                                style = style,
+                                isSelected = style == uiState.settingsUiStyle,
+                                onClick = { viewModel.onEvent(ThemeSettingsEvent.SelectSettingsUiStyle(style)) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .focusRequester(styleFocusRequesters.getValue(style))
+                            )
+                        }
                     }
                 }
             }

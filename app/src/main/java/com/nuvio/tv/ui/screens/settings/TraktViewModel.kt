@@ -80,7 +80,8 @@ class TraktViewModel @Inject constructor(
             integrationStore.values.collectLatest { values ->
                 _uiState.update {
                     it.copy(
-                        credentialsConfigured = values.traktClientId.isNotBlank(),
+                        // Built-in Notflix app counts too, so "Connect Trakt" works without typing keys.
+                        credentialsConfigured = traktAuthService.hasRequiredCredentials(),
                         traktClientId = values.traktClientId,
                         traktClientSecret = values.traktClientSecret
                     )

@@ -26,6 +26,7 @@ import com.nuvio.tv.domain.model.FolderViewMode
 import com.nuvio.tv.domain.model.HomeImdbRatingsVisibility
 import com.nuvio.tv.domain.model.HomeLayout
 import com.nuvio.tv.domain.model.MetaPreview
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.domain.model.TmdbCollectionSource
 import com.nuvio.tv.domain.model.TraktCollectionSource
 import com.nuvio.tv.domain.model.enabledAddons
@@ -58,6 +59,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.delay
@@ -91,7 +93,10 @@ data class FolderDetailUiState(
     val selectedTabIndex: Int = 0,
     val isLoading: Boolean = true,
     val followLayoutHomeState: HomeUiState? = null,
-    val movieWatchedStatus: Map<String, Boolean> = emptyMap()
+    val movieWatchedStatus: Map<String, Boolean> = emptyMap(),
+    /** M67: títulos ocultos del perfil activo; la rejilla los quita, como Inicio. */
+    val hiddenTitleKeys: Set<String> = emptySet(),
+    val hiddenTitleUndo: com.nuvio.tv.ui.screens.home.HiddenTitleUndo? = null
 )
 
 data class FolderTab(
@@ -115,6 +120,7 @@ data class FolderDetailGridFocusState(
 private const val TRAILER_PREVIEW_DEBOUNCE_MS = 180L
 
 @HiltViewModel
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class FolderDetailViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle,
@@ -134,8 +140,16 @@ class FolderDetailViewModel @Inject constructor(
     private val tmdbCollectionSourceResolver: TmdbCollectionSourceResolver,
     private val traktPublicListSourceResolver: TraktPublicListSourceResolver,
     private val ageGate: ActiveProfileAgeGate,
+    playerSettingsDataStore: com.nuvio.tv.data.local.PlayerSettingsDataStore,
+    private val hiddenTitlesRepository: com.nuvio.tv.domain.repository.HiddenTitlesRepository,
+    private val profileManager: com.nuvio.tv.core.profile.ProfileManager,
     val posterOptions: com.nuvio.tv.ui.components.posteroptions.PosterOptionsController
 ) : ViewModel() {
+
+    /** M63: el botón Reproducir de la tarjeta respeta el mismo ajuste de autoarranque que Inicio. */
+    val effectiveAutoplayEnabled = playerSettingsDataStore.playerSettings
+        .map(com.nuvio.tv.core.player.StreamAutoPlayPolicy::isEffectivelyEnabled)
+        .distinctUntilChanged()
 
     private val collectionId: String = savedStateHandle["collectionId"] ?: ""
     private val folderId: String = savedStateHandle["folderId"] ?: ""
@@ -161,6 +175,22 @@ class FolderDetailViewModel @Inject constructor(
     private var activeTrailerPreviewItemId: String? = null
     private var trailerPreviewRequestVersion: Long = 0L
     private var trailerPreviewJob: Job? = null
+
+    // M63: lectura mínima del pedido oficial para el resolvedor de tráiler compartido.
+    internal val trailerPreviewVersion: Long get() = trailerPreviewRequestVersion
+    internal val trailerPreviewJobRef: Job? get() = trailerPreviewJob
+    internal fun trailerPreviewLoading(itemId: String): Boolean = itemId in trailerPreviewLoadingIds
+    internal fun trailerPreviewNegative(itemId: String): Boolean = itemId in trailerPreviewNegativeCache
+    internal fun trailerPreviewVideoUrl(itemId: String): String? = _trailerPreviewUrls.value[itemId]
+    internal fun trailerPreviewAudioUrl(itemId: String): String? = _trailerPreviewAudioUrls.value[itemId]
+    internal fun cancelTrailerPreview(itemId: String, version: Long, job: Job?) {
+        if (trailerPreviewRequestVersion != version) return
+        if (job != null && trailerPreviewJob !== job) return
+        trailerPreviewRequestVersion++
+        trailerPreviewLoadingIds.remove(itemId)
+        if (activeTrailerPreviewItemId == itemId) activeTrailerPreviewItemId = null
+        job?.cancel()
+    }
 
     /** Items for which enrichment was attempted but produced no enriched data. */
     private val _failedEnrichmentIds = MutableStateFlow<Set<String>>(emptySet())
@@ -190,12 +220,66 @@ class FolderDetailViewModel @Inject constructor(
     private val _tabFocusStates = MutableStateFlow<Map<Int, FolderDetailGridFocusState>>(emptyMap())
     val tabFocusStates: StateFlow<Map<Int, FolderDetailGridFocusState>> = _tabFocusStates.asStateFlow()
 
+    private var hiddenUndoJob: Job? = null
+    private var hiddenWriteJob: Job? = null
+    private var derivedKidsFolder = false
+
     init {
         posterOptions.bind(viewModelScope)
         loadFolder()
         observeWatchedStatusCombined()
+        // M67: títulos ocultos del perfil activo; solo en el dispositivo, como en Inicio.
+        viewModelScope.launch {
+            profileManager.activeProfileId
+                .flatMapLatest { hiddenTitlesRepository.observe(it) }
+                .collect { keys ->
+                    _uiState.update { state ->
+                        val undo = state.hiddenTitleUndo?.takeIf { it.profileId == profileManager.activeProfileId.value }
+                        if (state.hiddenTitleKeys == keys && state.hiddenTitleUndo == undo) state
+                        else state.copy(hiddenTitleKeys = keys, hiddenTitleUndo = undo)
+                    }
+                }
+        }
         viewModelScope.launch {
             mdbListSettingsDataStore.settings.distinctUntilChanged().collect { currentMdbListSettings = it }
+        }
+    }
+
+    /**
+     * M67: estado y acciones de Mi lista y Visto de la tarjeta abierta. Se delega en el controlador
+     * del menú largo de esta pantalla: es quien ya escribe en la biblioteca y en el progreso.
+     */
+    fun refreshCardStatus(item: MetaPreview) = posterOptions.refreshCardStatus(item)
+
+    fun toggleCardLibrary(item: MetaPreview, addonBaseUrl: String?) =
+        posterOptions.toggleLibraryFor(item, addonBaseUrl)
+
+    fun toggleCardWatched(item: MetaPreview) = posterOptions.toggleWatchedFor(item)
+
+    /** M67: Oculta el título en el perfil activo con el mismo almacén que usa Inicio. */
+    fun hideTitle(item: MetaPreview) {
+        val profileId = profileManager.activeProfileId.value
+        val key = com.nuvio.tv.data.local.hiddenTitleKey(item.apiType, item.id)
+        hiddenWriteJob = viewModelScope.launch { hiddenTitlesRepository.hide(profileId, key) }
+        _uiState.update { it.copy(hiddenTitleUndo = com.nuvio.tv.ui.screens.home.HiddenTitleUndo(profileId, key, item.name)) }
+        hiddenUndoJob?.cancel()
+        hiddenUndoJob = viewModelScope.launch {
+            delay(5_000)
+            _uiState.update { state ->
+                if (state.hiddenTitleUndo?.key == key) state.copy(hiddenTitleUndo = null) else state
+            }
+        }
+    }
+
+    fun undoHideTitle() {
+        val undo = _uiState.value.hiddenTitleUndo ?: return
+        val write = hiddenWriteJob
+        hiddenUndoJob?.cancel()
+        hiddenUndoJob = null
+        _uiState.update { it.copy(hiddenTitleUndo = null) }
+        viewModelScope.launch {
+            write?.join()
+            hiddenTitlesRepository.show(undo.profileId, undo.key)
         }
     }
 
@@ -234,10 +318,24 @@ class FolderDetailViewModel @Inject constructor(
             return state.tabs.firstOrNull()?.isAllTab == true && folder.sources.size >= 2
         }
 
+    private suspend fun filterFolderItems(items: List<MetaPreview>): List<MetaPreview> =
+        if (derivedKidsFolder) ageGate.filterForLimit(items, com.nuvio.tv.core.profile.AgeLevel.TP)
+        else ageGate.filter(items)
+
+    private suspend fun filterFolderRow(row: CatalogRow): CatalogRow =
+        if (derivedKidsFolder) row.copy(items = filterFolderItems(row.items)) else ageGate.filterRow(row)
+
     private fun loadFolder() {
         viewModelScope.launch {
             val collections = collectionsDataStore.collections.first()
-            val collection = collections.find { it.id == collectionId }
+            val builtInKids = if (collectionId == com.nuvio.tv.ui.appearance.NotflixKidsHomePreset.ID) {
+                com.nuvio.tv.ui.appearance.notflixKidsHomeCollection(
+                    collectionId, ageGate.currentLimitFromStore(),
+                    com.nuvio.tv.ui.appearance.notflixKidsHomeTexts(appContext)
+                )
+            } else null
+            derivedKidsFolder = builtInKids != null
+            val collection = builtInKids ?: collections.find { it.id == collectionId }
             val folder = collection?.folders?.find { it.id == folderId }
 
             if (folder == null || folder.sources.isEmpty()) {
@@ -680,6 +778,7 @@ class FolderDetailViewModel @Inject constructor(
                                 background = item.background, logo = item.logo,
                                 description = item.description, releaseInfo = item.releaseInfo,
                                 imdbRating = item.imdbRating, genres = item.genres,
+                                ratingSource = item.ratingSource,
                                 runtime = item.runtime, director = item.director,
                                 cast = emptyList(), videos = emptyList(),
                                 country = item.country, awards = null,
@@ -693,7 +792,9 @@ class FolderDetailViewModel @Inject constructor(
                                     current.copy(
                                         mdbListRatings = result.ratings,
                                         mdbListRatingOrder = ratingOrder,
-                                        imdbRating = result.ratings.imdb?.toFloat() ?: current.imdbRating
+                                        imdbRating = result.ratings.imdb?.toFloat() ?: current.imdbRating,
+                                        ratingSource = if (result.ratings.imdb != null) RatingSource.IMDB
+                                            else current.ratingSource
                                     )
                                 }
                                 val existing = _enrichedPreviews.value[item.id]
@@ -796,7 +897,7 @@ class FolderDetailViewModel @Inject constructor(
                 when (result) {
                     is NetworkResult.Success -> {
                         val hideUnreleased = _uiState.value.hideUnreleasedContent
-                        val filteredRow = ageGate.filterRow(result.data.filteredForRelease(hideUnreleased))
+                        val filteredRow = filterFolderRow(result.data.filteredForRelease(hideUnreleased))
                         _uiState.update { state ->
                             val tabs = state.tabs.toMutableList()
                             if (tabIndex < tabs.size) {
@@ -887,7 +988,7 @@ class FolderDetailViewModel @Inject constructor(
             ).collect { result ->
                 when (result) {
                     is NetworkResult.Success -> {
-                        val ageFilteredItems = ageGate.filter(result.data.items)
+                        val ageFilteredItems = filterFolderItems(result.data.items)
                         _uiState.update { s ->
                             val currentTab = s.tabs.getOrNull(tabIndex)
                             val currentRow = currentTab?.catalogRow ?: return@update s
@@ -1056,7 +1157,7 @@ class FolderDetailViewModel @Inject constructor(
                     is NetworkResult.Success -> {
                         val posterPattern = layoutPreferenceDataStore.customPosterUrlPattern.first()
                         val enabledScreens = layoutPreferenceDataStore.customPosterEnabledScreens.first()
-                        val filteredData = ageGate.filterRow(
+                        val filteredData = filterFolderRow(
                             result.data.filteredForRelease(
                                 hideUnreleased = _uiState.value.hideUnreleasedContent,
                                 treatMissingDateAsUnreleased = true
@@ -1121,7 +1222,7 @@ class FolderDetailViewModel @Inject constructor(
                     is NetworkResult.Success -> {
                         val posterPattern = layoutPreferenceDataStore.customPosterUrlPattern.first()
                         val enabledScreens = layoutPreferenceDataStore.customPosterEnabledScreens.first()
-                        val filteredData = ageGate.filterRow(
+                        val filteredData = filterFolderRow(
                             result.data.filteredForRelease(
                                 hideUnreleased = _uiState.value.hideUnreleasedContent,
                                 treatMissingDateAsUnreleased = true
@@ -1242,7 +1343,7 @@ class FolderDetailViewModel @Inject constructor(
         return source.collectionExtraArgs()
     }
 
-    fun onItemFocused(item: MetaPreview) {
+    fun onItemFocused(item: MetaPreview, allowTrailerRetry: Boolean = true) {
         // Clear enriching for previous item immediately.
         if (_enrichingItemId.value != null && _enrichingItemId.value != item.id) {
             _enrichingItemId.value = null
@@ -1365,7 +1466,7 @@ class FolderDetailViewModel @Inject constructor(
             // If the trailer pipeline already ran for this item without a hit and
             // enrichment just brought localized YT ids, retry now using them as
             // fallback. Mirrors the behaviour in HomeViewModelPresentationPipeline.
-            if (enrichment != null) {
+            if (enrichment != null && allowTrailerRetry) {
                 val ytFallback = enrichment.trailers.mapNotNull { it.ytId }.firstOrNull()
                 if (ytFallback != null && !_trailerPreviewUrls.value.containsKey(item.id)) {
                     trailerPreviewNegativeCache.remove(item.id)
@@ -1416,6 +1517,7 @@ class FolderDetailViewModel @Inject constructor(
                                     logo = meta.logo?.takeIf { it.isNotBlank() } ?: merged.logo,
                                     genres = meta.genres.takeIf { it.isNotEmpty() } ?: merged.genres,
                                     imdbRating = meta.imdbRating ?: merged.imdbRating,
+                                    ratingSource = if (meta.imdbRating != null) meta.ratingSource else merged.ratingSource,
                                     releaseInfo = meta.releaseInfo?.takeIf { it.isNotBlank() } ?: merged.releaseInfo
                                 )
                             }
@@ -1453,10 +1555,16 @@ class FolderDetailViewModel @Inject constructor(
         title: String,
         releaseInfo: String?,
         apiType: String,
-        fallbackYtId: String? = null
+        fallbackYtId: String? = null,
+        newVisit: Boolean = false
     ) {
         if (!AppFeaturePolicy.inAppTrailerPlaybackEnabled) return
-        if (activeTrailerPreviewItemId != itemId) {
+        if (newVisit) {
+            trailerPreviewJob?.cancel()
+            trailerPreviewLoadingIds.remove(activeTrailerPreviewItemId)
+            trailerPreviewLoadingIds.remove(itemId)
+        }
+        if (newVisit || activeTrailerPreviewItemId != itemId) {
             activeTrailerPreviewItemId = itemId
             trailerPreviewRequestVersion++
         }
@@ -1518,7 +1626,9 @@ class FolderDetailViewModel @Inject constructor(
                     }
                 }
             } finally {
-                trailerPreviewLoadingIds.remove(itemId)
+                if (!newVisit || trailerPreviewRequestVersion == requestVersion) {
+                    trailerPreviewLoadingIds.remove(itemId)
+                }
             }
         }
     }
@@ -1547,7 +1657,8 @@ class FolderDetailViewModel @Inject constructor(
                 item.copy(
                     mdbListRatings = ratings,
                     mdbListRatingOrder = order,
-                    imdbRating = ratings.imdb?.toFloat() ?: item.imdbRating
+                    imdbRating = ratings.imdb?.toFloat() ?: item.imdbRating,
+                    ratingSource = if (ratings.imdb != null) RatingSource.IMDB else item.ratingSource
                 )
             } else item
         } else item
@@ -1677,6 +1788,7 @@ class FolderDetailViewModel @Inject constructor(
                                 logo = meta.logo?.takeIf { it.isNotBlank() } ?: merged.logo,
                                 genres = meta.genres.takeIf { it.isNotEmpty() } ?: merged.genres,
                                 imdbRating = meta.imdbRating ?: merged.imdbRating,
+                                ratingSource = if (meta.imdbRating != null) meta.ratingSource else merged.ratingSource,
                                 releaseInfo = meta.releaseInfo?.takeIf { it.isNotBlank() } ?: merged.releaseInfo
                             )
                         }

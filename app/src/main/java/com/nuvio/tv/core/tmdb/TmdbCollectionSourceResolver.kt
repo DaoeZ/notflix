@@ -16,6 +16,7 @@ import com.nuvio.tv.domain.model.CatalogRow
 import com.nuvio.tv.domain.model.ContentType
 import com.nuvio.tv.domain.model.MetaPreview
 import com.nuvio.tv.domain.model.PosterShape
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.domain.model.TmdbCollectionMediaType
 import com.nuvio.tv.domain.model.TmdbCollectionSort
 import com.nuvio.tv.domain.model.TmdbCollectionSource
@@ -207,6 +208,7 @@ class TmdbCollectionSourceResolver @Inject constructor(
                     releaseInfo = it.releaseDate?.take(4),
                     released = it.releaseDate?.takeIf { value -> value.isNotBlank() },
                     imdbRating = it.voteAverage?.toFloat(),
+                    ratingSource = RatingSource.TMDB,
                     voteCount = it.voteCount,
                     genres = emptyList()
                 )
@@ -384,6 +386,7 @@ class TmdbCollectionSourceResolver @Inject constructor(
             releaseInfo = (releaseDate ?: firstAirDate)?.take(4),
             released = (releaseDate ?: firstAirDate)?.takeIf { it.isNotBlank() },
             imdbRating = voteAverage?.toFloat(),
+            ratingSource = RatingSource.TMDB,
             voteCount = voteCount,
             genres = emptyList()
         )
@@ -416,6 +419,7 @@ class TmdbCollectionSourceResolver @Inject constructor(
                 TmdbCollectionMediaType.TV -> firstAirDate?.takeIf { it.isNotBlank() }
             },
             imdbRating = voteAverage?.toFloat(),
+            ratingSource = RatingSource.TMDB,
             voteCount = voteCount,
             genres = emptyList()
         )
@@ -447,6 +451,7 @@ class TmdbCollectionSourceResolver @Inject constructor(
                 TmdbCollectionMediaType.TV -> firstAirDate?.takeIf { it.isNotBlank() }
             },
             imdbRating = voteAverage?.toFloat(),
+            ratingSource = RatingSource.TMDB,
             voteCount = voteCount,
             genres = emptyList()
         )
@@ -478,6 +483,7 @@ class TmdbCollectionSourceResolver @Inject constructor(
                 TmdbCollectionMediaType.TV -> firstAirDate?.takeIf { it.isNotBlank() }
             },
             imdbRating = voteAverage?.toFloat(),
+            ratingSource = RatingSource.TMDB,
             voteCount = voteCount,
             genres = emptyList()
         )

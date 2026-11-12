@@ -1,6 +1,7 @@
 package com.nuvio.tv.ui.screens.detail
 
 import com.nuvio.tv.domain.model.MDBListRatings
+import com.nuvio.tv.domain.model.RatingSource
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -12,6 +13,17 @@ internal enum class NotflixRatingProvider(val id: String, val maximum: Int, val 
 }
 
 internal data class NotflixRating(val provider: NotflixRatingProvider, val value: Double, val fromMDBList: Boolean)
+
+/** M57: where the standard (non-MDBList) rating may be shown for a title. */
+internal data class NotflixStandardRatings(val imdb: Float?, val tmdb: Float?)
+
+/**
+ * M57: a TMDB-sourced value goes to the TMDB slot (0..10, drawn as a percentage), never to the IMDb
+ * one. The already-fetched TMDB rating still wins when the standard value is hidden.
+ */
+internal fun notflixStandardRatings(standardRating: Float?, source: RatingSource, tmdbRating: Float?): NotflixStandardRatings =
+    if (source == RatingSource.TMDB) NotflixStandardRatings(imdb = null, tmdb = standardRating ?: tmdbRating)
+    else NotflixStandardRatings(imdb = standardRating, tmdb = tmdbRating)
 
 internal fun notflixDetailRatings(
     ratings: MDBListRatings?, order: List<String>, standardImdb: Float? = null, standardTmdb: Float? = null

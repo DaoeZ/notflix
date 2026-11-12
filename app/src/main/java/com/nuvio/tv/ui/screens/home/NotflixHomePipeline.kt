@@ -3,6 +3,7 @@ package com.nuvio.tv.ui.screens.home
 import com.nuvio.tv.domain.model.CatalogRow
 import com.nuvio.tv.domain.model.Collection
 import com.nuvio.tv.domain.model.legacyKey
+import com.nuvio.tv.core.profile.isKidsAgeLimit
 import com.nuvio.tv.R
 
 /** Captured beside the official rows; stale generation results never publish removals. */
@@ -14,7 +15,8 @@ internal fun HomeViewModel.notflixSnapshot(
     return projectNotflixCatalogs(captured, ordered, fullRows, scopedCollections, disabledHomeCatalogKeys,
         customCatalogTitles, synchronized(catalogStateLock) { placeholderDescriptors.toList() },
         _uiState.value.catalogTypeSuffixEnabled, appContext.getString(R.string.type_movie),
-        appContext.getString(R.string.type_series), notflixCollectionRows.snapshot())
+        appContext.getString(R.string.type_series), notflixCollectionRows.snapshot(),
+        kidsHome = isKidsAgeLimit(ageGate.currentLimit()))
         .copy(collectionRowsKnown = _uiState.value.notflixPresentationActive && notflixCollectionsProfile == captured.context)
 }
 
@@ -23,7 +25,8 @@ internal fun projectNotflixCatalogs(
     captured: NotflixCatalogSnapshot, ordered: List<String>, fullRows: List<CatalogRow>, collections: List<Collection>,
     disabled: Set<String>, customTitles: Map<String, String>, descriptors: List<HomeViewModel.PlaceholderDescriptor>,
     showTypeSuffix: Boolean, movieLabel: String, seriesLabel: String,
-    projectedFolders: List<NotflixCatalogRow> = emptyList()
+    projectedFolders: List<NotflixCatalogRow> = emptyList(),
+    kidsHome: Boolean = false
 ): NotflixCatalogSnapshot {
     val filtered = fullRows.associateBy { it.legacyKey() }
     val names = descriptors.associateBy { it.catalogKey }
@@ -50,10 +53,16 @@ internal fun projectNotflixCatalogs(
     val byKey = (catalog.rows + collectionRows).associateBy { it.loadKey }
     val pinned = collections.filter { it.pinToTop }.map { "collection_${it.id}" }
     val folderGroups = projectedFolders.groupBy { it.folderTarget?.first }
-    val expanded = (pinned + ordered).distinct().mapNotNull { byKey[it] }
-        .filter { it.loadKey !in disabled }.flatMap { row ->
-            if (row.collection?.id == "notflix-inicio") folderGroups[row.collection.id] ?: listOf(row) else listOf(row)
-        }
+    // M66: the kids home is only its own row group; the account's catalogs and collections are
+    // not projected at all, so their rows cannot leak into a KIDS profile.
+    val expanded = if (kidsHome) {
+        projectedFolders
+    } else {
+        (pinned + ordered).distinct().mapNotNull { byKey[it] }
+            .filter { it.loadKey !in disabled }.flatMap { row ->
+                if (row.collection?.id == "notflix-inicio") folderGroups[row.collection.id] ?: listOf(row) else listOf(row)
+            }
+    }
     val (rows, aliases) = suppressReplacedPopular(expanded, captured.focusAliases)
     return catalog.copy(rows = rows, focusAliases = aliases)
 }

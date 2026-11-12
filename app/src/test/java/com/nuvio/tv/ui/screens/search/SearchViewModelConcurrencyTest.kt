@@ -151,7 +151,10 @@ class SearchViewModelConcurrencyTest {
             hiddenTitlesRepository = mockk<com.nuvio.tv.domain.repository.HiddenTitlesRepository> {
                 every { observe(any()) } returns flowOf(emptySet())
             },
-            context = mockk<Context>(relaxed = true)
+            context = mockk<Context>(relaxed = true),
+            tmdbSettingsDataStore = mockk(relaxed = true),
+            tmdbService = mockk(relaxed = true),
+            tmdbMetadataService = mockk(relaxed = true)
         )
     }
 

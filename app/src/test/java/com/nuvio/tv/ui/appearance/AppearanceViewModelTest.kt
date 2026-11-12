@@ -6,6 +6,8 @@ import com.nuvio.tv.data.local.AppearanceRead
 import com.nuvio.tv.data.local.NotflixAppearanceStore
 import com.nuvio.tv.domain.model.AppAppearance
 import com.nuvio.tv.domain.model.AppearanceContext
+import com.nuvio.tv.domain.model.NotflixCardOpening
+import com.nuvio.tv.domain.model.NotflixCardSize
 import com.nuvio.tv.domain.model.UserProfile
 import com.nuvio.tv.domain.model.PersistedAppearanceProfile
 import io.mockk.coEvery
@@ -230,6 +232,52 @@ class AppearanceViewModelTest {
         assertFalse(currentController.confirm(obsolete, context))
         assertNull(currentController.authorized(context))
         assertTrue(currentController.confirm(current, context))
+    }
+
+    @Test fun `card opening is closed before confirmation and saves the chosen wait`() = runTest(dispatcher) {
+        vm.selectCardOpening(NotflixCardOpening.SLOW)
+        runCurrent()
+        coVerify(exactly = 0) { store.selectCardOpening(any(), any(), any()) }
+        authorize(1)
+        runCurrent()
+        vm.selectCardOpening(NotflixCardOpening.SLOW)
+        runCurrent()
+        coVerify(exactly = 0) { store.selectCardOpening(any(), any(), any()) }
+        authorize(2)
+        runCurrent()
+        coEvery { store.selectCardOpening(AppearanceContext(2, 2), NotflixCardOpening.SLOW, any()) } coAnswers {
+            assertTrue(thirdArg<() -> Boolean>().invoke())
+            reads.getValue(2).value = AppearanceRead(AppAppearance.NOTFLIX, cardOpening = NotflixCardOpening.SLOW)
+            Result.success(Unit)
+        }
+        vm.selectCardOpening(NotflixCardOpening.SLOW)
+        runCurrent()
+        assertEquals(NotflixCardOpening.SLOW, vm.state.value.cardOpening)
+        coVerify(exactly = 1) { store.selectCardOpening(any(), any(), any()) }
+        coVerify(exactly = 0) { store.select(any(), any()) }
+    }
+
+    @Test fun `card size is closed before confirmation and saves the chosen size`() = runTest(dispatcher) {
+        vm.selectCardSize(NotflixCardSize.SMALL)
+        runCurrent()
+        coVerify(exactly = 0) { store.selectCardSize(any(), any(), any()) }
+        authorize(1)
+        runCurrent()
+        vm.selectCardSize(NotflixCardSize.SMALL)
+        runCurrent()
+        coVerify(exactly = 0) { store.selectCardSize(any(), any(), any()) }
+        authorize(2)
+        runCurrent()
+        coEvery { store.selectCardSize(AppearanceContext(2, 2), NotflixCardSize.SMALL, any()) } coAnswers {
+            assertTrue(thirdArg<() -> Boolean>().invoke())
+            reads.getValue(2).value = AppearanceRead(AppAppearance.NOTFLIX, cardSize = NotflixCardSize.SMALL)
+            Result.success(Unit)
+        }
+        vm.selectCardSize(NotflixCardSize.SMALL)
+        runCurrent()
+        assertEquals(NotflixCardSize.SMALL, vm.state.value.cardSize)
+        coVerify(exactly = 1) { store.selectCardSize(any(), any(), any()) }
+        coVerify(exactly = 0) { store.select(any(), any()) }
     }
 
     @Test fun `motion is closed before confirmation and while Nuvio is effective`() = runTest(dispatcher) {

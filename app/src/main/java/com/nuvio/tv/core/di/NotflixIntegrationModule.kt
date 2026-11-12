@@ -16,5 +16,5 @@ object NotflixIntegrationModule {
     @Provides
     @Singleton
     fun provideNotflixIntegrationConfig(store: NotflixIntegrationStore): NotflixIntegrationConfig =
-        NotflixIntegrationConfig(store)
+        NotflixIntegrationConfig(source = store)
 }

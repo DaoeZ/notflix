@@ -54,6 +54,7 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.nuvio.tv.R
 import com.nuvio.tv.core.profile.AgeLevel
+import com.nuvio.tv.core.profile.isKidsAgeLimit
 import com.nuvio.tv.data.remote.supabase.AvatarCatalogItem
 import com.nuvio.tv.domain.model.UserProfile
 import com.nuvio.tv.ui.appearance.NotflixVisualSpec as Spec
@@ -102,7 +103,7 @@ internal fun notflixDeleteConfirmInitialFocusIndex(): Int =
 internal fun notflixAgeLimitAfterKidsToggle(kids: Boolean): AgeLevel? =
     if (kids) NOTFLIX_KIDS_AGE_LEVEL else null
 
-internal fun notflixIsKidsAgeLimit(level: AgeLevel?): Boolean = level == NOTFLIX_KIDS_AGE_LEVEL
+internal fun notflixIsKidsAgeLimit(level: AgeLevel?): Boolean = isKidsAgeLimit(level)
 
 private val NotflixPanelShape = RoundedCornerShape(2.dp)
 

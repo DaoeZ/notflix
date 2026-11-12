@@ -5,11 +5,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.focus.FocusRequester
+import com.nuvio.tv.domain.model.NotflixCardOpening
+import com.nuvio.tv.domain.model.NotflixCardSize
 
 data class NotflixPresentation(
     val active: Boolean = false,
     val navigation: NotflixNavigationState? = null,
-    val reduceHomeMotion: Boolean = false
+    val reduceHomeMotion: Boolean = false,
+    val cardOpening: NotflixCardOpening = NotflixCardOpening.DEFAULT,
+    val cardSize: NotflixCardSize = NotflixCardSize.DEFAULT
 )
 val LocalNotflixPresentation = staticCompositionLocalOf { NotflixPresentation() }
 val LocalAppearanceViewModel = staticCompositionLocalOf<AppearanceViewModel?> { null }

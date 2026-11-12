@@ -5,6 +5,7 @@ import com.nuvio.tv.data.repository.MDBListRepository
 import com.nuvio.tv.domain.model.MDBListSettings
 import com.nuvio.tv.domain.model.Meta
 import com.nuvio.tv.domain.model.MetaPreview
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.domain.model.TmdbSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -87,10 +88,13 @@ class MetaPreviewEnricher @Inject constructor(
 
         var enriched = item
         if (mdbResult != null && mdbSettings != null) {
+            val imdbFromMdbList = mdbResult.ratings.imdb?.toFloat()
             enriched = enriched.copy(
                 mdbListRatings = mdbResult.ratings,
                 mdbListRatingOrder = mdbSettings.ratingOrder,
-                imdbRating = mdbResult.ratings.imdb?.toFloat() ?: enriched.imdbRating
+                imdbRating = imdbFromMdbList ?: enriched.imdbRating,
+                // M57: the value came from IMDb; without one, the addon's source stays.
+                ratingSource = if (imdbFromMdbList != null) RatingSource.IMDB else enriched.ratingSource
             )
         }
 
@@ -105,9 +109,7 @@ class MetaPreviewEnricher @Inject constructor(
         }
 
         if (settings.useBasicInfo) {
-            enriched = enriched.copy(
-                name = enrichment.localizedTitle ?: enriched.name,
-                description = enrichment.description ?: enriched.description,
+            enriched = enriched.withLocalizedTmdbText(enrichment).copy(
                 genres = if (enrichment.genres.isNotEmpty()) enrichment.genres else enriched.genres,
                 imdbRating = enriched.imdbRating
             )
@@ -135,6 +137,7 @@ class MetaPreviewEnricher @Inject constructor(
         runtime = runtime, director = director,
         cast = emptyList(), videos = emptyList(),
         country = country, awards = null,
-        language = language, links = links
+        language = language, links = links,
+        ratingSource = ratingSource
     )
 }

@@ -6,6 +6,7 @@ import com.nuvio.tv.domain.model.Addon
 import com.nuvio.tv.domain.model.CatalogDescriptor
 import com.nuvio.tv.domain.model.CatalogRow
 import com.nuvio.tv.domain.model.MetaPreview
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.domain.model.stableKey
 import kotlinx.coroutines.Job
 
@@ -125,7 +126,9 @@ internal fun HomeViewModel.replaceCatalogRow(key: String, row: CatalogRow) {
                     newItem.copy(
                         mdbListRatings = prev.mdbListRatings,
                         mdbListRatingOrder = prev.mdbListRatingOrder,
-                        imdbRating = prev.mdbListRatings.imdb?.toFloat() ?: newItem.imdbRating
+                        imdbRating = prev.mdbListRatings.imdb?.toFloat() ?: newItem.imdbRating,
+                        ratingSource = if (prev.mdbListRatings.imdb != null) RatingSource.IMDB
+                            else newItem.ratingSource
                     )
                 } else newItem
             }

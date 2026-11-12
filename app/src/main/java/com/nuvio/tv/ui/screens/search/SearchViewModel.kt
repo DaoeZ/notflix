@@ -12,6 +12,9 @@ import com.nuvio.tv.data.local.DiscoverSelectionDataStore
 import com.nuvio.tv.data.local.hiddenTitleKey
 import com.nuvio.tv.data.local.LayoutPreferenceDataStore
 import com.nuvio.tv.data.local.SearchHistoryDataStore
+import com.nuvio.tv.data.local.TmdbSettingsDataStore
+import com.nuvio.tv.core.tmdb.TmdbMetadataService
+import com.nuvio.tv.core.tmdb.TmdbService
 import com.nuvio.tv.data.mediaserver.ServerCatalog
 import com.nuvio.tv.domain.model.Addon
 import com.nuvio.tv.domain.model.CatalogDescriptor
@@ -36,6 +39,7 @@ import com.nuvio.tv.domain.repository.CatalogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -48,6 +52,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -69,6 +74,9 @@ class SearchViewModel @Inject constructor(
     private val ageGate: com.nuvio.tv.core.profile.ActiveProfileAgeGate,
     private val profileManager: com.nuvio.tv.core.profile.ProfileManager,
     private val hiddenTitlesRepository: com.nuvio.tv.domain.repository.HiddenTitlesRepository,
+    private val tmdbSettingsDataStore: TmdbSettingsDataStore,
+    private val tmdbService: TmdbService,
+    private val tmdbMetadataService: TmdbMetadataService,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -262,6 +270,57 @@ class SearchViewModel @Inject constructor(
      */
     fun getCachedBackdrop(id: String, type: String): String? {
         return metaRepository.getCachedMeta(type, id)?.backdropUrl
+    }
+
+    private val _localizedTitles = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /** M61: translated titles keyed by `apiType:id`, from the TMDB enrichments already in memory. */
+    val localizedTitles: StateFlow<Map<String, String>> = _localizedTitles.asStateFlow()
+    private var localizedTitlesJob: Job? = null
+
+    /**
+     * M61: Notflix search only draws a title when a poster fails, so translating the whole grid
+     * cannot justify a request per result. This reads what the app already asked TMDB for (home
+     * cards, banner, detail) and never issues one of its own; an unknown title stays as the addon
+     * sent it.
+     */
+    fun requestLocalizedTitles(items: List<MetaPreview>) {
+        localizedTitlesJob?.cancel()
+        _localizedTitles.value = emptyMap()
+        val offered = items.asSequence().distinctBy { "${it.apiType}:${it.id}" }.take(96).toList()
+        if (offered.isEmpty()) return
+        localizedTitlesJob = viewModelScope.launch {
+            combine(tmdbSettingsDataStore.settings, tmdbMetadataService.enrichmentVersion) { settings, _ ->
+                if (!settings.enabled || !settings.useBasicInfo) return@combine emptyMap<String, String>()
+                buildMap {
+                    offered.forEach { item ->
+                        val key = "${item.apiType}:${item.id}"
+                        val tmdbId = tmdbIdOf(item.id) ?: return@forEach
+                        val title = cachedLocalizedTitle(tmdbId, item.apiType, settings.language)
+                            ?.takeIf { it.isNotBlank() } ?: return@forEach
+                        put(key, title)
+                    }
+                }
+            }.flowOn(Dispatchers.Default).collect { _localizedTitles.value = it }
+        }
+    }
+
+    /** TMDB-addon items already carry their numeric id; the rest need the IMDb mapping in memory. */
+    private fun tmdbIdOf(itemId: String): Int? =
+        if (itemId.startsWith("tmdb:")) itemId.removePrefix("tmdb:").toIntOrNull()
+        else tmdbService.cachedTmdbId(itemId)
+
+    /** The enrichment may have been cached under either content type for a series. */
+    private fun cachedLocalizedTitle(tmdbId: Int, apiType: String, language: String): String? {
+        val id = tmdbId.toString()
+        return when (ContentType.fromString(apiType)) {
+            ContentType.MOVIE -> tmdbMetadataService.cachedLocalizedTitle(id, ContentType.MOVIE, language)
+            ContentType.SERIES -> tmdbMetadataService.cachedLocalizedTitle(id, ContentType.SERIES, language)
+                ?: tmdbMetadataService.cachedLocalizedTitle(id, ContentType.TV, language)
+            ContentType.TV -> tmdbMetadataService.cachedLocalizedTitle(id, ContentType.TV, language)
+                ?: tmdbMetadataService.cachedLocalizedTitle(id, ContentType.SERIES, language)
+            else -> null
+        }
     }
 
     fun onEvent(event: SearchEvent) {

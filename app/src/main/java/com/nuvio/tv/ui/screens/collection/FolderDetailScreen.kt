@@ -106,12 +106,14 @@ import kotlinx.coroutines.launch
 fun FolderDetailScreen(
     viewModel: FolderDetailViewModel = hiltViewModel(),
     onNavigateToDetail: (String, String, String) -> Unit,
+    onNavigateToPlay: ((String, String, String, Boolean) -> Unit)? = null,
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val rowsFocusState by viewModel.rowsFocusState.collectAsStateWithLifecycle()
     val followLayoutFocusState by viewModel.followLayoutFocusState.collectAsStateWithLifecycle()
     val tabFocusStates by viewModel.tabFocusStates.collectAsStateWithLifecycle()
+    val autoplayEnabled by viewModel.effectiveAutoplayEnabled.collectAsStateWithLifecycle(initialValue = false)
     val folder = uiState.folder
 
     // Rama Notflix (M49): página de categoría. Con apariencia Nuvio no se compone y la pantalla
@@ -120,7 +122,10 @@ fun FolderDetailScreen(
         NotflixFolderDetailScreen(
             viewModel = viewModel,
             uiState = uiState,
-            onNavigateToDetail = onNavigateToDetail
+            onNavigateToDetail = onNavigateToDetail,
+            onNavigateToPlay = onNavigateToPlay?.let { play ->
+                { id, type, base -> play(id, type, base, !autoplayEnabled) }
+            }
         )
         return
     }

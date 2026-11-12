@@ -121,6 +121,14 @@ internal fun HomeViewModel.observeTmdbSettingsPipeline() {
                 val enrichEnabled = tmdbEnabledForLayout || externalMetaPrefetchEnabled
                 _uiState.update { it.copy(heroEnrichmentEnabled = enrichEnabled) }
                 if (languageChanged) {
+                    if (_uiState.value.notflixPresentationActive) {
+                        tmdbEnrichFocusJob?.cancel()
+                        adjacentItemPrefetchJob?.cancel()
+                        pendingTmdbEnrichItemId = null
+                        pendingAdjacentPrefetchItemId = null
+                        setEnrichingItemId(null)
+                        enrichmentMergedIds.clear()
+                    }
                     // Allow re-enrichment with the updated TMDB metadata selection on next focus.
                     prefetchedTmdbIds.clear()
                     prefetchedExternalMetaIds.clear()

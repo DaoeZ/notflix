@@ -77,7 +77,12 @@ class NotflixHomeMotionIntegrationTest {
         compose.waitUntil(10_000) { vm.state.value.effective == AppAppearance.NOTFLIX }
         compose.onNodeWithTag("home-motion-normal").assertExists()
         key("home-motion-normal")
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("home-motion-option-reduced").fetchSemanticsNodes().isNotEmpty()
+        }
+        key("home-motion-option-reduced")
         compose.waitUntil(10_000) { vm.state.value.reduceHomeMotion }
+        compose.waitForIdle()
         compose.onNodeWithTag("home-motion-reduced").assertIsFocused()
         compose.onNodeWithText("Home motion").assertExists()
         compose.onNodeWithTag("home-motion-reduced").assertTextContains("Reduced ›")
@@ -129,6 +134,9 @@ class NotflixHomeMotionIntegrationTest {
         compose.onNodeWithText("Movimiento de Inicio").assertExists()
         compose.onNodeWithTag("home-motion-reduced").assertTextContains("Reducido ›")
         key("home-motion-reduced")
+        compose.onNodeWithTag("home-motion-option-reduced").assertExists()
+        key("home-motion-option-normal")
+        compose.waitForIdle()
         compose.onNodeWithTag("home-motion-normal").assertIsFocused()
         compose.onNodeWithTag("home-motion-normal").assertTextContains("Normal ›")
         assertFalse(state.value.reduceHomeMotion)

@@ -252,7 +252,7 @@ object NetworkModule {
             val newRequest = request.newBuilder()
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "Nuvio/$version")
-                .header("trakt-api-key", integrationConfig.traktClientId())
+                .header("trakt-api-key", integrationConfig.traktApiClientId())
                 .header("trakt-api-version", "2")
                 .build()
 

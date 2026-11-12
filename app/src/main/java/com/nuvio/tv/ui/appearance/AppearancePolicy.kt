@@ -2,6 +2,8 @@ package com.nuvio.tv.ui.appearance
 
 import com.nuvio.tv.domain.model.AppAppearance
 import com.nuvio.tv.domain.model.AppearanceContext
+import com.nuvio.tv.domain.model.NotflixCardOpening
+import com.nuvio.tv.domain.model.NotflixCardSize
 import com.nuvio.tv.BuildConfig
 
 object AppearancePolicy {
@@ -37,5 +39,7 @@ data class AppearanceState(
     val uiSoundsEnabled: Boolean = true,
     val uiSoundsOptionsValid: Boolean = false,
     val wikipediaEnabled: Boolean = false,
-    val wikipediaOptionsValid: Boolean = false
+    val wikipediaOptionsValid: Boolean = false,
+    val cardOpening: NotflixCardOpening = NotflixCardOpening.DEFAULT,
+    val cardSize: NotflixCardSize = NotflixCardSize.DEFAULT
 )

@@ -41,6 +41,7 @@ import com.nuvio.tv.ui.screens.ambient.LocalAmbientIdleController
 import com.nuvio.tv.core.ui.rememberNotflixConfirmSound
 import com.nuvio.tv.R
 import com.nuvio.tv.domain.model.MetaPreview
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.ui.appearance.NotflixVisualSpec as Spec
 import com.nuvio.tv.ui.appearance.notflixRating
 
@@ -178,9 +179,12 @@ internal fun NotflixBillboard(
     }
 }
 
+/** M57: the banner labels the rating with its real origin; the value keeps its existing format. */
+internal fun notflixBillboardRatingText(source: RatingSource, rating: String): String =
+    "${source.label} $rating"
+
 @Composable
 private fun BillboardCopy(item: MetaPreview) {
-
     var logoFailed by remember(item.logo) { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -196,7 +200,8 @@ private fun BillboardCopy(item: MetaPreview) {
             fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             notflixRating(item.imdbRating)?.let { rating ->
-                Text("IMDb $rating", color = Spec.Text, fontSize = 13.sp, lineHeight = 17.sp, fontFamily = Spec.BodyFont)
+                Text(notflixBillboardRatingText(item.ratingSource, rating), color = Spec.Text,
+                    fontSize = 13.sp, lineHeight = 17.sp, fontFamily = Spec.BodyFont)
             }
             val facts = listOfNotNull(item.releaseInfo, item.runtime?.let { value ->
                 value.toIntOrNull()?.let { stringResource(R.string.notflix_runtime_minutes, it) } ?: value }, item.ageRating)

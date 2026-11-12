@@ -10,6 +10,7 @@ import com.nuvio.tv.core.poster.CustomPosterScreen
 import com.nuvio.tv.core.poster.patternForScreen
 import com.nuvio.tv.core.poster.withCustomPosterUrls
 import com.nuvio.tv.core.tmdb.TmdbEnrichment
+import com.nuvio.tv.core.tmdb.withLocalizedTmdbText
 import com.nuvio.tv.data.mediaserver.ServerItemRef
 import com.nuvio.tv.domain.model.FocusedPosterTrailerPlaybackTarget
 import com.nuvio.tv.domain.model.HomeImdbRatingsVisibility
@@ -17,6 +18,7 @@ import com.nuvio.tv.domain.model.DetailImdbRatingsVisibility
 import com.nuvio.tv.domain.model.HomeLayout
 import com.nuvio.tv.domain.model.Meta
 import com.nuvio.tv.domain.model.MetaPreview
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.domain.model.TmdbSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -557,7 +559,13 @@ internal fun HomeViewModel.onItemFocusPipeline(item: MetaPreview) {
         deferredEnrichItem = item
         return
     }
-    if (item.id in prefetchedTmdbIds || item.id in prefetchedExternalMetaIds) {
+    val requestSettings = currentTmdbSettings
+    val requestNotflix = _uiState.value.notflixPresentationActive
+    // Restore only the discarded presentation from cache. A resolved external meta must not
+    // block this merge, and a missing cache must not trigger another TMDB/add-on request.
+    val restoresTmdb = requestNotflix && requestSettings.enabled &&
+        item.id in prefetchedTmdbIds && item.id !in _enrichedPreviews.value
+    if (!restoresTmdb && (item.id in prefetchedTmdbIds || item.id in prefetchedExternalMetaIds)) {
         // Only external enrichment re-opens this gate, so a cached external result still shuts out
         // an unresolved TMDB fetch. That is unchanged from before and deliberate: TMDB is never
         // marked prefetched when an item has no TMDB match, so gating on it too would re-enter on
@@ -578,7 +586,9 @@ internal fun HomeViewModel.onItemFocusPipeline(item: MetaPreview) {
                         enriched = enriched.copy(
                             mdbListRatings = existing.mdbListRatings,
                             mdbListRatingOrder = existing.mdbListRatingOrder,
-                            imdbRating = existing.mdbListRatings.imdb?.toFloat() ?: enriched.imdbRating
+                            imdbRating = existing.mdbListRatings.imdb?.toFloat() ?: enriched.imdbRating,
+                            ratingSource = if (existing.mdbListRatings.imdb != null) RatingSource.IMDB
+                                else enriched.ratingSource
                         )
                     }
                 }
@@ -605,8 +615,8 @@ internal fun HomeViewModel.onItemFocusPipeline(item: MetaPreview) {
         setEnrichingItemId(null)
     }
 
-    val tmdbEnabledForCurrentLayout = currentTmdbSettings.enabled &&
-        (_uiState.value.notflixPresentationActive || _uiState.value.homeLayout != HomeLayout.MODERN || currentTmdbSettings.modernHomeEnabled)
+    val tmdbEnabledForCurrentLayout = requestSettings.enabled &&
+        (requestNotflix || _uiState.value.homeLayout != HomeLayout.MODERN || requestSettings.modernHomeEnabled)
     val willEnrich = tmdbEnabledForCurrentLayout || externalMetaPrefetchEnabled
 
     pendingTmdbEnrichItemId = item.id
@@ -621,7 +631,7 @@ internal fun HomeViewModel.onItemFocusPipeline(item: MetaPreview) {
         // The enrichment can proceed in the background without visual disruption.
         val alreadyEnriched = item.id in _enrichedPreviews.value
         if (willEnrich && !alreadyEnriched) setEnrichingItemId(item.id)
-        if (item.id in prefetchedTmdbIds || item.id in prefetchedExternalMetaIds) {
+        if (!restoresTmdb && (item.id in prefetchedTmdbIds || item.id in prefetchedExternalMetaIds)) {
             if (!externalEnrichmentOutstanding(item.id)) {
                 if (_enrichingItemId.value == item.id) setEnrichingItemId(null)
                 // Still prefetch full meta in background for instant detail screen.
@@ -643,14 +653,20 @@ internal fun HomeViewModel.onItemFocusPipeline(item: MetaPreview) {
             // Which sources are used depends on settings:
             // - tmdbEnabledForCurrentLayout: controls TMDB enrichment
             // - externalMetaPrefetchEnabled: controls external meta addon fetch
-            val tmdbDeferred = if (tmdbEnabledForCurrentLayout && item.id !in prefetchedTmdbIds) {
+            val tmdbDeferred = if (tmdbEnabledForCurrentLayout && restoresTmdb) {
+                async {
+                    val id = if (item.id.startsWith("tmdb:")) item.id.removePrefix("tmdb:")
+                        else tmdbService.cachedTmdbId(item.id)?.toString()
+                    id?.let { tmdbMetadataService.cachedEnrichment(it, item.type, requestSettings.language) }
+                }
+            } else if (tmdbEnabledForCurrentLayout && item.id !in prefetchedTmdbIds) {
                 val tmdbId = runCatching { tmdbService.ensureTmdbId(item.id, item.apiType) }.getOrNull()
                 if (tmdbId != null) async {
                     runCatching {
                         tmdbMetadataService.fetchEnrichment(
                             tmdbId = tmdbId,
                             contentType = item.type,
-                            language = currentTmdbSettings.language
+                            language = if (requestNotflix) requestSettings.language else currentTmdbSettings.language
                         )
                     }.getOrNull()
                 } else null
@@ -675,6 +691,10 @@ internal fun HomeViewModel.onItemFocusPipeline(item: MetaPreview) {
             val externalOutcome = externalMetaDeferred?.await()
             val externalMeta = (externalOutcome as? ExternalMetaOutcome.Resolved)?.meta
 
+            if (requestNotflix && (currentTmdbSettings.language != requestSettings.language || !currentTmdbSettings.enabled)) {
+                return@launch
+            }
+
             // Mark as prefetched
             if (tmdbEnrichment != null) prefetchedTmdbIds.add(item.id)
             if (externalOutcome != null && externalOutcome != ExternalMetaOutcome.Failed) {
@@ -693,7 +713,7 @@ internal fun HomeViewModel.onItemFocusPipeline(item: MetaPreview) {
             // If neither source produced anything, mark enrichment in previews
             // so UI doesn't keep showing spinner. Skip titles a merge already reached: a row
             // loaded after that merge carries raw data, and publishing it would downgrade them.
-            if (tmdbEnrichment == null && externalMeta == null && item.id !in enrichmentMergedIds) {
+            if (tmdbEnrichment == null && externalMeta == null && (restoresTmdb || item.id !in enrichmentMergedIds)) {
                 var preview = findCatalogItemById(item.id) ?: item
                 // Preserve MDBList ratings from batch prefetch.
                 if (preview.mdbListRatings == null) {
@@ -702,7 +722,9 @@ internal fun HomeViewModel.onItemFocusPipeline(item: MetaPreview) {
                         preview = preview.copy(
                             mdbListRatings = existing.mdbListRatings,
                             mdbListRatingOrder = existing.mdbListRatingOrder,
-                            imdbRating = existing.mdbListRatings.imdb?.toFloat() ?: preview.imdbRating
+                            imdbRating = existing.mdbListRatings.imdb?.toFloat() ?: preview.imdbRating,
+                            ratingSource = if (existing.mdbListRatings.imdb != null) RatingSource.IMDB
+                                else preview.ratingSource
                         )
                     }
                 }
@@ -727,8 +749,9 @@ internal fun HomeViewModel.onItemFocusPipeline(item: MetaPreview) {
 
         } finally {
             // Release the claim only if it is still ours: a later focus may have claimed another item.
-            if (pendingTmdbEnrichItemId == item.id) pendingTmdbEnrichItemId = null
-            if (_enrichingItemId.value == item.id) {
+            val currentLanguage = !requestNotflix || currentTmdbSettings.language == requestSettings.language
+            if (currentLanguage && pendingTmdbEnrichItemId == item.id) pendingTmdbEnrichItemId = null
+            if (currentLanguage && _enrichingItemId.value == item.id) {
                 setEnrichingItemId(null)
                 // If enrichment completed but no enriched data exists for this item,
                 // mark it as failed so the UI can show addon data immediately.
@@ -755,8 +778,10 @@ internal fun HomeViewModel.preloadAdjacentItemPipeline(item: MetaPreview) {
     pendingAdjacentPrefetchItemId = item.id
     adjacentItemPrefetchJob?.cancel()
     adjacentItemPrefetchJob = viewModelScope.launch(Dispatchers.IO) {
-        val tmdbEnabledForCurrentLayout = currentTmdbSettings.enabled &&
-            (_uiState.value.notflixPresentationActive || _uiState.value.homeLayout != HomeLayout.MODERN || currentTmdbSettings.modernHomeEnabled)
+        val requestSettings = currentTmdbSettings
+        val requestNotflix = _uiState.value.notflixPresentationActive
+        val tmdbEnabledForCurrentLayout = requestSettings.enabled &&
+            (requestNotflix || _uiState.value.homeLayout != HomeLayout.MODERN || requestSettings.modernHomeEnabled)
         delay(HomeViewModel.EXTERNAL_META_PREFETCH_ADJACENT_DEBOUNCE_MS)
         if (pendingAdjacentPrefetchItemId != item.id) return@launch
 
@@ -771,7 +796,7 @@ internal fun HomeViewModel.preloadAdjacentItemPipeline(item: MetaPreview) {
                         tmdbMetadataService.fetchEnrichment(
                             tmdbId = tmdbId,
                             contentType = item.type,
-                            language = currentTmdbSettings.language
+                            language = if (requestNotflix) requestSettings.language else currentTmdbSettings.language
                         )
                     }.getOrNull()
                 } else null
@@ -793,6 +818,10 @@ internal fun HomeViewModel.preloadAdjacentItemPipeline(item: MetaPreview) {
             val tmdbEnrichment = tmdbDeferred?.await()
             val externalOutcome = externalMetaDeferred?.await()
             val externalMeta = (externalOutcome as? ExternalMetaOutcome.Resolved)?.meta
+
+            if (requestNotflix && (currentTmdbSettings.language != requestSettings.language || !currentTmdbSettings.enabled)) {
+                return@launch
+            }
 
             if (tmdbEnrichment != null) prefetchedTmdbIds.add(item.id)
             if (externalOutcome != null && externalOutcome != ExternalMetaOutcome.Failed) {
@@ -825,7 +854,7 @@ internal fun HomeViewModel.preloadAdjacentItemPipeline(item: MetaPreview) {
             }
 
         } finally {
-            if (pendingAdjacentPrefetchItemId == item.id) {
+            if ((!requestNotflix || currentTmdbSettings.language == requestSettings.language) && pendingAdjacentPrefetchItemId == item.id) {
                 pendingAdjacentPrefetchItemId = null
             }
         }
@@ -892,13 +921,17 @@ private fun HomeViewModel.applyEnrichmentToDisplayedRows(
 
 private fun HomeViewModel.updateCatalogItemWithTmdb(itemId: String, enrichment: TmdbEnrichment, fallback: MetaPreview? = null) {
     enrichmentMergedIds.add(itemId)
-    val isModernLayout = _uiState.value.homeLayout == HomeLayout.MODERN
+    // M61: Notflix draws its own cards, so it localizes like the Modern layout whatever official
+    // preset is still stored (M60 hides that preset from Settings).
+    val localizesTitle = _uiState.value.notflixPresentationActive ||
+        _uiState.value.homeLayout == HomeLayout.MODERN
     fun mergeItem(currentItem: MetaPreview): MetaPreview {
         var merged = currentItem
         if (currentTmdbSettings.useBasicInfo) {
+            val localized = merged.withLocalizedTmdbText(enrichment)
             merged = merged.copy(
-                name = if (isModernLayout) enrichment.localizedTitle ?: merged.name else merged.name,
-                description = enrichment.description ?: merged.description,
+                name = if (localizesTitle) localized.name else merged.name,
+                description = localized.description,
                 genres = if (enrichment.genres.isNotEmpty()) enrichment.genres else merged.genres
             )
         }
@@ -918,13 +951,18 @@ private fun HomeViewModel.updateCatalogItemWithTmdb(itemId: String, enrichment: 
         return merged
     }
 
-    updateIndexedCatalogItem(itemId, ::mergeItem)
+    // Notflix already reads the presentation overlay. Keep the catalog's original text intact
+    // so clearing that overlay on a language change cannot reveal the previous translation.
+    val notflix = _uiState.value.notflixPresentationActive
+    if (!notflix) updateIndexedCatalogItem(itemId, ::mergeItem)
     clearEnrichmentFailure(itemId)
 
-    applyEnrichmentToDisplayedRows(itemId, ::mergeItem)
+    if (!notflix) applyEnrichmentToDisplayedRows(itemId, ::mergeItem)
 
     // Notflix collection rows are loaded outside the catalog index; enrich the focused item itself so cards get it too.
-    (findCatalogItemById(itemId) ?: fallback?.let(::mergeItem))?.let { enriched ->
+    val catalogItem = findCatalogItemById(itemId)
+    (if (notflix) (catalogItem ?: fallback)?.let(::mergeItem)
+        else catalogItem ?: fallback?.let(::mergeItem))?.let { enriched ->
         _lastEnrichedPreview.value = enriched
         addEnrichedPreview(itemId, enriched)
     }
@@ -939,7 +977,8 @@ internal fun HomeViewModel.updateCatalogItemMdbListRatings(
         currentItem.copy(
             mdbListRatings = ratings,
             mdbListRatingOrder = order,
-            imdbRating = ratings.imdb?.toFloat() ?: currentItem.imdbRating
+            imdbRating = ratings.imdb?.toFloat() ?: currentItem.imdbRating,
+            ratingSource = if (ratings.imdb != null) RatingSource.IMDB else currentItem.ratingSource
         )
 
     updateIndexedCatalogItem(itemId, ::mergeItem)
@@ -975,7 +1014,8 @@ internal fun HomeViewModel.updateCatalogItemMdbListRatings(
 
 internal fun HomeViewModel.updateCatalogItemImdbRating(itemId: String, rating: Float) {
     updateIndexedCatalogItem(itemId) { currentItem ->
-        currentItem.copy(imdbRating = rating)
+        // M57: this entry point only ever receives IMDb values.
+        currentItem.copy(imdbRating = rating, ratingSource = RatingSource.IMDB)
     }
     _uiState.update { state ->
         var changed = false
@@ -983,7 +1023,7 @@ internal fun HomeViewModel.updateCatalogItemImdbRating(itemId: String, rating: F
             val idx = row.items.indexOfFirst { it.id == itemId }
             if (idx < 0) row
             else {
-                val updated = row.items[idx].copy(imdbRating = rating)
+                val updated = row.items[idx].copy(imdbRating = rating, ratingSource = RatingSource.IMDB)
                 if (updated == row.items[idx]) row
                 else {
                     changed = true
@@ -1013,6 +1053,7 @@ private fun HomeViewModel.updateCatalogItemWithMeta(itemId: String, meta: Meta) 
         logo = meta.logo ?: currentItem.logo,
         description = meta.description ?: currentItem.description,
         imdbRating = meta.imdbRating ?: currentItem.imdbRating,
+        ratingSource = if (meta.imdbRating != null) meta.ratingSource else currentItem.ratingSource,
         genres = if (meta.genres.isNotEmpty()) meta.genres else currentItem.genres,
         runtime = meta.runtime ?: currentItem.runtime,
         status = meta.status ?: currentItem.status,

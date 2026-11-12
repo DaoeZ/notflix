@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -75,8 +76,17 @@ class ActiveProfileAgeGate @Inject constructor(
     suspend fun ratingFor(apiType: String, id: String, ownRating: String?): AgeLevel? =
         ageLevelOf(ownRating) ?: resolver.resolve(apiType, id)
 
-    suspend fun filter(items: List<MetaPreview>): List<MetaPreview> {
-        val limit = _limit.value ?: return items
+    suspend fun currentLimitFromStore(): AgeLevel? {
+        val profile = profileManager.activeProfileId.value
+        val limit = limitStore.observe(profile).first()
+        return limit.takeIf { profileManager.activeProfileId.value == profile }
+    }
+
+    suspend fun filter(items: List<MetaPreview>): List<MetaPreview> = filterForLimit(items, _limit.value)
+
+    /** Built-in KIDS folders retain the strict TP ceiling during initial profile-state loading. */
+    suspend fun filterForLimit(items: List<MetaPreview>, limit: AgeLevel?): List<MetaPreview> {
+        if (limit == null) return items
         return coroutineScope {
             items.map { item ->
                 async(Dispatchers.IO) {

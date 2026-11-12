@@ -1,6 +1,8 @@
 package com.nuvio.tv.core.player
 
+import com.nuvio.tv.data.local.AUDIO_LANGUAGES
 import com.nuvio.tv.data.local.StreamAutoPlayMode
+import com.nuvio.tv.data.local.StreamAutoPlayPriority
 import com.nuvio.tv.data.local.StreamAutoPlayPriorityRule
 import com.nuvio.tv.data.local.StreamAutoPlayPriorityConfig
 import com.nuvio.tv.data.local.StreamAutoPlayQuality
@@ -8,8 +10,13 @@ import com.nuvio.tv.data.local.StreamAutoPlaySource
 import com.nuvio.tv.domain.model.Stream
 import com.nuvio.tv.domain.model.StreamDebridCacheState
 import com.nuvio.tv.domain.model.StreamDebridCacheStatus
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.verify
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StreamAutoPlayPriorityTest {
@@ -185,7 +192,7 @@ class StreamAutoPlayPriorityTest {
 
         val selected = select(
             streams = listOf(english4k, spanish4k),
-            rules = listOf(StreamAutoPlayPriorityRule(null, StreamAutoPlayQuality.UHD_2160, spanishOnly = true))
+            rules = listOf(StreamAutoPlayPriorityRule(null, StreamAutoPlayQuality.UHD_2160, audioLanguage = "es"))
         )
 
         assertEquals(spanish4k, selected)
@@ -199,6 +206,250 @@ class StreamAutoPlayPriorityTest {
         assertEquals(true, StreamAutoPlaySelector.isSpanishForPriority(stream("A", "2160p", "Movie 2160p Dual Castellano + VOSE")))
         assertEquals(false, StreamAutoPlaySelector.isSpanishForPriority(stream("A", "2160p", "Movie\n💬 🇪🇸 🇬🇧")))
         assertEquals(true, StreamAutoPlaySelector.isSpanishForPriority(stream("A", "2160p", "Movie\n🇪🇸 Castellano | Subs: EN")))
+    }
+
+    @Test
+    fun `every offered language matches its own native label`() {
+        AUDIO_LANGUAGES.forEach { language ->
+            assertTrue(
+                "${language.code} no coincide con ${language.nativeName}",
+                matches(stream("A", "1080p", "Movie ${language.nativeName} 1080p"), setOf(language.code))
+            )
+        }
+    }
+
+    @Test
+    fun `the table covers every app language without ambiguous two-letter codes`() {
+        val expected = setOf(
+            "ar", "bn", "bs", "bg", "zh", "hr", "cs", "da", "nl", "en", "fr", "de", "el", "he",
+            "hi", "hu", "id", "it", "ja", "lt", "no", "pl", "pt", "ro", "ru", "sr", "sk", "sl",
+            "es", "sq", "sv", "ta", "tr", "uk", "vi"
+        )
+        assertEquals(expected, AUDIO_LANGUAGES.map { it.code }.toSet())
+        assertEquals(AUDIO_LANGUAGES.size, AUDIO_LANGUAGES.map { it.nativeName }.toSet().size)
+        val ambiguous = setOf("it", "de", "en", "no", "in", "da", "es")
+        AUDIO_LANGUAGES.forEach { language ->
+            val tokens = language.codes + language.names
+            assertTrue(
+                "${language.code} usa un código ambiguo: $tokens",
+                tokens.none { it.lowercase() in ambiguous }
+            )
+        }
+    }
+
+    @Test
+    fun `common words and subtitle-only marks never count as audio`() {
+        assertFalse(matches(stream("A", "1080p", "It (2017) 1080p"), setOf("it")))
+        assertFalse(matches(stream("A", "1080p", "Dual 1080p"), setOf("en")))
+        assertFalse(matches(stream("A", "1080p", "Dual 1080p"), setOf("es")))
+        assertFalse(matches(stream("A", "1080p", "Movie VOSTFR"), setOf("fr")))
+        assertFalse(matches(stream("A", "1080p", "Movie SUB ITA"), setOf("it")))
+        assertFalse(matches(stream("A", "1080p", "Movie Legendado"), setOf("pt")))
+        assertTrue(matches(stream("A", "1080p", "MULTI VFF"), setOf("fr")))
+        assertFalse(matches(stream("A", "1080p", "MULTI VFF"), setOf("it")))
+    }
+
+    @Test
+    fun `english and spanish selection accepts castilian and unmarked but not french`() {
+        val codes = setOf("en", "es")
+        assertTrue(matches(stream("A", "1080p", "Movie Castellano"), codes))
+        assertTrue(matches(stream("A", "1080p", "Movie 1080p"), codes))
+        assertFalse(matches(stream("A", "1080p", "Movie Français"), codes))
+    }
+
+    @Test
+    fun `an empty selection accepts any language`() {
+        assertTrue(matches(stream("A", "1080p", "Movie Français"), emptySet()))
+    }
+
+    @Test
+    fun `quality first expands quality language and addon in that order`() {
+        val rules = StreamAutoPlayPriorityConfig(
+            addons = listOf("AddonA", "AddonB"),
+            qualities = listOf(
+                StreamAutoPlayQuality.UHD_2160,
+                StreamAutoPlayQuality.FHD_1080,
+                StreamAutoPlayQuality.OTHER
+            ),
+            audioLanguages = listOf("it", "es", "en"),
+            priority = StreamAutoPlayPriority.CALIDAD
+        ).toRules()
+
+        assertRuleOrder("""
+            UHD_2160/it/AddonA
+            UHD_2160/it/AddonB
+            UHD_2160/es/AddonA
+            UHD_2160/es/AddonB
+            UHD_2160/en/AddonA
+            UHD_2160/en/AddonB
+            FHD_1080/it/AddonA
+            FHD_1080/it/AddonB
+            FHD_1080/es/AddonA
+            FHD_1080/es/AddonB
+            FHD_1080/en/AddonA
+            FHD_1080/en/AddonB
+            OTHER/it/AddonA
+            OTHER/it/AddonB
+            OTHER/es/AddonA
+            OTHER/es/AddonB
+            OTHER/en/AddonA
+            OTHER/en/AddonB
+        """, rules)
+    }
+
+    @Test
+    fun `language first expands language quality and addon in that order`() {
+        val rules = StreamAutoPlayPriorityConfig(
+            addons = listOf("AddonA", "AddonB"),
+            qualities = listOf(
+                StreamAutoPlayQuality.UHD_2160,
+                StreamAutoPlayQuality.FHD_1080,
+                StreamAutoPlayQuality.OTHER
+            ),
+            audioLanguages = listOf("it", "es", "en"),
+            priority = StreamAutoPlayPriority.IDIOMA
+        ).toRules()
+
+        assertRuleOrder("""
+            UHD_2160/it/AddonA
+            UHD_2160/it/AddonB
+            FHD_1080/it/AddonA
+            FHD_1080/it/AddonB
+            OTHER/it/AddonA
+            OTHER/it/AddonB
+            UHD_2160/es/AddonA
+            UHD_2160/es/AddonB
+            FHD_1080/es/AddonA
+            FHD_1080/es/AddonB
+            OTHER/es/AddonA
+            OTHER/es/AddonB
+            UHD_2160/en/AddonA
+            UHD_2160/en/AddonB
+            FHD_1080/en/AddonA
+            FHD_1080/en/AddonB
+            OTHER/en/AddonA
+            OTHER/en/AddonB
+        """, rules)
+    }
+
+    @Test
+    fun `quality first lets a 4k English stream beat a 1080 Italian one`() {
+        val english4k = stream("AddonA", "2160p", "English")
+        val italian1080 = stream("AddonA", "1080p", "Italiano")
+        val rules = StreamAutoPlayPriorityConfig(
+            qualities = listOf(StreamAutoPlayQuality.UHD_2160, StreamAutoPlayQuality.FHD_1080),
+            audioLanguages = listOf("it", "en"),
+            priority = StreamAutoPlayPriority.CALIDAD
+        ).toRules()
+
+        assertEquals(english4k, select(listOf(english4k, italian1080), rules))
+    }
+
+    @Test
+    fun `language first lets a 1080 Italian stream beat a 4k English one`() {
+        val english4k = stream("AddonA", "2160p", "English")
+        val italian1080 = stream("AddonA", "1080p", "Italiano")
+        val rules = StreamAutoPlayPriorityConfig(
+            qualities = listOf(StreamAutoPlayQuality.UHD_2160, StreamAutoPlayQuality.FHD_1080),
+            audioLanguages = listOf("it", "en"),
+            priority = StreamAutoPlayPriority.IDIOMA
+        ).toRules()
+
+        assertEquals(italian1080, select(listOf(english4k, italian1080), rules))
+    }
+
+    @Test
+    fun `without languages quality order is unchanged`() {
+        val english4k = stream("AddonA", "2160p", "English")
+        val italian1080 = stream("AddonA", "1080p", "Italiano")
+        val rules = StreamAutoPlayPriorityConfig(
+            qualities = listOf(StreamAutoPlayQuality.UHD_2160, StreamAutoPlayQuality.FHD_1080)
+        ).toRules()
+
+        assertTrue(rules.all { it.audioLanguage == null })
+        assertEquals(english4k, select(listOf(english4k, italian1080), rules))
+        val config = StreamAutoPlayPriorityConfig(
+            addons = listOf("AddonA", "AddonB"),
+            qualities = StreamAutoPlayPriorityConfig.DEFAULT_QUALITIES
+        )
+        val qualityRules = config.toRules()
+        assertRuleOrder("""
+            UHD_2160/null/AddonA
+            UHD_2160/null/AddonB
+            FHD_1080/null/AddonA
+            FHD_1080/null/AddonB
+            OTHER/null/AddonA
+            OTHER/null/AddonB
+        """, qualityRules)
+        assertEquals(qualityRules, config.copy(priority = StreamAutoPlayPriority.IDIOMA).toRules())
+    }
+
+    @Test
+    fun `language aliases do not expand into duplicate rules`() {
+        val config = StreamAutoPlayPriorityConfig(
+            qualities = listOf(StreamAutoPlayQuality.OTHER),
+            audioLanguages = listOf("iw", "he", "en", "he", " ", " en ")
+        )
+        assertEquals(listOf("he", "en"), config.toRules().map { it.audioLanguage })
+    }
+
+    @Test
+    fun `many rules classify each source only once`() {
+        val streams = listOf(stream("AddonA", "2160p", "English"), stream("AddonB", "1080p", "Italiano"))
+        val rules = StreamAutoPlayPriorityConfig(
+            addons = listOf("AddonA", "AddonB"),
+            qualities = StreamAutoPlayPriorityConfig.DEFAULT_QUALITIES,
+            audioLanguages = listOf("fr", "de", "ru"),
+            cachedOnly = true
+        ).toRules()
+        mockkObject(StreamAutoPlaySelector)
+        try {
+            assertNull(select(streams, rules)) // Exhaust all 18 rules.
+            streams.forEach { stream ->
+                verify(exactly = 1) { StreamAutoPlaySelector.streamPriorityQuality(stream) }
+                verify(exactly = 1) { StreamAutoPlaySelector.classifyPriorityAudio(stream) }
+                verify(exactly = 1) { StreamAutoPlaySelector.isCachedForPriority(stream) }
+            }
+        } finally {
+            unmockkObject(StreamAutoPlaySelector)
+        }
+    }
+
+    @Test
+    fun `Portuguese subtitle labels do not become audio`() {
+        assertFalse(matches(stream("A", "1080p", "Movie Legendado Português"), setOf("pt")))
+        assertFalse(matches(stream("A", "1080p", "Movie Legendado ITA"), setOf("it")))
+        assertFalse(matches(stream("A", "1080p", "Movie VOST ITA"), setOf("it")))
+    }
+
+    @Test
+    fun `explicit dub after subtitles still counts as audio`() {
+        assertTrue(matches(stream("A", "1080p", "Movie SUB ITA + DUB ITA"), setOf("it")))
+        assertTrue(matches(stream("A", "1080p", "Movie VOSTFR + French Dub"), setOf("fr")))
+        assertFalse(matches(stream("A", "1080p", "Movie VOSTFR French"), setOf("fr")))
+    }
+
+    @Test
+    fun `ISO Hebrew selection recognizes Hebrew audio`() {
+        assertTrue(matches(stream("A", "1080p", "Movie HEB"), setOf("he")))
+        assertTrue(matches(stream("A", "1080p", "Movie עברית"), setOf("he")))
+    }
+
+    @Test
+    fun `every offered language rejects its own subtitle-only label`() {
+        AUDIO_LANGUAGES.forEach { language ->
+            val otherAudio = if (language.code == "fr") "German" else "French"
+            assertFalse("${language.code} was accepted from subtitles",
+                matches(stream("A", "1080p", "Movie $otherAudio | Subs: ${language.nativeName}"), setOf(language.code)))
+        }
+    }
+
+    @Test
+    fun `non Spanish native names match Unicode uppercase labels`() {
+        AUDIO_LANGUAGES.filter { it.code != "es" }.forEach { language ->
+            assertTrue("${language.code} uppercase native label did not match",
+                matches(stream("A", "1080p", "Movie ${language.nativeName.uppercase(java.util.Locale.ROOT)}"), setOf(language.code)))
+        }
     }
 
     @Test
@@ -220,6 +471,13 @@ class StreamAutoPlayPriorityTest {
         assertEquals(listOf("AddonA", "AddonB"), config.addons)
         assertEquals(listOf(StreamAutoPlayQuality.UHD_2160, StreamAutoPlayQuality.FHD_1080), config.qualities)
     }
+
+    private fun assertRuleOrder(expected: String, rules: List<StreamAutoPlayPriorityRule>) {
+        assertEquals(expected.trimIndent().lines(), rules.map { "${it.quality}/${it.audioLanguage}/${it.addonName}" })
+    }
+
+    private fun matches(stream: Stream, codes: Set<String>): Boolean =
+        StreamAutoPlaySelector.matchesAudioLanguages(stream, codes)
 
     private fun select(
         streams: List<Stream>,

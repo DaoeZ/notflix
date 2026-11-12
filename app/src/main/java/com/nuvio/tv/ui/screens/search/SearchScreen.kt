@@ -149,6 +149,7 @@ fun SearchScreen(
     }
     val watchedMovieIds by viewModel.watchedMovieIds.collectAsState()
     val watchedSeriesIds by viewModel.watchedSeriesIds.collectAsState()
+    val localizedTitles by viewModel.localizedTitles.collectAsState()
     val context = LocalContext.current
     val view = LocalView.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -338,7 +339,9 @@ fun SearchScreen(
             onItemSelected = { item ->
                 HeroBackdropState.update(viewModel.getCachedBackdrop(item.id, item.apiType) ?: item.backdropUrl)
             },
-            onNavigateToDetail = onNavigateToDetail
+            onNavigateToDetail = onNavigateToDetail,
+            localizedTitles = localizedTitles,
+            onRequestTitles = viewModel::requestLocalizedTitles
         )
         return
     }

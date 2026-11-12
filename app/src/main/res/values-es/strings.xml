@@ -1009,6 +1009,14 @@
     <string name="autoplay_priority_cached_only_desc">Usa solo fuentes listas en tu servicio, como Real-Debrid. Salta los torrents que habría que descargar.</string>
     <string name="autoplay_priority_spanish_only_title">Solo en español</string>
     <string name="autoplay_priority_spanish_only_desc">Usa solo fuentes cuyo nombre o título indique español (ES, Castellano, Latino, bandera). Las que no lo indican se saltan.</string>
+    <string name="autoplay_priority_audio_languages_title">Idiomas del audio</string>
+    <string name="autoplay_priority_audio_languages_desc">Elige uno o varios idiomas. Si no marcas ninguno, vale cualquiera.</string>
+    <string name="autoplay_priority_audio_languages_any">Cualquiera</string>
+    <string name="autoplay_priority_priority_title">Priorizar</string>
+    <string name="autoplay_priority_priority_desc">La calidad mantiene el orden actual. El idioma prueba todas las calidades del primer idioma antes de pasar al siguiente.</string>
+    <string name="autoplay_priority_priority_quality">Calidad</string>
+    <string name="autoplay_priority_priority_language">Idioma</string>
+    <string name="autoplay_priority_audio_order_title">Idiomas elegidos, en orden</string>
     <string name="autoplay_scope_all_desc">La reproducción automática puede usar tanto complementos instalados como complementos habilitados.</string>
     <string name="autoplay_scope_addons_desc">La reproducción automática solo considera transmisiones de tus complementos instalados.</string>
     <string name="autoplay_scope_plugins_desc">La reproducción automática solo considera transmisiones de complementos habilitados.</string>
@@ -1107,6 +1115,7 @@
     <string name="layout_cw_card_style_card">Tarjeta</string>
     <string name="layout_cw_card_style_wide">Ancha</string>
     <string name="layout_cw_card_style_poster">Póster</string>
+    <string name="layout_cw_card_style_title">Estilo de Continuar viendo</string>
     <string name="layout_cw_sort_mode">Orden de clasificación</string>
     <string name="layout_cw_sort_mode_sub">Cómo se organizan los elementos de Continuar viendo</string>
     <string name="layout_cw_sort_default">Predeterminado</string>
@@ -3502,6 +3511,9 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="notflix_home_folder_sci_fi">Ciencia ficción</string>
     <string name="notflix_home_folder_drama_series">Series de drama</string>
     <string name="notflix_home_folder_featured_movies">Películas destacadas</string>
+    <string name="notflix_kids_folder_animated_series">Series de animación</string>
+    <string name="notflix_kids_folder_family_series">Series para ver en familia</string>
+    <string name="notflix_kids_tmdb_required">Los perfiles KIDS necesitan una clave de TMDB para conocer la edad de cada título.</string>
     <string name="notflix_collection_help">Crea la colección oficial %1$s con once carpetas. Se conservan las colecciones existentes y sus cambios.</string>
     <string name="notflix_collection_create">Crear %1$s</string>
     <string name="notflix_collection_creating">Creando %1$s…</string>

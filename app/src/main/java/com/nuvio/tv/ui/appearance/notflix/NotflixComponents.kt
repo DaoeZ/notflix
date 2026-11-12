@@ -50,6 +50,8 @@ import coil3.compose.AsyncImage
 import com.nuvio.tv.core.ui.rememberNotflixConfirmSound
 import com.nuvio.tv.domain.model.LibraryEntry
 import com.nuvio.tv.domain.model.MetaPreview
+import com.nuvio.tv.domain.model.NotflixCardSize
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.ui.appearance.LocalNotflixPresentation
 import com.nuvio.tv.ui.screens.home.RatingBadge
 import com.nuvio.tv.ui.util.rememberLongPressKeyTracker
@@ -62,6 +64,12 @@ object NotflixPosterMetrics {
     val Spacing = 11.dp
     val Corner = 4.dp
     const val COLUMNS = 6
+
+    /** M64: category pages follow the card size; 136x202 stays the Large measurement. */
+    fun width(size: NotflixCardSize) = Math.round(Width.value * size.scale).dp
+    fun height(size: NotflixCardSize) = Math.round(Height.value * size.scale).dp
+    /** 7 columns fit at Small with the current gutters (34 dp) and spacing (11 dp); Medium/Large keep 6. */
+    fun columns(size: NotflixCardSize) = if (size == NotflixCardSize.SMALL) 7 else COLUMNS
 }
 
 /**
@@ -74,6 +82,8 @@ data class NotflixPosterSpec(
     val title: String,
     val poster: String? = null,
     val rating: Float? = null,
+    /** M57: kept with the value so the badge never labels a TMDB rating as IMDb. */
+    val ratingSource: RatingSource = RatingSource.IMDB,
     /** M39 rule: watched titles are dimmed while they are not focused. */
     val watched: Boolean = false,
     /** M40 rule: optional «New» style label; the caller decides when it applies. */
@@ -89,6 +99,7 @@ internal fun MetaPreview.toNotflixPosterSpec(watched: Boolean = false): NotflixP
         title = name,
         poster = poster,
         rating = imdbRating,
+        ratingSource = ratingSource,
         watched = watched
     )
 
@@ -199,7 +210,7 @@ fun NotflixPosterCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 badge?.takeIf { it.isNotBlank() }?.let { NotflixBadge(it) }
-                RatingBadge(item.rating)
+                RatingBadge(item.rating, source = item.ratingSource)
             }
         }
         item.progress?.let { progress ->

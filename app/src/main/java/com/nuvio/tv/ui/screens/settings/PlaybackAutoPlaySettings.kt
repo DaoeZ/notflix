@@ -31,7 +31,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -41,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -60,10 +65,15 @@ import androidx.tv.material3.Text
 import com.nuvio.tv.core.build.AppFeaturePolicy
 import com.nuvio.tv.data.local.PlayerSettings
 import com.nuvio.tv.data.local.NextEpisodeThresholdMode
+import com.nuvio.tv.data.local.AUDIO_LANGUAGES
 import com.nuvio.tv.data.local.StreamAutoPlayMode
+import com.nuvio.tv.data.local.StreamAutoPlayPriority
 import com.nuvio.tv.data.local.StreamAutoPlayPriorityConfig
 import com.nuvio.tv.data.local.StreamAutoPlayQuality
 import com.nuvio.tv.data.local.StreamAutoPlaySource
+import com.nuvio.tv.data.local.decodeStreamAutoPlayPriorityConfig
+import com.nuvio.tv.data.local.encodeStreamAutoPlayPriorityConfig
+import com.nuvio.tv.ui.appearance.LocalNotflixPresentation
 import com.nuvio.tv.ui.components.NuvioDialog
 import kotlin.math.roundToInt
 import java.util.Locale
@@ -550,23 +560,33 @@ private fun StreamAutoPlaySourceDialog(
 }
 
 @Composable
-private fun StreamAutoPlayProviderSelectionDialog(
+internal fun StreamAutoPlayProviderSelectionDialog(
     title: String,
     allLabel: String,
     items: List<String>,
     selectedItems: Set<String>,
     onSelectionSaved: (Set<String>) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    saveSelection: Boolean = false
 ) {
-    var selected by remember(selectedItems, items) {
-        mutableStateOf(selectedItems.intersect(items.toSet()))
+    val selection = if (saveSelection) {
+        rememberSaveable(selectedItems, items, stateSaver = PrioritySelectedNamesSaver) {
+            mutableStateOf(selectedItems.intersect(items.toSet()))
+        }
+    } else {
+        remember(selectedItems, items) { mutableStateOf(selectedItems.intersect(items.toSet())) }
     }
+    var selected by selection
     val focusRequester = remember { FocusRequester() }
     val focusedItem = remember(selectedItems, items) {
         items.firstOrNull { it in selectedItems }
     }
+    val itemListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = if (saveSelection) items.indexOf(focusedItem).coerceAtLeast(0) else 0
+    )
 
     LaunchedEffect(Unit) {
+        if (saveSelection) repeat(2) { withFrameNanos { } }
         focusRequester.requestFocus()
     }
 
@@ -628,6 +648,7 @@ private fun StreamAutoPlayProviderSelectionDialog(
                 )
             } else {
                 LazyColumn(
+                    state = itemListState,
                     modifier = Modifier.heightIn(max = 300.dp),
                     verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.sm),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = NuvioTheme.spacing.xs)
@@ -685,19 +706,247 @@ private fun StreamAutoPlayProviderSelectionDialog(
 }
 
 @Composable
-private fun StreamAutoPlayPriorityDialog(
+internal fun AudioLanguagesSelectionDialog(
+    selected: List<String>,
+    onSave: (List<String>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val initial = remember(selected) {
+        selected
+            .map { if (it == "iw") "he" else it }
+            .filter { code -> AUDIO_LANGUAGES.any { it.code == code } }
+            .distinct()
+    }
+    var ordered by rememberSaveable(initial, stateSaver = AudioLanguageOrderSaver) { mutableStateOf(initial) }
+    val firstSelected = initial.firstOrNull()
+    val focusRequester = remember { FocusRequester() }
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = if (firstSelected != null) {
+            (AUDIO_LANGUAGES.indexOfFirst { it.code == firstSelected } + 1).coerceAtLeast(0)
+        } else 0
+    )
+    var pendingOrderFocus by remember { mutableStateOf<String?>(null) }
+    val orderFocus = remember { FocusRequester() }
+    LaunchedEffect(pendingOrderFocus) {
+        val code = pendingOrderFocus ?: return@LaunchedEffect
+        val index = ordered.indexOf(code)
+        listState.scrollToItem(if (index < 0) 0 else AUDIO_LANGUAGES.size + 2 + index)
+        repeat(2) { withFrameNanos { } }
+        runCatching { orderFocus.requestFocus() }
+        pendingOrderFocus = null
+    }
+    LaunchedEffect(Unit) {
+        listState.scrollToItem(if (firstSelected != null) AUDIO_LANGUAGES.indexOfFirst { it.code == firstSelected } + 1 else 0)
+        repeat(2) { withFrameNanos { } }
+        runCatching { focusRequester.requestFocus() }
+    }
+    NuvioDialog(
+        onDismiss = {
+            onSave(ordered)
+            onDismiss()
+        },
+        title = stringResource(R.string.autoplay_priority_audio_languages_title),
+        width = 560.dp,
+        suppressFirstKeyUp = false
+    ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxWidth().heightIn(max = 460.dp).testTag("autoplay-audio-language-entries"),
+            verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.sm),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = NuvioTheme.spacing.xs)
+        ) {
+            item(key = "any") {
+                Card(
+                    onClick = { ordered = emptyList() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(if (firstSelected == null) Modifier.focusRequester(focusRequester) else Modifier)
+                        .testTag("autoplay-audio-language-any")
+                        .then(if (pendingOrderFocus == "") Modifier.focusRequester(orderFocus) else Modifier),
+                    colors = CardDefaults.colors(
+                        containerColor = if (ordered.isEmpty()) NuvioTheme.colors.FocusBackground else NuvioTheme.colors.BackgroundCard,
+                        focusedContainerColor = NuvioTheme.colors.FocusBackground
+                    ),
+                    shape = CardDefaults.shape(shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)),
+                    scale = CardDefaults.scale(focusedScale = 1f)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.autoplay_priority_audio_languages_any),
+                            color = if (ordered.isEmpty()) NuvioTheme.colors.Primary else NuvioTheme.colors.TextPrimary,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (ordered.isEmpty()) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = stringResource(R.string.cd_selected),
+                                tint = NuvioTheme.colors.Primary,
+                                modifier = Modifier.height(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            items(AUDIO_LANGUAGES, key = { it.code }) { entry ->
+                val isSelected = entry.code in ordered
+                Card(
+                    onClick = {
+                        ordered = if (isSelected) ordered - entry.code else ordered + entry.code
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("autoplay-audio-language-${entry.code}")
+                        .then(if (entry.code == firstSelected) Modifier.focusRequester(focusRequester) else Modifier),
+                    colors = CardDefaults.colors(
+                        containerColor = if (isSelected) NuvioTheme.colors.FocusBackground else NuvioTheme.colors.BackgroundCard,
+                        focusedContainerColor = NuvioTheme.colors.FocusBackground
+                    ),
+                    shape = CardDefaults.shape(shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)),
+                    scale = CardDefaults.scale(focusedScale = 1f)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = entry.nativeName,
+                            color = if (isSelected) NuvioTheme.colors.Primary else NuvioTheme.colors.TextPrimary,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = stringResource(R.string.cd_selected),
+                                tint = NuvioTheme.colors.Primary,
+                                modifier = Modifier.height(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            if (ordered.isNotEmpty()) {
+                item(key = "order_header") {
+                    Text(
+                        text = stringResource(R.string.autoplay_priority_audio_order_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = NuvioTheme.colors.TextSecondary,
+                        modifier = Modifier.padding(top = NuvioTheme.spacing.sm)
+                    )
+                }
+                itemsIndexed(ordered, key = { _, code -> "order_$code" }) { index, code ->
+                    val entry = AUDIO_LANGUAGES.firstOrNull { it.code == code } ?: return@itemsIndexed
+                    PriorityEntryRow(
+                        label = entry.nativeName,
+                        canMoveUp = index > 0,
+                        canMoveDown = index < ordered.lastIndex,
+                        onUp = {
+                            ordered = ordered.swapped(index, index - 1)
+                            pendingOrderFocus = code
+                        },
+                        onDown = {
+                            ordered = ordered.swapped(index, index + 1)
+                            pendingOrderFocus = code
+                        },
+                        onRemove = {
+                            pendingOrderFocus = ordered.getOrNull(index + 1) ?: ordered.getOrNull(index - 1) ?: ""
+                            ordered = ordered.filterIndexed { i, _ -> i != index }
+                        },
+                        modifier = Modifier.testTag("autoplay-audio-order-$code"),
+                        removeFocusRequester = if (pendingOrderFocus == code) orderFocus else null
+                    )
+                }
+            }
+        }
+    }
+}
+
+private val AudioLanguageOrderSaver = listSaver<List<String>, String>(
+    save = { it },
+    restore = { it }
+)
+
+@Composable
+internal fun StreamAutoPlayPriorityDialog(
     config: StreamAutoPlayPriorityConfig,
     installedAddonNames: List<String>,
     onSave: (StreamAutoPlayPriorityConfig) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var working by remember { mutableStateOf(config) }
+    val notflix = LocalNotflixPresentation.current.active
+    var working by rememberSaveable(stateSaver = StreamAutoPlayPriorityConfigSaver) { mutableStateOf(config) }
     var addonPickerOpen by remember { mutableStateOf(false) }
     var qualityPickerOpen by remember { mutableStateOf(false) }
+    var priorityPickerOpen by rememberSaveable { mutableStateOf(false) }
+    var audioLanguagesOpen by rememberSaveable { mutableStateOf(false) }
+    var restoreAudioFocus by remember { mutableStateOf(false) }
+    var restorePriorityFocus by remember { mutableStateOf(false) }
+    val audioFocus = remember { FocusRequester() }
+    val priorityFocus = remember { FocusRequester() }
     val listState = rememberLazyListState()
+    LaunchedEffect(restoreAudioFocus) {
+        if (restoreAudioFocus) {
+            repeat(2) { withFrameNanos { } }
+            runCatching { audioFocus.requestFocus() }
+            restoreAudioFocus = false
+        }
+    }
+    LaunchedEffect(restorePriorityFocus) {
+        if (restorePriorityFocus) {
+            listState.scrollToItem(6 + working.addons.size.coerceAtLeast(1) + working.qualities.size)
+            repeat(2) { withFrameNanos { } }
+            runCatching { priorityFocus.requestFocus() }
+            restorePriorityFocus = false
+        }
+    }
     val anyAddon = stringResource(R.string.autoplay_priority_any_addon_order)
     val addonOptions = installedAddonNames.filter { it !in working.addons }
     val qualityOptions = StreamAutoPlayQuality.entries.filter { it !in working.qualities }
+
+    if (notflix && audioLanguagesOpen) {
+        AudioLanguagesSelectionDialog(
+            selected = working.audioLanguages,
+            onSave = { ordered -> working = working.copy(audioLanguages = ordered) },
+            onDismiss = {
+                audioLanguagesOpen = false
+                restoreAudioFocus = true
+            }
+        )
+        return
+    }
+
+    if (notflix && priorityPickerOpen) {
+        SettingsSingleChoiceDialog(
+            title = stringResource(R.string.autoplay_priority_priority_title),
+            options = listOf(
+                SettingsPickerOption(
+                    StreamAutoPlayPriority.CALIDAD,
+                    stringResource(R.string.autoplay_priority_priority_quality)
+                ),
+                SettingsPickerOption(
+                    StreamAutoPlayPriority.IDIOMA,
+                    stringResource(R.string.autoplay_priority_priority_language)
+                )
+            ),
+            selectedValue = working.priority,
+            onOptionSelected = { selected ->
+                working = working.copy(priority = selected)
+                priorityPickerOpen = false
+                restorePriorityFocus = true
+            },
+            onDismiss = {
+                priorityPickerOpen = false
+                restorePriorityFocus = true
+            },
+            width = 460.dp,
+            maxHeight = 260.dp
+        )
+        return
+    }
 
     if (addonPickerOpen) {
         SettingsSingleChoiceDialog(
@@ -743,7 +992,7 @@ private fun StreamAutoPlayPriorityDialog(
     ) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxWidth().heightIn(max = 460.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(max = 460.dp).testTag("autoplay-priority-entries"),
             verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.sm)
         ) {
             item(key = "addons_header") {
@@ -817,17 +1066,52 @@ private fun StreamAutoPlayPriorityDialog(
                     onToggle = { working = working.copy(cachedOnly = !working.cachedOnly) }
                 )
             }
-            item(key = "spanish_only") {
-                SettingsToggleRow(
-                    title = stringResource(R.string.autoplay_priority_spanish_only_title),
-                    subtitle = stringResource(R.string.autoplay_priority_spanish_only_desc),
-                    checked = working.spanishOnly,
-                    onToggle = { working = working.copy(spanishOnly = !working.spanishOnly) }
-                )
+            item(key = if (notflix) "audio_languages" else "spanish_only") {
+                if (notflix) {
+                    SettingsActionRow(
+                        title = stringResource(R.string.autoplay_priority_audio_languages_title),
+                        subtitle = stringResource(R.string.autoplay_priority_audio_languages_desc),
+                        value = audioLanguagesSummary(working.audioLanguages),
+                        onClick = { audioLanguagesOpen = true },
+                        modifier = Modifier.focusRequester(audioFocus).testTag("autoplay-priority-audio-languages")
+                    )
+                } else {
+                    SettingsToggleRow(
+                        title = stringResource(R.string.autoplay_priority_spanish_only_title),
+                        subtitle = stringResource(R.string.autoplay_priority_spanish_only_desc),
+                        checked = "es" in working.audioLanguages,
+                        onToggle = {
+                            working = working.copy(
+                                audioLanguages = if ("es" in working.audioLanguages) emptyList() else listOf("es")
+                            )
+                        }
+                    )
+                }
+            }
+            if (notflix && working.audioLanguages.isNotEmpty()) {
+                item(key = "priority") {
+                    SettingsActionRow(
+                        title = stringResource(R.string.autoplay_priority_priority_title),
+                        subtitle = stringResource(R.string.autoplay_priority_priority_desc),
+                        value = priorityLabel(working.priority),
+                        onClick = { priorityPickerOpen = true },
+                        modifier = Modifier.focusRequester(priorityFocus).testTag("autoplay-priority-priority")
+                    )
+                }
             }
         }
     }
 }
+
+private val StreamAutoPlayPriorityConfigSaver = Saver<StreamAutoPlayPriorityConfig, String>(
+    save = { encodeStreamAutoPlayPriorityConfig(it) },
+    restore = { decodeStreamAutoPlayPriorityConfig(it) }
+)
+
+private val PrioritySelectedNamesSaver = listSaver<Set<String>, String>(
+    save = { it.toList() },
+    restore = { it.toSet() }
+)
 
 @Composable
 private fun PriorityEntryRow(
@@ -836,10 +1120,12 @@ private fun PriorityEntryRow(
     canMoveDown: Boolean,
     onUp: () -> Unit,
     onDown: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+    removeFocusRequester: FocusRequester? = null
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.xs)
     ) {
         Text(
@@ -850,13 +1136,30 @@ private fun PriorityEntryRow(
         SettingsDialogActionRow(horizontalAlignment = Alignment.Start) {
             SettingsDialogActionButton(text = stringResource(R.string.autoplay_priority_up), onClick = onUp, enabled = canMoveUp)
             SettingsDialogActionButton(text = stringResource(R.string.autoplay_priority_down), onClick = onDown, enabled = canMoveDown)
-            SettingsDialogActionButton(text = stringResource(R.string.autoplay_priority_remove), onClick = onRemove)
+            Box(if (removeFocusRequester != null) Modifier.focusRequester(removeFocusRequester) else Modifier) {
+                SettingsDialogActionButton(text = stringResource(R.string.autoplay_priority_remove), onClick = onRemove)
+            }
         }
     }
 }
 
 private fun <T> List<T>.swapped(first: Int, second: Int): List<T> =
     toMutableList().also { java.util.Collections.swap(it, first, second) }
+
+@Composable
+private fun audioLanguagesSummary(codes: List<String>): String {
+    val anyLabel = stringResource(R.string.autoplay_priority_audio_languages_any)
+    if (codes.isEmpty()) return anyLabel
+    return codes.mapNotNull { code -> AUDIO_LANGUAGES.firstOrNull { it.code == code }?.nativeName }
+        .joinToString(", ")
+        .ifEmpty { anyLabel }
+}
+
+@Composable
+private fun priorityLabel(priority: StreamAutoPlayPriority): String = when (priority) {
+    StreamAutoPlayPriority.CALIDAD -> stringResource(R.string.autoplay_priority_priority_quality)
+    StreamAutoPlayPriority.IDIOMA -> stringResource(R.string.autoplay_priority_priority_language)
+}
 
 @Composable
 private fun priorityQualityLabel(quality: StreamAutoPlayQuality): String = when (quality) {

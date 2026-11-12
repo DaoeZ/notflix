@@ -5,6 +5,8 @@ import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import com.nuvio.tv.R
+import com.nuvio.tv.domain.model.NotflixCardOpening
+import com.nuvio.tv.domain.model.NotflixCardSize
 import com.nuvio.tv.ui.theme.InterFamily
 
 /** Notflix native presentation tokens; no web runtime. */
@@ -41,6 +43,11 @@ object NotflixVisualSpec {
     const val EXPAND_DELAY_MS = 1200L
     /** Card preview starts after this dwell on a title (expansion first, then the clip). */
     const val PREVIEW_DWELL_MS = 2000L
+    /** M56: the clip waits until the card has opened plus this beat, never only for a fixed dwell. */
+    const val PREVIEW_AFTER_OPEN_MS = 800L
+    fun cardOpenDelayMs(opening: NotflixCardOpening): Long = opening.delayMs.toLong()
+    fun previewDwellMs(opening: NotflixCardOpening): Long =
+        maxOf(PREVIEW_DWELL_MS, cardOpenDelayMs(opening) + PREVIEW_AFTER_OPEN_MS)
     // M29 (promoter on the Xiaomi): portrait posters, same size in every row and «un pelín más grandes» than the
     // 180x266 trial (was 122x183 first rows / 168x248 others). Landscape 16:9 was tried and rejected by the promoter;
     // its layout stays available behind CARD_LANDSCAPE. 08-11-2026: promoter asked again for «un pelín más grandes»: +10% (was 190x281, CW 224x126).
@@ -48,12 +55,23 @@ object NotflixVisualSpec {
     const val POSTER_WIDTH = 210
     const val POSTER_HEIGHT = 311
     const val EXPANDED_WIDTH = 378
-    const val TV_POSTER_WIDTH = POSTER_WIDTH
-    const val TV_POSTER_HEIGHT = POSTER_HEIGHT
-    const val TV_EXPANDED_WIDTH = EXPANDED_WIDTH
     const val CW_WIDTH = 248
     const val CW_HEIGHT = 140
-    fun posterWidth(browsing: Boolean) = if (browsing) TV_POSTER_WIDTH else POSTER_WIDTH
-    fun posterHeight(browsing: Boolean) = if (browsing) TV_POSTER_HEIGHT else POSTER_HEIGHT
-    fun expandedWidth(browsing: Boolean) = if (browsing) TV_EXPANDED_WIDTH else EXPANDED_WIDTH
+    // M64: the expanded card scales less than the poster so its panel never clips the action row,
+    // facts and genres at the current text sizes.
+    const val EXPANDED_MIN_WIDTH = 330
+    const val EXPANDED_MIN_HEIGHT = 300
+    /** M64: portrait expanded card split; the panel keeps at least PANEL_MIN_CONTENT_HEIGHT dp. */
+    const val PANEL_WEIGHT = 0.42f
+    const val PANEL_PADDING = 8
+    const val PANEL_MIN_CONTENT_HEIGHT = 100
+    fun posterWidth(size: NotflixCardSize) = scaled(POSTER_WIDTH, size)
+    fun posterHeight(size: NotflixCardSize) = scaled(POSTER_HEIGHT, size)
+    fun expandedWidth(size: NotflixCardSize) = maxOf(EXPANDED_MIN_WIDTH, scaled(EXPANDED_WIDTH, size))
+    fun expandedHeight(size: NotflixCardSize) = maxOf(EXPANDED_MIN_HEIGHT, scaled(POSTER_HEIGHT, size))
+    fun wideWidth(size: NotflixCardSize) = scaled(CW_WIDTH, size)
+    fun wideHeight(size: NotflixCardSize) = scaled(CW_HEIGHT, size)
+    fun expandedPanelHeight(size: NotflixCardSize) =
+        Math.round(expandedHeight(size) * PANEL_WEIGHT) - PANEL_PADDING * 2
+    private fun scaled(value: Int, size: NotflixCardSize) = Math.round(value * size.scale)
 }

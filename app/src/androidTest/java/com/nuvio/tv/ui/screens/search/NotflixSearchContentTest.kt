@@ -56,7 +56,9 @@ class NotflixSearchContentTest {
         rows: List<CatalogRow> = emptyList(),
         submittedQuery: String = query.value,
         isSearching: Boolean = false,
-        recentSearches: List<String> = emptyList()
+        recentSearches: List<String> = emptyList(),
+        localizedTitles: MutableState<Map<String, String>> = mutableStateOf(emptyMap()),
+        onRequestTitles: (List<MetaPreview>) -> Unit = {}
     ) {
         compose.setContent {
             back = requireNotNull(LocalOnBackPressedDispatcherOwner.current).onBackPressedDispatcher
@@ -81,7 +83,9 @@ class NotflixSearchContentTest {
                     },
                     onVoiceSearch = {},
                     onRetry = {},
-                    onNavigateToDetail = { _, _, _ -> }
+                    onNavigateToDetail = { _, _, _ -> },
+                    localizedTitles = localizedTitles.value,
+                    onRequestTitles = onRequestTitles
                 )
             }
         }
@@ -96,6 +100,32 @@ class NotflixSearchContentTest {
             }
         }
         compose.onNodeWithTag(tag).assertIsFocused()
+    }
+
+    @Test fun translatedPosterFallbackUpdatesAndUnknownTitlesKeepTheirOriginalText() {
+        val titles = mutableStateOf(mapOf("movie:1" to "Título español"))
+        show(mutableStateOf("Title"), rows = listOf(row("catalog", item("1"), item("2"))), localizedTitles = titles)
+        compose.onNodeWithText("Título español").assertIsDisplayed()
+        compose.onNodeWithText("Title 1").assertDoesNotExist()
+        compose.onNodeWithText("Title 2").assertIsDisplayed()
+        compose.runOnIdle { titles.value = mapOf("movie:1" to "Titre français") }
+        compose.onNodeWithText("Titre français").assertIsDisplayed()
+        compose.onNodeWithText("Título español").assertDoesNotExist()
+    }
+
+    @Test fun titleLookupsFollowTheScrolledWindowInsteadOfStoppingAtTheFirstResults() {
+        val titles = mutableStateOf<Map<String, String>>(emptyMap())
+        val requests = mutableListOf<List<MetaPreview>>()
+        val items = (0..149).map { item(it.toString().padStart(3, '0')) }
+        show(mutableStateOf("Title"), rows = listOf(row("catalog", *items.toTypedArray())),
+            localizedTitles = titles, onRequestTitles = { offered ->
+                requests += offered
+                titles.value = offered.associate { "${it.apiType}:${it.id}" to "Translated ${it.id}" }
+            })
+        compose.onNodeWithTag("notflix-search-results").performScrollToIndex(149)
+        compose.waitUntil(5_000) { requests.any { offered -> offered.any { it.id == "149" } } }
+        compose.onNodeWithText("Translated 149").assertIsDisplayed()
+        compose.runOnIdle { org.junit.Assert.assertTrue(requests.all { it.size <= 96 }) }
     }
 
     private fun focus(tag: String) {

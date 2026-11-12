@@ -59,8 +59,20 @@ class NotflixCardActionsTest {
         assertEquals(NotflixCardKeyResult.Activate(3), key(armed, NotflixCardKey.CENTER, down = false, count = 4).second)
     }
 
-    @Test fun `runtime and ends at use official parsing and omit invalid values`() {
-        assertEquals(126, notflixRuntimeMinutes("126"))
+    @Test fun `the same button activates again after a release`() {
+        val armed = key(NotflixCardCursor(id, 3), NotflixCardKey.CENTER).first!!
+        val (released, first) = key(armed, NotflixCardKey.CENTER, down = false)
+        assertEquals(NotflixCardKeyResult.Activate(3), first)
+        assertFalse(released!!.armed)
+        // M56: a second press on the same button must not inherit a stale armed flag.
+        val armedAgain = key(released, NotflixCardKey.CENTER).first!!
+        assertTrue(armedAgain.armed)
+        val (releasedAgain, second) = key(armedAgain, NotflixCardKey.CENTER, down = false)
+        assertEquals(NotflixCardKeyResult.Activate(3), second)
+        assertFalse(releasedAgain!!.armed)
+    }
+
+    @Test fun `runtime and ends at use official parsing and omit invalid values`() {        assertEquals(126, notflixRuntimeMinutes("126"))
         assertEquals(126, notflixRuntimeMinutes("2h 6min"))
         assertEquals(45, notflixRuntimeMinutes("45 min"))
         for (bad in listOf(null, "", "  ", "0", "abc", "2000")) assertNull(bad, notflixRuntimeMinutes(bad))

@@ -57,6 +57,8 @@ import com.nuvio.tv.ui.screens.settings.LayoutSettingsScreen
 import com.nuvio.tv.ui.screens.settings.LicensesAttributionsScreen
 import com.nuvio.tv.ui.screens.settings.PlaybackSettingsScreen
 import com.nuvio.tv.ui.screens.settings.SettingsScreen
+import com.nuvio.tv.ui.screens.settings.NotflixSettingsEntry
+import com.nuvio.tv.ui.screens.settings.openNotflixIntegrations
 import com.nuvio.tv.ui.screens.settings.SupportersContributorsScreen
 import com.nuvio.tv.ui.screens.settings.ThemeSettingsScreen
 import com.nuvio.tv.ui.screens.settings.TrackingSettingsScreen
@@ -311,6 +313,9 @@ private fun PlaybackNavHost(
                 },
                 onNavigateToFolderDetail = { collectionId, folderId ->
                     navController.navigate(Screen.FolderDetail.createRoute(collectionId, folderId))
+                },
+                onNavigateToNotflixIntegrations = {
+                    navController.openNotflixIntegrations()
                 }
             )
         }
@@ -1299,6 +1304,7 @@ private fun PlaybackNavHost(
         composable(Screen.Settings.route) { entry ->
             val collectionReturnToken by entry.savedStateHandle.getStateFlow("notflixCollectionReturnToken", 0).collectAsState()
             SettingsScreen(
+                initialNotflixIntegrations = NotflixSettingsEntry.isNotflixIntegrationsRequested(entry.savedStateHandle),
                 onNavigateToCollections = { navController.navigate(Screen.Collections.route) },
                 collectionManagerReturnToken = collectionReturnToken,
                 showBuiltInHeader = !hideBuiltInHeaders,
@@ -1448,6 +1454,15 @@ private fun PlaybackNavHost(
                     val heroBackdrop = HeroBackdropState.consumeAndClear()
                     navController.navigate(Screen.Detail.createRoute(itemId, itemType, addonBaseUrl, heroBackdropUrl = heroBackdrop))
                 },
+                onNavigateToPlay = { itemId, itemType, addonBaseUrl, manual ->
+                    // M63: mismo camino de reproducción que el botón Reproducir de Inicio.
+                    navController.navigate(
+                        com.nuvio.tv.ui.screens.home.notflixBillboardPlayRoute(
+                            itemId, itemType, addonBaseUrl, manual,
+                            backdrop = HeroBackdropState.consumeAndClear()
+                        )
+                    ) { launchSingleTop = true }
+                },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -1537,6 +1552,12 @@ private fun PlaybackNavHost(
                 viewModel = homeViewModel,
                 onNavigateToDetail = { itemId, itemType, addonBaseUrl ->
                     navController.navigate(Screen.Detail.createRoute(itemId, itemType, addonBaseUrl))
+                },
+                onNavigateToPlay = { itemId, itemType, addonBaseUrl, manual ->
+                    // M63: mismo camino de reproducción que el botón Reproducir del Inicio.
+                    navController.navigate(
+                        com.nuvio.tv.ui.screens.home.notflixBillboardPlayRoute(itemId, itemType, addonBaseUrl, manual)
+                    ) { launchSingleTop = true }
                 },
                 onBackPress = { navController.popBackStack() }
             )

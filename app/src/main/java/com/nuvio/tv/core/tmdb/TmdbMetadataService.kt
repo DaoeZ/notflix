@@ -23,6 +23,7 @@ import com.nuvio.tv.domain.model.MetaPreview
 import com.nuvio.tv.domain.model.MetaTrailer
 import com.nuvio.tv.domain.model.PersonDetail
 import com.nuvio.tv.domain.model.PosterShape
+import com.nuvio.tv.domain.model.RatingSource
 import java.time.LocalDate
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -36,6 +37,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
@@ -67,6 +71,8 @@ class TmdbMetadataService(
 
     // In-memory caches
     private val enrichmentCache = ConcurrentHashMap<String, TmdbEnrichment>()
+    private val _enrichmentVersion = MutableStateFlow(0L)
+    val enrichmentVersion = _enrichmentVersion.asStateFlow()
     private val episodeCache = ConcurrentHashMap<String, Map<Pair<Int, Int>, TmdbEpisodeEnrichment>>()
     private val enrichmentInFlight = ConcurrentHashMap<String, CompletableDeferred<TmdbEnrichment?>>()
     private val episodeInFlight = ConcurrentHashMap<String, CompletableDeferred<Map<Pair<Int, Int>, TmdbEpisodeEnrichment>>>()
@@ -80,6 +86,27 @@ class TmdbMetadataService(
     fun cachedOriginalTitle(tmdbId: String, contentType: ContentType): String? {
         val prefix = "$tmdbId:${contentType.name}:"
         return enrichmentCache.entries.firstOrNull { it.key.startsWith(prefix) }?.value?.originalTitle
+    }
+
+    /**
+     * M61: the translated title from an enrichment already in memory, for grids that show a title
+     * without ever opening a card (Notflix search). It never issues a request: a miss means the
+     * title stays as the addon sent it.
+     */
+    fun cachedLocalizedTitle(tmdbId: String, contentType: ContentType, language: String): String? =
+        cachedEnrichment(tmdbId, contentType, language)?.localizedTitle
+
+    /** A cache miss never turns a restored card or search label into another network request. */
+    fun cachedEnrichment(tmdbId: String, contentType: ContentType, language: String): TmdbEnrichment? {
+        if (!tmdbEnabled()) return null
+        val normalized = normalizeTmdbLanguage(language)
+        val cached = enrichmentCache["$tmdbId:${contentType.name}:$normalized"]
+        val alternate = when (contentType) {
+            ContentType.SERIES -> ContentType.TV
+            ContentType.TV -> ContentType.SERIES
+            else -> return cached
+        }
+        return cached ?: enrichmentCache["$tmdbId:${alternate.name}:$normalized"]
     }
 
     suspend fun fetchEnrichment(
@@ -234,7 +261,15 @@ class TmdbMetadataService(
                 val genres = details?.genres?.mapNotNull { genre ->
                     genre.name.trim().takeIf { name -> name.isNotBlank() }
                 } ?: emptyList()
+                // Beta.4: TMDB leaves the overview empty when it has no translation; show the English
+                // one instead of an empty card (titles already fall back the same way).
                 val description = details?.overview?.takeIf { it.isNotBlank() }
+                    ?: if (normalizedLanguage.startsWith("en")) null else runCatching {
+                        when (tmdbType) {
+                            "tv" -> tmdbApi.getTvDetails(numericId, tmdbKey(), "en-US").body()
+                            else -> tmdbApi.getMovieDetails(numericId, tmdbKey(), "en-US").body()
+                        }?.overview?.takeIf { it.isNotBlank() }
+                    }.getOrNull()
                 val status = details?.status?.trim()?.takeIf { it.isNotBlank() }
                 val releaseInfo = if (tmdbType == "tv") {
                     details?.firstAirDate.yearPart()?.let { startYear ->
@@ -507,6 +542,7 @@ class TmdbMetadataService(
                     trailers = trailers
                 )
                 enrichmentCache[cacheKey] = enrichment
+                _enrichmentVersion.update { it + 1 }
                 requestDeferred.complete(enrichment)
                 enrichment
             } catch (e: CancellationException) {
@@ -781,6 +817,7 @@ class TmdbMetadataService(
                             description = rec.overview?.takeIf { it.isNotBlank() },
                             releaseInfo = releaseInfo,
                             imdbRating = rec.voteAverage?.toFloat(),
+                            ratingSource = RatingSource.TMDB,
                             genres = emptyList(),
                             landscapePoster = backdrop,
                             rawPosterUrl = fallbackPoster
@@ -880,6 +917,7 @@ class TmdbMetadataService(
                             description = part.overview?.takeIf { it.isNotBlank() },
                             releaseInfo = releaseInfo,
                             imdbRating = part.voteAverage?.toFloat(),
+                            ratingSource = RatingSource.TMDB,
                             genres = emptyList(),
                             landscapePoster = backdrop,
                             rawPosterUrl = fallbackPoster
@@ -1166,6 +1204,7 @@ class TmdbMetadataService(
             description = result.overview?.takeIf { it.isNotBlank() },
             releaseInfo = releaseInfo,
             imdbRating = result.voteAverage?.toFloat(),
+            ratingSource = RatingSource.TMDB,
             genres = emptyList()
         )
     }
@@ -1467,6 +1506,7 @@ class TmdbMetadataService(
                     description = credit.overview?.takeIf { it.isNotBlank() },
                     releaseInfo = year,
                     imdbRating = credit.voteAverage?.toFloat(),
+                    ratingSource = RatingSource.TMDB,
                     genres = emptyList()
                 )
             }
@@ -1501,6 +1541,7 @@ class TmdbMetadataService(
                     description = credit.overview?.takeIf { it.isNotBlank() },
                     releaseInfo = year,
                     imdbRating = credit.voteAverage?.toFloat(),
+                    ratingSource = RatingSource.TMDB,
                     genres = emptyList()
                 )
             }
@@ -1535,6 +1576,7 @@ class TmdbMetadataService(
                     description = credit.overview?.takeIf { it.isNotBlank() },
                     releaseInfo = year,
                     imdbRating = credit.voteAverage?.toFloat(),
+                    ratingSource = RatingSource.TMDB,
                     genres = emptyList()
                 )
             }
@@ -1569,6 +1611,7 @@ class TmdbMetadataService(
                     description = credit.overview?.takeIf { it.isNotBlank() },
                     releaseInfo = year,
                     imdbRating = credit.voteAverage?.toFloat(),
+                    ratingSource = RatingSource.TMDB,
                     genres = emptyList()
                 )
             }

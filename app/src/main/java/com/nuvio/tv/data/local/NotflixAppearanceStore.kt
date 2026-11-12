@@ -2,6 +2,8 @@ package com.nuvio.tv.data.local
 
 import com.nuvio.tv.domain.model.AppAppearance
 import com.nuvio.tv.domain.model.AppearanceContext
+import com.nuvio.tv.domain.model.NotflixCardOpening
+import com.nuvio.tv.domain.model.NotflixCardSize
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -19,7 +21,9 @@ data class AppearanceRead(val requested: AppAppearance, val failed: Boolean = fa
     val introEnabled: Boolean = true, val introSoundEnabled: Boolean = true, val introOptionsValid: Boolean = true,
     val previewEnabled: Boolean = true, val previewSoundEnabled: Boolean = false, val previewOptionsValid: Boolean = true,
     val uiSoundsEnabled: Boolean = true, val uiSoundsOptionsValid: Boolean = true,
-    val wikipediaEnabled: Boolean = true, val wikipediaOptionsValid: Boolean = true)
+    val wikipediaEnabled: Boolean = true, val wikipediaOptionsValid: Boolean = true,
+    val cardOpening: NotflixCardOpening = NotflixCardOpening.DEFAULT,
+    val cardSize: NotflixCardSize = NotflixCardSize.DEFAULT)
 
 @Singleton
 class NotflixAppearanceStore @Inject constructor(private val factory: ProfileDataStoreFactory) {
@@ -32,6 +36,8 @@ class NotflixAppearanceStore @Inject constructor(private val factory: ProfileDat
         const val PREVIEW_SOUND_ENABLED = "preview_sound_enabled"
         const val UI_SOUNDS_ENABLED = "ui_sounds_enabled"
         const val WIKIPEDIA_ENABLED = "wikipedia_enabled"
+        const val CARD_OPENING_MS = "card_opening_ms"
+        const val CARD_SIZE_PERCENT = "card_size_percent"
     }
 
     val revision = factory.appearanceRevision
@@ -56,6 +62,10 @@ class NotflixAppearanceStore @Inject constructor(private val factory: ProfileDat
                 // M44: a corrupt/unknown value fails safe to "on" and never poisons the other flags.
                 val uiSoundsValid = (schema == null || schema == 1) &&
                     (values[UI_SOUNDS_ENABLED] == null || values[UI_SOUNDS_ENABLED] is Boolean)
+                val cardOpeningValid = (schema == null || schema == 1) &&
+                    (values[CARD_OPENING_MS] == null || values[CARD_OPENING_MS] is Int)
+                val cardSizeValid = (schema == null || schema == 1) &&
+                    (values[CARD_SIZE_PERCENT] == null || values[CARD_SIZE_PERCENT] is Int)
                 AppearanceRead(AppAppearance.decode(values["appearance"], schema),
                     reduceHomeMotion = (schema == null || schema == 1) && (values[REDUCE_HOME_MOTION] as? Boolean ?: false),
                     introEnabled = introValid && (values[INTRO_ENABLED] as? Boolean ?: true),
@@ -67,7 +77,11 @@ class NotflixAppearanceStore @Inject constructor(private val factory: ProfileDat
                     uiSoundsEnabled = values[UI_SOUNDS_ENABLED] as? Boolean ?: true,
                     uiSoundsOptionsValid = uiSoundsValid,
                     wikipediaEnabled = wikipediaValid && (values[WIKIPEDIA_ENABLED] as? Boolean ?: true),
-                    wikipediaOptionsValid = wikipediaValid)
+                    wikipediaOptionsValid = wikipediaValid,
+                    cardOpening = if (cardOpeningValid) NotflixCardOpening.decode(values[CARD_OPENING_MS])
+                        else NotflixCardOpening.DEFAULT,
+                    cardSize = if (cardSizeValid) NotflixCardSize.decode(values[CARD_SIZE_PERCENT])
+                        else NotflixCardSize.DEFAULT)
             }
         })
     }.catch { error ->
@@ -99,6 +113,34 @@ class NotflixAppearanceStore @Inject constructor(private val factory: ProfileDat
                 // Recheck the captured session at the mutation, after any queue wait.
                 if (!authorized()) throw IOException("Appearance session changed")
                 it[booleanPreferencesKey(REDUCE_HOME_MOTION)] = reduced
+            }
+        }
+        Result.success(Unit)
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error)
+    }
+
+    suspend fun selectCardOpening(context: AppearanceContext, opening: NotflixCardOpening, authorized: () -> Boolean = { true }): Result<Unit> = try {
+        factory.withAppearanceContext(context) {
+            factory.get(context.profileId, FEATURE).edit {
+                if (!authorized()) throw IOException("Appearance session changed")
+                it[intPreferencesKey(CARD_OPENING_MS)] = opening.delayMs
+            }
+        }
+        Result.success(Unit)
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error)
+    }
+
+    suspend fun selectCardSize(context: AppearanceContext, size: NotflixCardSize, authorized: () -> Boolean = { true }): Result<Unit> = try {
+        factory.withAppearanceContext(context) {
+            factory.get(context.profileId, FEATURE).edit {
+                if (!authorized()) throw IOException("Appearance session changed")
+                it[intPreferencesKey(CARD_SIZE_PERCENT)] = size.percent
             }
         }
         Result.success(Unit)

@@ -134,25 +134,39 @@ internal fun CustomThemeEditor(
 
     Column(verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.sm)) {
         if (onGradientChanged != null) {
-            Row(
-                modifier = Modifier.selectableGroup().settingsOptionRow(modeFocusRequester),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(true, false).forEach { gradient ->
-                    val selected = gradientEnabled == gradient
-                    SettingsChoiceChip(
-                        label = stringResource(
-                            if (gradient) R.string.custom_theme_mode_gradient else R.string.custom_theme_mode_solid
-                        ),
-                        selected = selected,
-                        onClick = { onGradientChanged(gradient) },
-                        modifier = Modifier
-                            .then(if (selected) Modifier.focusRequester(modeFocusRequester) else Modifier)
-                            .semantics {
-                                role = Role.RadioButton
-                                this.selected = selected
-                            }
-                    )
+            if (notflixSettingsActive()) {
+                SettingsSingleChoiceRow(
+                    title = stringResource(R.string.appearance_color_theme),
+                    value = stringResource(if (gradientEnabled) R.string.custom_theme_mode_gradient else R.string.custom_theme_mode_solid),
+                    options = listOf(
+                        SettingsPickerOption(true, stringResource(R.string.custom_theme_mode_gradient)),
+                        SettingsPickerOption(false, stringResource(R.string.custom_theme_mode_solid))
+                    ),
+                    selectedValue = gradientEnabled,
+                    onOptionSelected = onGradientChanged,
+                    focusRequester = modeFocusRequester
+                )
+            } else {
+                Row(
+                    modifier = Modifier.selectableGroup().settingsOptionRow(modeFocusRequester),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(true, false).forEach { gradient ->
+                        val selected = gradientEnabled == gradient
+                        SettingsChoiceChip(
+                            label = stringResource(
+                                if (gradient) R.string.custom_theme_mode_gradient else R.string.custom_theme_mode_solid
+                            ),
+                            selected = selected,
+                            onClick = { onGradientChanged(gradient) },
+                            modifier = Modifier
+                                .then(if (selected) Modifier.focusRequester(modeFocusRequester) else Modifier)
+                                .semantics {
+                                    role = Role.RadioButton
+                                    this.selected = selected
+                                }
+                        )
+                    }
                 }
             }
         }

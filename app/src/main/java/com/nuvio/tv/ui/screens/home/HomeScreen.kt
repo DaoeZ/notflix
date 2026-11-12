@@ -98,7 +98,9 @@ fun HomeScreen(
     onContinueWatchingStartFromBeginning: (ContinueWatchingItem) -> Unit = onContinueWatchingClick,
     onContinueWatchingPlayManually: (ContinueWatchingItem) -> Unit = onContinueWatchingClick,
     onNavigateToCatalogSeeAll: (String, String, String) -> Unit = { _, _, _ -> },
-    onNavigateToFolderDetail: (String, String) -> Unit = { _, _ -> }
+    onNavigateToFolderDetail: (String, String) -> Unit = { _, _ -> },
+    /** M66: KIDS notice shortcut to Settings → Integraciones → Notflix. */
+    onNavigateToNotflixIntegrations: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val notflix = LocalNotflixPresentation.current.active
@@ -155,7 +157,7 @@ fun HomeScreen(
     }
     val latestCardUi = androidx.compose.runtime.rememberUpdatedState(uiState)
     val notflixCardActions = remember(viewModel, uiState.librarySourceMode) {
-        NotflixCardActionsHost(
+        notflixCardActionHost(
             status = { item ->
                 val key = homeItemStatusKey(item.id, item.apiType)
                 val state = latestCardUi.value
@@ -329,6 +331,7 @@ fun HomeScreen(
                 cardActions = notflixCardActions,
                 myListRow = myListRow,
                 becauseRow = becauseRow,
+                onOpenIntegrations = onNavigateToNotflixIntegrations,
                 onLongPress = onCatalogItemLongPress,
                 onRetry = { viewModel.onEvent(HomeEvent.OnRetry) }
             )

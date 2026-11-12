@@ -6,6 +6,7 @@ import com.nuvio.tv.core.util.isUnreleased
 import com.nuvio.tv.data.local.hiddenTitleKey
 import com.nuvio.tv.domain.model.*
 import com.nuvio.tv.domain.model.Collection
+import com.nuvio.tv.ui.appearance.NotflixHomeCollectionPreset
 import java.time.LocalDate
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
@@ -26,7 +27,12 @@ internal data class NotflixCollectionSpec(
 )
 
 internal fun notflixCollectionSpecs(collections: List<Collection>, addons: List<Addon>, disabled: Set<String>): List<NotflixCollectionSpec> {
-    val collection = collections.lastOrNull { it.id == "notflix-inicio" } ?: return emptyList()
+    val collection = collections.lastOrNull { it.id == NotflixHomeCollectionPreset.ID } ?: return emptyList()
+    return notflixCollectionSpecsFor(collection, addons, disabled)
+}
+
+/** M66: also used for the derived kids row group, which is never written to the collection store. */
+internal fun notflixCollectionSpecsFor(collection: Collection, addons: List<Addon>, disabled: Set<String>): List<NotflixCollectionSpec> {
     if ("collection_${collection.id}" in disabled) return emptyList()
     return collection.folders.associateBy { it.id }.values.map { folder ->
         val source = folder.sources.singleOrNull() as? AddonCatalogCollectionSource
@@ -118,6 +124,7 @@ internal class NotflixCollectionRows(
                             NetworkResult.Loading -> Unit
                             is NetworkResult.Success -> {
                                 val ageAllowed = filterRow(result.data)
+                                if (!valid(captured, spec, job)) return@collect
                                 val hiddenAllowed = if (captured.hiddenKeys.isEmpty()) ageAllowed else {
                                     ageAllowed.copy(items = ageAllowed.items.filterNot { hiddenTitleKey(it.apiType, it.id) in captured.hiddenKeys })
                                 }

@@ -6,6 +6,8 @@ import com.nuvio.tv.core.profile.ProfileManager
 import com.nuvio.tv.data.local.NotflixAppearanceStore
 import com.nuvio.tv.domain.model.AppAppearance
 import com.nuvio.tv.domain.model.AppearanceContext
+import com.nuvio.tv.domain.model.NotflixCardOpening
+import com.nuvio.tv.domain.model.NotflixCardSize
 import com.nuvio.tv.domain.model.PersistedAppearanceProfile
 import com.nuvio.tv.domain.model.UserProfile
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -53,7 +55,8 @@ class AppearanceViewModel @Inject constructor(
                     previewEnabled = read.previewEnabled, previewSoundEnabled = read.previewSoundEnabled,
                     previewOptionsValid = read.previewOptionsValid,
                     uiSoundsEnabled = read.uiSoundsEnabled, uiSoundsOptionsValid = read.uiSoundsOptionsValid,
-                    wikipediaEnabled = read.wikipediaEnabled, wikipediaOptionsValid = read.wikipediaOptionsValid)
+                    wikipediaEnabled = read.wikipediaEnabled, wikipediaOptionsValid = read.wikipediaOptionsValid,
+                    cardOpening = read.cardOpening, cardSize = read.cardSize)
             }.onStart {
                 // Retrying a failed read in the same authorized session preserves
                 // its last confirmed state. A different session never inherits it.
@@ -74,6 +77,14 @@ class AppearanceViewModel @Inject constructor(
 
     fun selectHomeMotion(reduced: Boolean) {
         saveSelection(requireNotflix = true) { context, authorized -> store.selectHomeMotion(context, reduced, authorized) }
+    }
+
+    fun selectCardOpening(opening: NotflixCardOpening) {
+        saveSelection(requireNotflix = true) { context, authorized -> store.selectCardOpening(context, opening, authorized) }
+    }
+
+    fun selectCardSize(size: NotflixCardSize) {
+        saveSelection(requireNotflix = true) { context, authorized -> store.selectCardSize(context, size, authorized) }
     }
 
     fun selectIntroEnabled(enabled: Boolean) {

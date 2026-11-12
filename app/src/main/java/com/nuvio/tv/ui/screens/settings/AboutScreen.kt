@@ -26,10 +26,13 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -37,6 +40,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -86,6 +91,20 @@ fun AboutSettingsContent(
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
     var showNotflixPrivacy by remember { mutableStateOf(false) }
+    var showWhatsNew by rememberSaveable { mutableStateOf(false) }
+    val whatsNewFocus = remember { FocusRequester() }
+    var restoreWhatsNewFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(restoreWhatsNewFocus) {
+        if (restoreWhatsNewFocus) {
+            repeat(2) { withFrameNanos { } }
+            runCatching { whatsNewFocus.requestFocus() }
+            restoreWhatsNewFocus = false
+        }
+    }
+    LaunchedEffect(notflix) {
+        if (!notflix) showWhatsNew = false
+    }
+    val whatsNewItems = stringArrayResource(R.array.notflix_whats_new_items).toList()
     val aboutScrollState = rememberScrollState()
     var firstRowFocused by remember { mutableStateOf(false) }
     val firstRowModifier = Modifier.onFocusChanged { firstRowFocused = it.isFocused }
@@ -171,6 +190,18 @@ fun AboutSettingsContent(
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                                     )
                                 }
+                                if (whatsNewItems.isNotEmpty()) {
+                                    SettingsActionRow(
+                                        title = stringResource(R.string.notflix_whats_new_about_title),
+                                        subtitle = stringResource(
+                                            R.string.notflix_whats_new_about_subtitle,
+                                            BuildConfig.VERSION_NAME
+                                        ),
+                                        onClick = { showWhatsNew = true },
+                                        modifier = Modifier.focusRequester(whatsNewFocus)
+                                            .testTag("notflix-whats-new-about")
+                                    )
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(NuvioTheme.spacing.xxs))
@@ -238,6 +269,17 @@ fun AboutSettingsContent(
             onOpenNuvioPrivacy = {
                 showNotflixPrivacy = false
                 openUrl(NuvioPrivacyPolicyUrl)
+            }
+        )
+    }
+    // M58: the About row reopens the same notice as many times as the user wants.
+    if (notflix && showWhatsNew && whatsNewItems.isNotEmpty()) {
+        com.nuvio.tv.ui.appearance.NotflixWhatsNewPanel(
+            versionName = BuildConfig.VERSION_NAME,
+            items = whatsNewItems,
+            onDismiss = {
+                showWhatsNew = false
+                restoreWhatsNewFocus = true
             }
         )
     }

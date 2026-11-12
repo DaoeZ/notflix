@@ -11,6 +11,7 @@ import com.nuvio.tv.core.poster.withCustomPosterUrls
 import com.nuvio.tv.core.tmdb.TmdbMetadataService
 import com.nuvio.tv.core.tmdb.TmdbMovieCollection
 import com.nuvio.tv.core.tmdb.TmdbService
+import com.nuvio.tv.core.tmdb.withLocalizedTmdbText
 import com.nuvio.tv.data.local.LayoutPreferenceDataStore
 import com.nuvio.tv.data.local.MDBListSettingsDataStore
 import com.nuvio.tv.data.local.PlayerSettingsDataStore
@@ -31,6 +32,7 @@ import com.nuvio.tv.core.tracking.toggleTrackingMembershipSelection
 import com.nuvio.tv.domain.model.Meta
 import com.nuvio.tv.domain.model.MetaTrailer
 import com.nuvio.tv.domain.model.NextToWatch
+import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.domain.model.TmdbSettings
 import com.nuvio.tv.domain.model.TraktCommentReview
 import com.nuvio.tv.domain.model.Video
@@ -879,6 +881,8 @@ class MetaDetailsViewModel @Inject constructor(
             releaseInfo = enrichment.releaseInfo,
             status = enrichment.status,
             imdbRating = enrichment.rating?.toFloat(),
+            // M57: this fallback meta is built from TMDB's vote_average.
+            ratingSource = RatingSource.TMDB,
             genres = enrichment.genres,
             runtime = enrichment.runtimeMinutes?.toString(),
             director = enrichment.director,
@@ -1598,10 +1602,8 @@ class MetaDetailsViewModel @Inject constructor(
         }
 
         if (enrichment != null && settings.useBasicInfo) {
-            updated = updated.copy(
-                name = enrichment.localizedTitle ?: updated.name,
-                description = enrichment.description ?: updated.description
-            )
+            // M61: the same localized title and synopsis the home cards show.
+            updated = updated.withLocalizedTmdbText(enrichment)
             if (enrichment.genres.isNotEmpty()) {
                 updated = updated.copy(genres = enrichment.genres)
             }

@@ -31,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -59,9 +60,16 @@ import com.nuvio.tv.ui.components.nuvioCardDepth
 import com.nuvio.tv.ui.components.PosterCardDefaults
 import com.nuvio.tv.ui.components.PosterCardStyle
 import com.nuvio.tv.ui.appearance.LocalNotflixPresentation
+import com.nuvio.tv.domain.model.LibrarySourceMode
+import com.nuvio.tv.ui.components.posteroptions.posterCardStatusKey
 import com.nuvio.tv.ui.screens.home.HomeEvent
 import com.nuvio.tv.ui.screens.home.HomeViewModel
+import com.nuvio.tv.ui.screens.home.NotflixCardStatus
 import com.nuvio.tv.ui.screens.home.allowsForAge
+import com.nuvio.tv.ui.screens.home.notflixCardActionHost
+import com.nuvio.tv.ui.screens.home.rememberNotflixPreviewSession
+import com.nuvio.tv.ui.screens.home.toNotflixCardStatus
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.tv.ui.screens.search.SearchEvent
 import com.nuvio.tv.ui.screens.search.SearchViewModel
 import com.nuvio.tv.domain.model.MetaPreview
@@ -84,6 +92,7 @@ fun CatalogSeeAllScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     posterOptionsViewModel: com.nuvio.tv.ui.components.posteroptions.PosterOptionsViewModel = hiltViewModel(),
     onNavigateToDetail: (String, String, String) -> Unit,
+    onNavigateToPlay: ((String, String, String, Boolean) -> Unit)? = null,
     onBackPress: () -> Unit
 ) {
     val posterOptionsController = searchViewModel?.posterOptions ?: posterOptionsViewModel.controller
@@ -154,42 +163,84 @@ fun CatalogSeeAllScreen(
             }
         }
         val catalogFailed = catalogRow == null && serverFailed?.value == true
-        NotflixCatalogSeeAllScreen(
-            catalogKey = catalogKey,
-            title = catalogRow?.catalogName?.takeIf { it.isNotBlank() }
-                ?: stringResource(R.string.catalog_see_all_title_fallback),
-            collectionLabel = notflixCatalogCollectionLabel(
-                addonName = catalogRow?.addonName,
-                enabled = uiState.catalogAddonNameEnabled
-            )?.let { stringResource(R.string.catalog_see_all_from, it) },
-            items = catalogItems,
-            isLoading = if (catalogRow == null) !catalogFailed else catalogRow.isLoading,
-            hasMore = catalogRow?.hasMore == true,
-            notFound = catalogFailed,
-            onRetry = if (!isSearchMode && serverCatalog == null) {
-                { viewModel.requestLazyCatalogLoad(catalogKey) }
-            } else {
-                null
-            },
-            onLoadMore = loadMoreCatalog,
-            watched = { item ->
-                notflixCatalogItemWatched(
-                    item = item,
-                    searchMode = isSearchMode,
-                    searchWatchedMovieIds = searchWatchedMovieIds?.value ?: emptySet(),
-                    searchWatchedSeriesIds = searchWatchedSeriesIds?.value ?: emptySet(),
-                    movieWatchedStatus = uiState.movieWatchedStatus
-                )
-            },
-            onOpen = { item ->
-                onNavigateToDetail(item.id, item.apiType, catalogRow?.addonBaseUrl.orEmpty())
-            },
-            onLongPress = { item ->
-                posterOptionsController.show(item, catalogRow?.addonBaseUrl.orEmpty())
-            },
-            onNavigateToDetail = onNavigateToDetail,
-            posterController = posterOptionsController
+        // M63: misma tarjeta abierta que la carpeta; el pedido de tráiler es el de Inicio.
+        val notflixPosterOptions by posterOptionsController.state.collectAsState()
+        val notflixAutoplay by viewModel.effectiveAutoplayEnabled.collectAsStateWithLifecycle(initialValue = false)
+        val notflixResolver = remember(viewModel) {
+            com.nuvio.tv.ui.screens.home.OfficialNotflixPreviewResolver(
+                com.nuvio.tv.ui.screens.home.HomeNotflixPreviewRequestHost(viewModel, requiresHomePresentation = false)
+            )
+        }
+        val notflixPreview = rememberNotflixPreviewSession(
+            resolver = notflixResolver,
+            dialog = notflixPosterOptions.target != null || notflixPosterOptions.listPickerActive,
+            routeActive = true, validContext = { true }, lockContext = true
         )
+        // M67: mismas acciones y mismos escritores que Inicio. Mi lista y Visto van por el mismo
+        // controlador del menú largo de esta pantalla; Ocultar, por el almacén de títulos ocultos.
+        DisposableEffect(posterOptionsController) { onDispose { posterOptionsController.stopCardStatus() } }
+        val latestNotflixCardStatus = posterOptionsController.cardStatus.collectAsState()
+        val notflixCardActions = remember(posterOptionsController, notflixPosterOptions.librarySourceMode) {
+            notflixCardActionHost(
+                status = { item ->
+                    latestNotflixCardStatus.value[posterCardStatusKey(item.apiType, item.id)]
+                        ?.toNotflixCardStatus() ?: NotflixCardStatus()
+                },
+                manageLists = notflixPosterOptions.librarySourceMode != LibrarySourceMode.LOCAL,
+                onExpanded = { item -> posterOptionsController.refreshCardStatus(item) },
+                onLibrary = { item, base -> posterOptionsController.toggleLibraryFor(item, base) },
+                onWatched = { item -> posterOptionsController.toggleWatchedFor(item) },
+                onHide = { item -> viewModel.hideTitle(item) }
+            )
+        }
+        Box(Modifier.fillMaxSize()) {
+            NotflixCatalogSeeAllScreen(
+                catalogKey = catalogKey,
+                title = catalogRow?.catalogName?.takeIf { it.isNotBlank() }
+                    ?: stringResource(R.string.catalog_see_all_title_fallback),
+                collectionLabel = notflixCatalogCollectionLabel(
+                    addonName = catalogRow?.addonName,
+                    enabled = uiState.catalogAddonNameEnabled
+                )?.let { stringResource(R.string.catalog_see_all_from, it) },
+                items = catalogItems,
+                isLoading = if (catalogRow == null) !catalogFailed else catalogRow.isLoading,
+                hasMore = catalogRow?.hasMore == true,
+                notFound = catalogFailed,
+                onRetry = if (!isSearchMode && serverCatalog == null) {
+                    { viewModel.requestLazyCatalogLoad(catalogKey) }
+                } else {
+                    null
+                },
+                onLoadMore = loadMoreCatalog,
+                watched = { item ->
+                    notflixCatalogItemWatched(
+                        item = item,
+                        searchMode = isSearchMode,
+                        searchWatchedMovieIds = searchWatchedMovieIds?.value ?: emptySet(),
+                        searchWatchedSeriesIds = searchWatchedSeriesIds?.value ?: emptySet(),
+                        movieWatchedStatus = uiState.movieWatchedStatus
+                    )
+                },
+                onOpen = { item ->
+                    onNavigateToDetail(item.id, item.apiType, catalogRow?.addonBaseUrl.orEmpty())
+                },
+                onLongPress = { item ->
+                    posterOptionsController.show(item, catalogRow?.addonBaseUrl.orEmpty())
+                },
+                onNavigateToDetail = onNavigateToDetail,
+                posterController = posterOptionsController,
+                previewSession = notflixPreview,
+                cardActions = notflixCardActions,
+                onCardPlay = onNavigateToPlay?.let { play ->
+                    { item -> play(item.id, item.apiType, catalogRow?.addonBaseUrl.orEmpty(), !notflixAutoplay) }
+                },
+                canPlay = onNavigateToPlay != null
+            )
+            uiState.hiddenTitleUndo?.takeIf { it.profileId == viewModel.profileManager.activeProfileId.value }?.let { undo ->
+                com.nuvio.tv.ui.screens.home.HiddenTitleUndoNotice(undo, viewModel::undoHideTitle,
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = NuvioTheme.spacing.xl), autoFocus = false)
+            }
+        }
         return
     }
 

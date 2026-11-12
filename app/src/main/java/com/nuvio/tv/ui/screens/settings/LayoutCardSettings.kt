@@ -40,6 +40,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,26 +87,53 @@ internal fun LayoutContinueWatchingSection(
     )
 
     if (uiState.continueWatchingEnabled) {
-        val firstStyleFocusRequester = remember { FocusRequester() }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .settingsOptionRow(firstStyleFocusRequester),
-            horizontalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.md)
-        ) {
-            listOf(
-                ContinueWatchingCardStyle.CARD,
-                ContinueWatchingCardStyle.WIDE,
-                ContinueWatchingCardStyle.POSTER
-            ).forEachIndexed { index, style ->
-                CwStyleCard(
-                    style = style,
-                    isSelected = uiState.continueWatchingCardStyle == style,
-                    onClick = { onEvent(LayoutSettingsEvent.SetContinueWatchingCardStyle(style)) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .then(if (index == 0) Modifier.focusRequester(firstStyleFocusRequester) else Modifier)
-                )
+        if (notflixSettingsActive()) {
+            // M60 PARTE 3 (promotor 11-11): the card style is one row with the current value that
+            // opens a list, not three buttons side by side.
+            SettingsSingleChoiceRow(
+                title = stringResource(R.string.layout_cw_card_style_title),
+                subtitle = null,
+                value = continueWatchingStyleLabel(uiState.continueWatchingCardStyle),
+                options = listOf(
+                    SettingsPickerOption(
+                        ContinueWatchingCardStyle.CARD,
+                        stringResource(R.string.layout_cw_card_style_card)
+                    ),
+                    SettingsPickerOption(
+                        ContinueWatchingCardStyle.WIDE,
+                        stringResource(R.string.layout_cw_card_style_wide)
+                    ),
+                    SettingsPickerOption(
+                        ContinueWatchingCardStyle.POSTER,
+                        stringResource(R.string.layout_cw_card_style_poster)
+                    )
+                ),
+                selectedValue = uiState.continueWatchingCardStyle,
+                onOptionSelected = { style -> onEvent(LayoutSettingsEvent.SetContinueWatchingCardStyle(style)) },
+                modifier = Modifier.testTag("layout-cw-style")
+            )
+        } else {
+            val firstStyleFocusRequester = remember { FocusRequester() }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .settingsOptionRow(firstStyleFocusRequester),
+                horizontalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.md)
+            ) {
+                listOf(
+                    ContinueWatchingCardStyle.CARD,
+                    ContinueWatchingCardStyle.WIDE,
+                    ContinueWatchingCardStyle.POSTER
+                ).forEachIndexed { index, style ->
+                    CwStyleCard(
+                        style = style,
+                        isSelected = uiState.continueWatchingCardStyle == style,
+                        onClick = { onEvent(LayoutSettingsEvent.SetContinueWatchingCardStyle(style)) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .then(if (index == 0) Modifier.focusRequester(firstStyleFocusRequester) else Modifier)
+                    )
+                }
             }
         }
 
@@ -161,6 +189,15 @@ internal fun LayoutContinueWatchingSection(
         )
     }
 }
+
+@Composable
+private fun continueWatchingStyleLabel(style: ContinueWatchingCardStyle): String = stringResource(
+    when (style) {
+        ContinueWatchingCardStyle.CARD -> R.string.layout_cw_card_style_card
+        ContinueWatchingCardStyle.WIDE -> R.string.layout_cw_card_style_wide
+        ContinueWatchingCardStyle.POSTER -> R.string.layout_cw_card_style_poster
+    }
+)
 
 internal fun LayoutSettingsUiState.focusedPosterHasOptions(): Boolean {
     val modernLandscape = selectedLayout == HomeLayout.MODERN && modernLandscapePostersEnabled
@@ -260,13 +297,13 @@ internal fun LayoutPosterCardSection(
         PresetOption(stringResource(R.string.layout_preset_pill), 16)
     )
 
-    OptionRow(
+    ChoiceSettingRow(
         title = stringResource(R.string.layout_card_width),
         selectedValue = uiState.posterCardWidthDp,
         options = widthOptions,
         onSelected = { width -> onEvent(LayoutSettingsEvent.SetPosterCardWidth(width)) }
     )
-    OptionRow(
+    ChoiceSettingRow(
         title = stringResource(R.string.layout_card_radius),
         selectedValue = uiState.posterCardCornerRadiusDp,
         options = radiusOptions,
@@ -589,19 +626,19 @@ private fun CardDepthStyleControls(
         )
 
         if (style.enabled) {
-            OptionRow(
+            ChoiceSettingRow(
                 title = stringResource(R.string.settings_card_depth_edge),
                 selectedValue = style.edgeStrength,
                 options = edgeOptions,
                 onSelected = onEdgeStrengthChange
             )
-            OptionRow(
+            ChoiceSettingRow(
                 title = stringResource(R.string.settings_card_depth_sheen),
                 selectedValue = style.sheenStrength,
                 options = sheenOptions,
                 onSelected = onSheenStrengthChange
             )
-            OptionRow(
+            ChoiceSettingRow(
                 title = stringResource(R.string.settings_card_depth_edge_coverage),
                 selectedValue = style.edgeCoverage,
                 options = coverageOptions,
@@ -765,6 +802,40 @@ private fun CardDepthPreview(
                 sheenStrength = style.sheenStrength.toFloat(),
                 edgeCoverage = style.edgeCoverage.toFloat()
             )
+    )
+}
+
+/**
+ * M60 PARTE 3 (promotor 11-11): with the Notflix appearance a preset is one row with the current
+ * value that opens a list; the Nuvio appearance keeps the chip row exactly as before.
+ */
+@Composable
+private fun ChoiceSettingRow(
+    title: String,
+    selectedValue: Int,
+    options: List<PresetOption>,
+    onSelected: (Int) -> Unit
+) {
+    if (!notflixSettingsActive()) {
+        OptionRow(
+            title = title,
+            selectedValue = selectedValue,
+            options = options,
+            onSelected = onSelected
+        )
+        return
+    }
+
+    val selectedLabel = options.firstOrNull { it.value == selectedValue }?.label
+        ?: stringResource(R.string.layout_custom)
+
+    SettingsSingleChoiceRow(
+        title = title,
+        subtitle = null,
+        value = selectedLabel,
+        options = options.map { SettingsPickerOption(it.value, it.label) },
+        selectedValue = selectedValue,
+        onOptionSelected = onSelected
     )
 }
 

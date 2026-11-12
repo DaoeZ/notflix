@@ -29,8 +29,10 @@ import com.nuvio.tv.data.remote.api.TmdbSeasonResponse
 import com.nuvio.tv.data.remote.api.TmdbTvContentRatingsResponse
 import com.nuvio.tv.data.remote.api.TmdbVideosResponse
 import com.nuvio.tv.domain.model.ContentType
+import com.nuvio.tv.domain.model.RatingSource
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -912,6 +914,8 @@ class TmdbMetadataServiceTest {
         assertEquals("Movie: Reze Arc", collection.items.single { it.id == "tmdb:1" }.name)
         assertEquals("Chainsaw Man Compilation Movie 1", collection.items.single { it.id == "tmdb:2" }.name)
         assertEquals("Chainsaw Man Compilation Movie 2", collection.items.single { it.id == "tmdb:3" }.name)
+        // M57: every preview built from TMDB data carries the TMDB origin.
+        assertTrue(collection.items.all { it.ratingSource == RatingSource.TMDB })
         coVerify(exactly = 1) { api.getCollectionDetails(10, any(), "en") }
     }
 
@@ -940,6 +944,46 @@ class TmdbMetadataServiceTest {
         assertEquals("チェンソーマン シリーズ", collection.name)
         assertEquals("チェンソーマン総集篇 前篇", collection.items.single().name)
         coVerify(exactly = 0) { api.getCollectionDetails(10, any(), "en") }
+    }
+
+    @Test
+    fun `the localized title of an enrichment in memory is readable without a new request`() = runTest {
+        val api = mockk<TmdbApi>()
+        coEvery { api.getMovieDetails(any(), any(), any()) } returns Response.success(
+            TmdbDetailsResponse(
+                id = 948,
+                title = "La noche de Halloween",
+                originalTitle = "Halloween",
+                originalLanguage = "en",
+                overview = "Quince años después de asesinar a su hermana..."
+            )
+        )
+        coEvery { api.getMovieCredits(any(), any(), any()) } returns Response.success(TmdbCreditsResponse())
+        coEvery { api.getMovieImages(any(), any(), any()) } returns Response.success(TmdbImagesResponse())
+        coEvery { api.getMovieReleaseDates(any(), any()) } returns Response.success(TmdbMovieReleaseDatesResponse())
+        coEvery { api.getMovieVideos(any(), any(), any()) } returns Response.success(TmdbVideosResponse(id = 948))
+        var available = true
+        val configuration = mockk<NotflixIntegrationConfig> {
+            every { isTmdbEnabled() } answers { available }
+            every { tmdbApiKey() } returns "unit-test-key"
+        }
+        val service = TmdbMetadataService(api, configuration)
+
+        // M61: Notflix search only reads what is cached; before the enrichment there is nothing.
+        assertNull(service.cachedLocalizedTitle("948", ContentType.MOVIE, "es"))
+        assertEquals(0L, service.enrichmentVersion.value)
+
+        service.fetchEnrichment(tmdbId = "948", contentType = ContentType.MOVIE, language = "es")
+
+        assertEquals("La noche de Halloween", service.cachedLocalizedTitle("948", ContentType.MOVIE, "es"))
+        assertNull(service.cachedLocalizedTitle("948", ContentType.MOVIE, "fr"))
+        assertEquals(1L, service.enrichmentVersion.value)
+        assertEquals("Quince años después de asesinar a su hermana...",
+            service.cachedEnrichment("948", ContentType.MOVIE, "es")?.description)
+        available = false
+        assertNull(service.cachedLocalizedTitle("948", ContentType.MOVIE, "es"))
+        assertNull(service.cachedEnrichment("948", ContentType.MOVIE, "es"))
+        coVerify(exactly = 1) { api.getMovieDetails(any(), any(), any()) }
     }
 
     private data class MovieDiscoverCall(
