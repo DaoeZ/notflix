@@ -104,6 +104,7 @@ Found a bug or have an idea? Open an [issue](https://github.com/DaoeZ/notflix/is
 - **[NuvioTV](https://github.com/NuvioMedia/NuvioTV)** (GPL-3.0): the app Notflix is built on. The engine, addons and playback are theirs.
 - **Bebas Neue** by Dharma Type, SIL Open Font License 1.1.
 - Metadata and artwork: [TMDB](https://www.themoviedb.org/) and each user's addons. This product uses the TMDB API but is not endorsed or certified by TMDB.
+- Watch history, scrobbling and calendar: [Trakt](https://trakt.tv/). Notflix uses Trakt but is not endorsed or certified by Trakt.
 - Full third-party notices in [`NOTICE.txt`](app/src/main/assets/notflix/NOTICE.txt).
 
 ## License

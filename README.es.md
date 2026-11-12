@@ -104,6 +104,7 @@ Notflix no tiene anuncios, ni analíticas, ni seguimiento. Lee la [política de 
 - **[NuvioTV](https://github.com/NuvioMedia/NuvioTV)** (GPL-3.0): la app sobre la que se construye Notflix. El motor, los complementos y la reproducción son suyos.
 - **Bebas Neue**, de Dharma Type, con licencia SIL Open Font License 1.1.
 - Metadatos e imágenes: [TMDB](https://www.themoviedb.org/) y los complementos de cada usuario. Este producto usa la API de TMDB, pero TMDB no lo avala ni lo certifica.
+- Historial, scrobble y calendario: [Trakt](https://trakt.tv/). Notflix usa Trakt, pero Trakt no lo avala ni lo certifica (Notflix uses Trakt but is not endorsed or certified by Trakt).
 - Avisos completos de terceros en [`NOTICE.txt`](app/src/main/assets/notflix/NOTICE.txt).
 
 ## Licencia
