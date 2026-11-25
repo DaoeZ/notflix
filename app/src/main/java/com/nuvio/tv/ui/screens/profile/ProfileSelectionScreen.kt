@@ -130,6 +130,7 @@ import com.nuvio.tv.domain.model.ProfileBackgroundSelection
 import com.nuvio.tv.domain.model.resolveProfileBackgroundSelection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private object ProfileSelectionSpacing {
@@ -296,6 +297,7 @@ fun ProfileSelectionScreen(
             onProfileClicked()
             viewModel.selectProfile(
                 id = profileId,
+                notflix = notflixSkin,
                 onComplete = {
                     onProfileSessionSelected(profileId)
                     onProfileSelected()
@@ -335,6 +337,13 @@ fun ProfileSelectionScreen(
         targetProfile?.let { profile ->
             focusedProfileId = profile.id
             focusedAvatarColor = parseProfileColor(profile.avatarColorHex)
+        }
+    }
+
+    val profileIds = remember(profiles) { profiles.map { it.id } }
+    LaunchedEffect(notflixSkin, profileIds) {
+        if (notflixSkin) kotlinx.coroutines.coroutineScope {
+            profileIds.forEach { id -> launch { viewModel.loadSelectorAgeLimit(id) } }
         }
     }
 

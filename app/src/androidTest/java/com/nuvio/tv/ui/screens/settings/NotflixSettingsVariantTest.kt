@@ -2,6 +2,7 @@ package com.nuvio.tv.ui.screens.settings
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -113,7 +114,7 @@ class NotflixSettingsVariantTest {
         row.performSemanticsAction(SemanticsActions.RequestFocus)
         composeRule.waitForIdle()
 
-        val value = row.fetchSemanticsNode().config[NotflixVisualSpec.InvertedRowFocus]
+        val value = row.fetchSemanticsNode().config.getOrNull(NotflixVisualSpec.InvertedRowFocus)
         assertEquals(null, value)
     }
 

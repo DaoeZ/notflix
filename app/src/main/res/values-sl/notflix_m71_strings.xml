@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Zvok in podnapisi</string>
+    <string name="notflix_player_more">Več</string>
+    <string name="notflix_player_speed_value">Hitrost (%1$s×)</string>
+    <string name="notflix_player_remaining">Preostalo %1$s</string>
+    <string name="notflix_player_buttons">Gumbi predvajalnika</string>
+    <string name="notflix_player_buttons_help">Izberite do %1$d dejanj. Več ostane na koncu in vsebuje preostala.</string>
+    <string name="notflix_player_row_order">Vrstni red gumbov</string>
+</resources>
+

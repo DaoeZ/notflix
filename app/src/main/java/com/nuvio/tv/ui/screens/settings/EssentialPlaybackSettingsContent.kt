@@ -57,6 +57,11 @@ fun EssentialPlaybackSettingsContent(
             }
             item(key = "playback_basics") {
                 SettingsGroupCard(modifier = Modifier.fillMaxWidth(), title = stringResource(R.string.essential_playback_basics)) {
+                    if (settings != null) {
+                        NotflixPlayerButtonsSetting(settings, viewModel::playerButtonsProfileId) { ids, profile ->
+                            coroutineScope.launch { viewModel.setNotflixPlayerButtons(ids, profile) }
+                        }
+                    }
                     SettingsActionRow(
                         title = stringResource(R.string.essential_stream_selection),
                         subtitle = stringResource(R.string.essential_stream_selection_subtitle),

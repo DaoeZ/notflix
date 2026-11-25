@@ -28,6 +28,7 @@ internal fun PlaybackP2pSection(
     onClearTorrentCache: () -> Unit
 ) {
     SettingsToggleRow(
+        settingId = "PlaybackP2pSettings.p2p_consent_enable",
         title = stringResource(R.string.p2p_consent_enable),
         subtitle = null,
         checked = p2p.enabled,
@@ -40,24 +41,28 @@ internal fun PlaybackP2pSection(
         }
     )
     SettingsToggleRow(
+        settingId = "PlaybackP2pSettings.settings_p2p_hide_stats_title",
         title = stringResource(R.string.settings_p2p_hide_stats_title),
         subtitle = stringResource(R.string.settings_p2p_hide_stats_subtitle),
         checked = p2p.hideStats,
         onToggle = { onUpdate { setHideTorrentStats(!p2p.hideStats) } }
     )
     SettingsActionRow(
+        settingId = "PlaybackP2pSettings.settings_p2p_profile_title",
         title = stringResource(R.string.settings_p2p_profile_title),
         subtitle = stringResource(profileDescription(p2p.profile)),
         value = stringResource(profileLabel(p2p.profile)),
         onClick = { onOpenDialog(PlaybackDialog.TORRENT_PROFILE) }
     )
     SettingsActionRow(
+        settingId = "PlaybackP2pSettings.settings_p2p_cache_size_title",
         title = stringResource(R.string.settings_p2p_cache_size_title),
         subtitle = stringResource(R.string.settings_p2p_cache_size_description),
         value = stringResource(cacheSizeLabel(p2p.cacheSize)),
         onClick = { onOpenDialog(PlaybackDialog.TORRENT_CACHE_SIZE) }
     )
     SettingsActionRow(
+        settingId = "PlaybackP2pSettings.settings_p2p_clear_cache_title",
         title = stringResource(R.string.settings_p2p_clear_cache_title),
         subtitle = p2p.cacheSummary,
         onClick = onClearTorrentCache,

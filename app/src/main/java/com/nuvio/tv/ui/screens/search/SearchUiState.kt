@@ -9,6 +9,12 @@ import com.nuvio.tv.domain.model.CatalogRow
 import com.nuvio.tv.domain.model.DiscoverLocation
 import com.nuvio.tv.domain.model.MetaPreview
 
+internal data class NotflixDiscoverInput(val addons: List<Addon>, val location: DiscoverLocation, val profile: Int)
+
+internal fun notflixSearchStartItems(items: List<MetaPreview>, age: AgeGateSnapshot, hidden: Set<String>): List<MetaPreview> =
+    items.filter { age.allows(it) && hiddenTitleKey(it.apiType, it.id) !in hidden }
+        .distinctBy { "${it.apiType}:${it.id}" }
+
 internal const val MIN_SEARCH_QUERY_LENGTH = 2
 
 internal fun submittedSearchQuery(rawQuery: String): String =
@@ -33,6 +39,7 @@ data class SearchUiState(
     val installedAddons: List<Addon> = emptyList(),
     val discoverLocation: DiscoverLocation = DiscoverLocation.IN_SEARCH,
     val discoverInitialized: Boolean = false,
+    val discoverProfileId: Int? = null,
     val discoverLoading: Boolean = false,
     val discoverLoadingMore: Boolean = false,
     val discoverCatalogs: List<DiscoverCatalog> = emptyList(),
@@ -50,7 +57,8 @@ data class SearchUiState(
     val posterCardHeightDp: Int = 189,
     val posterCardCornerRadiusDp: Int = 12,
     val recentSearches: List<String> = emptyList(),
-    val suggestions: List<String> = emptyList()
+    val suggestions: List<String> = emptyList(),
+    val catalogRowsQuery: String = ""
 )
 
 /** Applies the device-local age limit and the profile's hidden titles to every rated list. */

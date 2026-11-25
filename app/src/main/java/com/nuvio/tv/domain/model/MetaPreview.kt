@@ -38,7 +38,8 @@ data class MetaPreview(
     val mdbListRatings: MDBListRatings? = null,
     val mdbListRatingOrder: List<String> = MDBListSettings.DEFAULT_RATING_ORDER,
     /** M57: origin of [imdbRating] for the label; old data and addon catalogs read as IMDB. */
-    val ratingSource: RatingSource = RatingSource.IMDB
+    val ratingSource: RatingSource = RatingSource.IMDB,
+    val originalTitle: String? = null
 ) {
     val apiType: String
         get() = type.toApiString(rawType)

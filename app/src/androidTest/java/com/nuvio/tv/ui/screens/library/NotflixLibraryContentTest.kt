@@ -137,6 +137,32 @@ class NotflixLibraryContentTest {
         composeRule.onNodeWithTag("notflix-focus-header").assertDoesNotExist()
     }
 
+    @Test fun cardSizeChangesTheRealPosterBoundsWithoutLosingFocus() {
+        val size = androidx.compose.runtime.mutableStateOf(com.nuvio.tv.domain.model.NotflixCardSize.LARGE)
+        composeRule.setContent {
+            NotflixPresentationTheme(true) {
+                CompositionLocalProvider(LocalNotflixPresentation provides NotflixPresentation(active = true,
+                    reduceHomeMotion = true, cardSize = size.value)) {
+                    NotflixLibraryPage(state(), emptySet(), emptySet(), listOf(LibraryViewMode.Saved),
+                        LibraryViewMode.Saved, actions(), {}, null, {})
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val poster = composeRule.onNodeWithTag("notflix-poster-series:2")
+        val large = poster.fetchSemanticsNode().boundsInRoot
+        composeRule.onNodeWithTag("notflix-poster-movie:1").assertIsFocused()
+        composeRule.runOnIdle { size.value = com.nuvio.tv.domain.model.NotflixCardSize.MEDIUM }
+        composeRule.waitForIdle()
+        val medium = poster.fetchSemanticsNode().boundsInRoot
+        composeRule.runOnIdle { size.value = com.nuvio.tv.domain.model.NotflixCardSize.SMALL }
+        composeRule.waitForIdle()
+        val small = poster.fetchSemanticsNode().boundsInRoot
+        org.junit.Assert.assertTrue(large.width > medium.width && medium.width > small.width)
+        org.junit.Assert.assertTrue(large.height > medium.height && medium.height > small.height)
+        composeRule.onNodeWithTag("notflix-poster-movie:1").assertIsFocused()
+    }
+
     @Test
     fun activeFiltersShowTheCounterInTheFiltersButton() {
         showNotflix(state(watched = LibraryWatchedFilter.WATCHED))

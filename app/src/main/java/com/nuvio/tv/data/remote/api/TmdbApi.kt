@@ -8,12 +8,20 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface TmdbApi {
+    @GET("search/multi")
+    suspend fun searchTitles(
+        @Query("api_key") apiKey: String,
+        @Query("query") query: String,
+        @Query("language") language: String,
+        @Query("include_adult") includeAdult: Boolean = false
+    ): Response<TmdbRecommendationsResponse>
     
     @GET("find/{external_id}")
     suspend fun findByExternalId(
         @Path("external_id") externalId: String,
         @Query("api_key") apiKey: String,
-        @Query("external_source") externalSource: String = "imdb_id"
+        @Query("external_source") externalSource: String = "imdb_id",
+        @Query("language") language: String? = null
     ): Response<TmdbFindResponse>
     
     @GET("movie/{movie_id}/external_ids")
@@ -183,7 +191,23 @@ interface TmdbApi {
         @Query("without_companies") withoutCompanies: String? = null,
         @Query("without_genres") withoutGenres: String? = null,
         @Query("without_keywords") withoutKeywords: String? = null,
-        @Query("without_watch_providers") withoutWatchProviders: String? = null
+        @Query("without_watch_providers") withoutWatchProviders: String? = null,
+        // M68: server-side age certificate filter (movies only; TMDB has none for series).
+        @Query("certification_country") certificationCountry: String? = null,
+        @Query("certification") certification: String? = null,
+        @Query("certification.lte") certificationLte: String? = null,
+        @Query("with_runtime.lte") runtimeLte: Int? = null,
+        @Query("with_runtime.gte") runtimeGte: Int? = null,
+        @Query("include_adult") includeAdult: Boolean = false
+    ): Response<TmdbDiscoverResponse>
+
+    @GET("trending/{media_type}/{time_window}")
+    suspend fun getTrending(
+        @Path("media_type") mediaType: String,
+        @Path("time_window") timeWindow: String = "day",
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String? = null,
+        @Query("page") page: Int = 1
     ): Response<TmdbDiscoverResponse>
 
     @GET("discover/tv")
@@ -296,7 +320,8 @@ data class TmdbFindResult(
     @Json(name = "id") val id: Int,
     @Json(name = "title") val title: String? = null,
     @Json(name = "name") val name: String? = null,
-    @Json(name = "media_type") val mediaType: String? = null
+    @Json(name = "media_type") val mediaType: String? = null,
+    @Json(name = "poster_path") val posterPath: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -448,7 +473,8 @@ data class TmdbCrewMember(
 @JsonClass(generateAdapter = true)
 data class TmdbImagesResponse(
     @Json(name = "logos") val logos: List<TmdbImage>? = null,
-    @Json(name = "backdrops") val backdrops: List<TmdbImage>? = null
+    @Json(name = "backdrops") val backdrops: List<TmdbImage>? = null,
+    @Json(name = "posters") val posters: List<TmdbImage>? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -630,7 +656,8 @@ data class TmdbRecommendationResult(
     @Json(name = "release_date") val releaseDate: String? = null,
     @Json(name = "first_air_date") val firstAirDate: String? = null,
     @Json(name = "vote_average") val voteAverage: Double? = null,
-    @Json(name = "vote_count") val voteCount: Int? = null
+    @Json(name = "vote_count") val voteCount: Int? = null,
+    @Json(name = "popularity") val popularity: Double? = null
 )
 
 // ── Person / Cast Detail DTOs ──

@@ -14,22 +14,22 @@ class NotflixCardSizeTest {
         assertEquals(311, NotflixVisualSpec.posterHeight(NotflixCardSize.LARGE))
         assertEquals(378, NotflixVisualSpec.expandedWidth(NotflixCardSize.LARGE))
         assertEquals(311, NotflixVisualSpec.expandedHeight(NotflixCardSize.LARGE))
-        assertEquals(248, NotflixVisualSpec.wideWidth(NotflixCardSize.LARGE))
-        assertEquals(140, NotflixVisualSpec.wideHeight(NotflixCardSize.LARGE))
+        assertEquals(336, NotflixVisualSpec.wideWidth(NotflixCardSize.LARGE))
+        assertEquals(189, NotflixVisualSpec.wideHeight(NotflixCardSize.LARGE))
     }
 
     @Test fun `medium is 87 percent of the poster and continue watching`() {
         assertEquals(183, NotflixVisualSpec.posterWidth(NotflixCardSize.MEDIUM))
         assertEquals(271, NotflixVisualSpec.posterHeight(NotflixCardSize.MEDIUM))
-        assertEquals(216, NotflixVisualSpec.wideWidth(NotflixCardSize.MEDIUM))
-        assertEquals(122, NotflixVisualSpec.wideHeight(NotflixCardSize.MEDIUM))
+        assertEquals(292, NotflixVisualSpec.wideWidth(NotflixCardSize.MEDIUM))
+        assertEquals(164, NotflixVisualSpec.wideHeight(NotflixCardSize.MEDIUM))
     }
 
     @Test fun `small is 75 percent of the poster and continue watching`() {
         assertEquals(158, NotflixVisualSpec.posterWidth(NotflixCardSize.SMALL))
         assertEquals(233, NotflixVisualSpec.posterHeight(NotflixCardSize.SMALL))
-        assertEquals(186, NotflixVisualSpec.wideWidth(NotflixCardSize.SMALL))
-        assertEquals(105, NotflixVisualSpec.wideHeight(NotflixCardSize.SMALL))
+        assertEquals(252, NotflixVisualSpec.wideWidth(NotflixCardSize.SMALL))
+        assertEquals(142, NotflixVisualSpec.wideHeight(NotflixCardSize.SMALL))
     }
 
     @Test fun `expanded card never drops below the panel minimum`() {

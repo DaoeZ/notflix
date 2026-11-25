@@ -60,6 +60,19 @@ class ReleaseSelectorTest {
         assertEquals(listOf("1.1.0"), selected.map { it.tagName })
     }
 
+    @Test
+    fun `shared feed excludes mobile tags even with a parseable release name`() {
+        val releases = listOf(
+            release("mobile-v2.0.0", name = "2.0.0"),
+            release("v1.1.0-beta.2"),
+            release("v1.0.1")
+        )
+        val stable = ReleaseSelector.eligibleReleases(releases, UpdateChannel.STABLE, sharedNotflixFeed = true)
+        val beta = ReleaseSelector.eligibleReleases(releases, UpdateChannel.BETA, sharedNotflixFeed = true)
+        assertEquals(listOf("v1.0.1"), stable.map { it.tagName })
+        assertEquals(listOf("v1.1.0-beta.2", "v1.0.1"), beta.map { it.tagName })
+    }
+
     private fun release(
         tag: String,
         name: String = tag,

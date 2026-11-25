@@ -64,5 +64,17 @@ internal fun projectNotflixCatalogs(
             }
     }
     val (rows, aliases) = suppressReplacedPopular(expanded, captured.focusAliases)
-    return catalog.copy(rows = rows, focusAliases = aliases)
+    val kidsHeroes = if (kidsHome) {
+        rows.asSequence()
+            .flatMap { it.catalog?.items.orEmpty().asSequence() }
+            .filter { !it.background.isNullOrBlank() || !it.poster.isNullOrBlank() }
+            .distinctBy { it.apiType.lowercase() to it.id.lowercase() }
+            .take(8)
+            .toList()
+    } else emptyList()
+    return catalog.copy(
+        rows = rows,
+        focusAliases = aliases,
+        heroItems = if (kidsHome && kidsHeroes.isNotEmpty()) kidsHeroes else catalog.heroItems
+    )
 }

@@ -468,6 +468,7 @@ private fun PlaybackNavHost(
                         )
                     )
                 },
+                onDownloadClick = navController::navigateToDetailDownload,
                 onPlayStartFromBeginningClick = { videoId, contentType, contentId, title, poster, backdrop, logo, season, episode, episodeName, genres, year, runtime, contentLanguage ->
                     navController.navigate(
                         Screen.Stream.createRoute(
@@ -556,6 +557,10 @@ private fun PlaybackNavHost(
                     nullable = true
                     defaultValue = null
                 },
+                navArgument("downloadSelection") {
+                    type = NavType.StringType
+                    defaultValue = "false"
+                },
                 navArgument("manualSelection") {
                     type = NavType.StringType
                     nullable = true
@@ -602,13 +607,19 @@ private fun PlaybackNavHost(
             val startFromBeginning = streamArgs
                 ?.getString("startFromBeginning")
                 ?.toBooleanStrictOrNull() == true
+            val downloadSelection = streamArgs?.getString("downloadSelection") == "true"
             StreamScreen(
+                downloadSelection = downloadSelection,
                 startFromBeginning = startFromBeginning,
                 restoreSourceSelection = restoreSourceSelection,
                 onSourceSelectionRestoreHandled = {
                     streamSavedState[SOURCE_SELECTION_RESTORE_STATE_KEY] = false
                 },
-                onBackPress = {
+                onBackPress = back@{
+                    if (downloadSelection) {
+                        navController.popBackStack()
+                        return@back
+                    }
                     val streamContentType = streamArgs?.getString("contentType").orEmpty()
                     val streamContentId = streamArgs?.getString("contentId").orEmpty()
                     val season = streamArgs?.getString("season")?.toIntOrNull()
@@ -676,7 +687,8 @@ private fun PlaybackNavHost(
                                 sources = playbackInfo.sources,
                                 contentLanguage = playbackInfo.contentLanguage,
                                 profileId = playbackInfo.profileId,
-                                audioDelayMs = playbackInfo.audioDelayMs
+                                audioDelayMs = playbackInfo.audioDelayMs,
+                                autoPlayAudioLanguage = playbackInfo.autoPlayAudioLanguage
                             )
                         )
                     }
@@ -718,7 +730,8 @@ private fun PlaybackNavHost(
                                 sources = playbackInfo.sources,
                                 contentLanguage = playbackInfo.contentLanguage,
                                 profileId = playbackInfo.profileId,
-                                audioDelayMs = playbackInfo.audioDelayMs
+                                audioDelayMs = playbackInfo.audioDelayMs,
+                                autoPlayAudioLanguage = playbackInfo.autoPlayAudioLanguage
                             )
                         ) {
                             popUpTo(Screen.Stream.route) { inclusive = true }
@@ -874,6 +887,11 @@ private fun PlaybackNavHost(
                     defaultValue = null
                 },
                 navArgument("audioDelayMs") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("autoPlayAudioLanguage") {
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
@@ -1273,6 +1291,24 @@ private fun PlaybackNavHost(
             )
         }
 
+        composable(Screen.Downloads.route) {
+            if (com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active) {
+                com.nuvio.tv.core.offline.NotflixOfflineScreen(
+                    onBack = { navController.popBackStack() },
+                    onPlay = { item ->
+                        val uri = item.playableUri ?: return@NotflixOfflineScreen
+                        navController.navigate(
+                            Screen.Player.createRoute(
+                                streamUrl = uri.toString(),
+                                title = item.video.title,
+                                filename = item.video.filename,
+                            )
+                        )
+                    },
+                )
+            }
+        }
+
         composable(Screen.Calendar.route) {
             // Fuente Nuvio: el mismo upcomingItems que usa la fila «En emisión» de Inicio.
             val homeEntry = androidx.compose.runtime.remember {
@@ -1303,8 +1339,10 @@ private fun PlaybackNavHost(
 
         composable(Screen.Settings.route) { entry ->
             val collectionReturnToken by entry.savedStateHandle.getStateFlow("notflixCollectionReturnToken", 0).collectAsState()
+            val notflixDestination by entry.savedStateHandle.getStateFlow<String?>(NotflixSettingsEntry.DESTINATION, null).collectAsState()
             SettingsScreen(
                 initialNotflixIntegrations = NotflixSettingsEntry.isNotflixIntegrationsRequested(entry.savedStateHandle),
+                initialNotflixDestination = notflixDestination,
                 onNavigateToCollections = { navController.navigate(Screen.Collections.route) },
                 collectionManagerReturnToken = collectionReturnToken,
                 showBuiltInHeader = !hideBuiltInHeaders,
@@ -1348,12 +1386,18 @@ private fun PlaybackNavHost(
         }
 
         composable(Screen.Tracking.route) {
+            if (LocalNotflixPresentation.current.active) com.nuvio.tv.ui.screens.settings.RedirectNotflixSettings(
+                navController, Screen.Tracking.route, com.nuvio.tv.ui.screens.settings.NotflixSettingsPage.ACCOUNTS)
+            else
             TrackingSettingsScreen(
                 onBackPress = { navController.popBackStack() }
             )
         }
 
         composable(Screen.TmdbSettings.route) {
+            if (LocalNotflixPresentation.current.active) com.nuvio.tv.ui.screens.settings.RedirectNotflixSettings(
+                navController, Screen.TmdbSettings.route, com.nuvio.tv.ui.screens.settings.NotflixSettingsPage.TMDB_OPTIONS)
+            else
             TmdbSettingsScreen(
                 onBackPress = { navController.popBackStack() }
             )
@@ -1361,6 +1405,9 @@ private fun PlaybackNavHost(
 
         composable(Screen.ThemeSettings.route) { entry ->
             val collectionReturnToken by entry.savedStateHandle.getStateFlow("notflixCollectionReturnToken", 0).collectAsState()
+            if (LocalNotflixPresentation.current.active) com.nuvio.tv.ui.screens.settings.RedirectNotflixSettings(
+                navController, Screen.ThemeSettings.route, com.nuvio.tv.ui.screens.settings.NotflixSettingsPage.HOME)
+            else
             ThemeSettingsScreen(
                 onNavigateToCollections = { navController.navigate(Screen.Collections.route) },
                 collectionManagerReturnToken = collectionReturnToken,
@@ -1369,12 +1416,18 @@ private fun PlaybackNavHost(
         }
 
         composable(Screen.PlaybackSettings.route) {
+            if (LocalNotflixPresentation.current.active) com.nuvio.tv.ui.screens.settings.RedirectNotflixSettings(
+                navController, Screen.PlaybackSettings.route, com.nuvio.tv.ui.screens.settings.NotflixSettingsPage.PLAYBACK)
+            else
             PlaybackSettingsScreen(
                 onBackPress = { navController.popBackStack() }
             )
         }
 
         composable(Screen.About.route) {
+            if (LocalNotflixPresentation.current.active) com.nuvio.tv.ui.screens.settings.RedirectNotflixSettings(
+                navController, Screen.About.route, com.nuvio.tv.ui.screens.settings.NotflixSettingsPage.ABOUT)
+            else
             AboutScreen(
                 onBackPress = { navController.popBackStack() },
                 onNavigateToSupportersContributors = {
@@ -1497,6 +1550,9 @@ private fun PlaybackNavHost(
         }
 
         composable(Screen.LayoutSettings.route) {
+            if (LocalNotflixPresentation.current.active) com.nuvio.tv.ui.screens.settings.RedirectNotflixSettings(
+                navController, Screen.LayoutSettings.route, com.nuvio.tv.ui.screens.settings.NotflixSettingsPage.HOME_ADVANCED)
+            else
             LayoutSettingsScreen(
                 onBackPress = { navController.popBackStack() }
             )

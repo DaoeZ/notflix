@@ -71,6 +71,21 @@ class NotflixSearchResultsTest {
     }
 
     @Test
+    fun localizedMatchFromPartialOriginalTitleLeadsAndKeepsTheAddonFallback() {
+        val original = item("film").copy(name = "The Brutalist", poster = "https://example.test/en.jpg")
+        val translated = original.copy(name = "El brutalista", originalTitle = "The Brutalist",
+            poster = "https://example.test/es.jpg")
+        val rows = listOf(row("addon", item("other").copy(name = "Brutalist Couture"), original),
+            row("tmdb", translated))
+        val results = notflixSearchResults(rows, "BRUTAL")
+        assertEquals(listOf("film", "other"), results.map { it.id })
+        assertEquals(translated.poster, results.first().poster)
+        assertEquals(original.poster, results.first().rawPosterUrl)
+        assertEquals(0, notflixTitleMatchRank("The Brutalist", "Brutalist"))
+        assertEquals(0, notflixTitleMatchRank("Amélie", "Amelie"))
+    }
+
+    @Test
     fun emptyRowsProduceAnEmptyResult() {
         assertTrue(notflixSearchResults(emptyList()).isEmpty())
         assertTrue(notflixSearchResults(listOf(row("a"))).isEmpty())

@@ -201,4 +201,6 @@
         <item>Simkl вече може да бъде свързан.</item>
         <item>Trakt: свързване само с код, без настройки.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Ключ на Notflix</string>
+    <string name="notflix_tmdb_attribution">Този продукт използва API на TMDB, но не е одобрен или сертифициран от TMDB.</string>
 </resources>

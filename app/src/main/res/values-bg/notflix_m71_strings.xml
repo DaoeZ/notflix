@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Аудио и субтитри</string>
+    <string name="notflix_player_more">Още</string>
+    <string name="notflix_player_speed_value">Скорост (%1$s×)</string>
+    <string name="notflix_player_remaining">Остават %1$s</string>
+    <string name="notflix_player_buttons">Бутони на плейъра</string>
+    <string name="notflix_player_buttons_help">Изберете до %1$d действия. Още е накрая и съдържа останалите.</string>
+    <string name="notflix_player_row_order">Ред на бутоните</string>
+</resources>
+

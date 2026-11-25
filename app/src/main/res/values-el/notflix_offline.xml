@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Λήψεις</string>
+    <string name="notflix_offline_receive">Λήψη από το κινητό</string>
+    <string name="notflix_offline_pairing">Χειροκίνητη εισαγωγή: %1$s · %2$s. Ο κωδικός ισχύει για 5 λεπτά.</string>
+    <string name="notflix_offline_scan">Σαρώστε με την κάμερα του κινητού για να ανοίξετε τις Λήψεις του Notflix.</string>
+    <string name="notflix_offline_expired">Η συνεδρία έληξε. Επιλέξτε «Λήψη από το κινητό» για επανασύνδεση.</string>
+    <string name="notflix_offline_empty">Κατεβάστε ένα βίντεο από τις Πηγές ή στείλτε ένα από το κινητό σας.</string>
+    <string name="notflix_offline_profile">Οι λήψεις δεν είναι διαθέσιμες σε αυτό το προφίλ.</string>
+    <string name="notflix_offline_unavailable">Το αρχείο δεν είναι διαθέσιμο</string>
+    <string name="notflix_offline_confirm_remove">Επιβεβαίωση αφαίρεσης</string>
+    <string name="notflix_offline_choose_source">Επιλέξτε πηγή για λήψη</string>
+    <string name="notflix_offline_started">Η λήψη μπήκε σε αναμονή</string>
+    <string name="notflix_offline_failed">Δεν ήταν δυνατό το άνοιγμα ή η λήψη αυτού του αρχείου. Δοκιμάστε ένα απευθείας αρχείο βίντεο.</string>
+</resources>

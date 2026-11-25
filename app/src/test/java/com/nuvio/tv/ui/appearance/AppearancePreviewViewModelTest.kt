@@ -68,4 +68,37 @@ class AppearancePreviewViewModelTest {
         authorize(2);runCurrent();coEvery{store.selectPreviewSoundEnabled(any(),true,any())} throws CancellationException("cancelled preview")
         vm.selectPreviewSoundEnabled(true);runCurrent();assertFalse(vm.state.value.saveFailed);assertFalse(vm.state.value.previewSoundEnabled)
     }
+
+    @Test fun `explicit unified sound writes appearance before the existing inverse preference`()=runTest(dispatcher) {
+        authorize(2);runCurrent()
+        val writes=mutableListOf<String>()
+        coEvery{store.selectPreviewSoundEnabled(any(),true,any())} coAnswers {
+            assertTrue(thirdArg<()->Boolean>()());writes += "appearance";Result.success(Unit)
+        }
+        vm.selectPreviewSoundEnabled(true) { authorized ->
+            assertTrue(authorized());writes += "inverse";Result.success(Unit)
+        }
+        runCurrent();assertEquals(listOf("appearance","inverse"),writes)
+        coVerify(exactly=1){store.selectPreviewSoundEnabled(any(),true,any())}
+    }
+    @Test fun `failed or late appearance sound write never updates the inverse preference`()=runTest(dispatcher) {
+        authorize(2);runCurrent();var inverseWrites=0
+        coEvery{store.selectPreviewSoundEnabled(any(),true,any())} returns Result.failure(IOException("fixture"))
+        vm.selectPreviewSoundEnabled(true) { inverseWrites++;Result.success(Unit) };runCurrent()
+        assertEquals(0,inverseWrites);assertTrue(vm.state.value.saveFailed)
+        val finish=CompletableDeferred<Result<Unit>>()
+        coEvery{store.selectPreviewSoundEnabled(any(),true,any())} coAnswers { finish.await() }
+        vm.selectPreviewSoundEnabled(true) { inverseWrites++;Result.success(Unit) };runCurrent()
+        authorize(1);runCurrent();finish.complete(Result.success(Unit));runCurrent()
+        assertEquals(0,inverseWrites);assertFalse(vm.state.value.saveFailed)
+    }
+    @Test fun `inverse sound failure is reported and cancellation is not converted into success`()=runTest(dispatcher) {
+        authorize(2);runCurrent()
+        coEvery{store.selectPreviewSoundEnabled(any(),true,any())} returns Result.success(Unit)
+        vm.selectPreviewSoundEnabled(true) { Result.failure(IOException("inverse")) };runCurrent()
+        assertTrue(vm.state.value.saveFailed)
+        vm.selectPreviewSoundEnabled(true) { throw CancellationException("inverse cancelled") };runCurrent()
+        // Cancellation must not publish a successful retry.
+        assertTrue(vm.state.value.saveFailed)
+    }
 }

@@ -2,7 +2,6 @@ package com.nuvio.tv.ui.screens.home
 
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.animation.Crossfade
 import com.nuvio.tv.ui.appearance.NotflixWordmark
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.snap
@@ -48,6 +47,35 @@ import com.nuvio.tv.ui.appearance.notflixRating
 /** Test-only pull observation; default null, never publishes frame values to accessibility. */
 internal val LocalBillboardFrameObserver = staticCompositionLocalOf<((() -> Float, () -> Float) -> Unit)?> { null }
 
+/** Lives above Home's lazy viewport, so scrolling the banner away never disposes its clock. */
+@Composable
+internal fun rememberNotflixBillboardRotation(
+    binding: PreviewBinding?, identity: String?, manualEpoch: Long, eligible: Boolean,
+    interacting: Boolean, count: Int, onAdvance: () -> Unit, liveAllowed: () -> Boolean = { true }
+): State<Float> {
+    val ambientController = LocalAmbientIdleController.current
+    val ambient = ambientController?.let { it.isShowing.collectAsState().value } ?: false
+    val fraction = remember(binding) { mutableFloatStateOf(0f) }
+    var periodIdentity by remember { mutableStateOf<Triple<PreviewBinding?, String?, Long>?>(null) }
+    val advance by rememberUpdatedState(onAdvance)
+    val allowed by rememberUpdatedState(liveAllowed)
+    val running = notflixBillboardRotates(eligible, interacting, ambient, count)
+    val latestRunning by rememberUpdatedState(running)
+    LaunchedEffect(binding, identity, manualEpoch, running) {
+        val token = Triple(binding, identity, manualEpoch)
+        if (periodIdentity != token || !eligible || ambient || count <= 1) { fraction.floatValue = 0f; periodIdentity = token }
+        if (!running) return@LaunchedEffect
+        val clock = NotflixBillboardClock(fraction.floatValue)
+        while (true) {
+            val frame = withFrameNanos { clock.frame(it) }
+            if (!latestRunning || ambientController?.isShowing?.value == true || !allowed()) { fraction.floatValue = 0f; break }
+            fraction.floatValue = frame.fraction
+            if (frame.advance) { if (latestRunning && allowed()) advance(); break }
+        }
+    }
+    return fraction
+}
+
 /** Image-only motion; actions remain outside crossfades so focus and held keys keep their identity. */
 @Composable
 internal fun NotflixBillboard(
@@ -55,13 +83,14 @@ internal fun NotflixBillboard(
     eligible: Boolean, manualEpoch: Long, infoRequester: FocusRequester, playRequester: FocusRequester,
     liveAllowed: () -> Boolean = { true }, onAdvance: () -> Unit, onSelect: (Int) -> Unit,
     onInteraction: (Boolean) -> Unit, onFocus: (BillboardAction) -> Unit,
-    onKey: (BillboardAction, Key) -> Unit, onInfo: () -> Unit, onPlay: (() -> Unit)?
+    onKey: (BillboardAction, Key) -> Unit, onInfo: () -> Unit, onPlay: (() -> Unit)?,
+    rotationProgress: State<Float>? = null
 ) {
 
-    val ambientController = LocalAmbientIdleController.current
-    val ambient = ambientController?.let { it.isShowing.collectAsState().value } ?: false
     var interacting by remember { mutableStateOf(false) }
-    var fraction by remember { mutableFloatStateOf(0f) }
+    val fraction by (rotationProgress ?: rememberNotflixBillboardRotation(binding, notflixMetaKey(item),
+        manualEpoch, eligible, interacting, count, onAdvance, liveAllowed))
+    DisposableEffect(Unit) { onDispose { onInteraction(false) } }
     LocalBillboardFrameObserver.current?.let { observer ->
         SideEffect { observer({ fraction }, { if (reduced) 1f else 1.02f + fraction * .035f }) }
     }
@@ -90,45 +119,18 @@ internal fun NotflixBillboard(
         }
         copyPhase = 0
     }
-    var periodIdentity by remember { mutableStateOf<Triple<PreviewBinding?, String, Long>?>(null) }
-    val latestAdvance by rememberUpdatedState(onAdvance)
-    val latestAllowed by rememberUpdatedState(liveAllowed)
-    val running = eligible && !ambient && !interacting && !reduced && count > 1
-    val latestRunning by rememberUpdatedState(running)
-    LaunchedEffect(binding, identity, manualEpoch, eligible, running, ambient) {
-        val token = Triple(binding, identity, manualEpoch)
-        if (periodIdentity != token || !eligible || ambient || reduced || count <= 1) {
-            fraction = 0f
-            periodIdentity = token
-        }
-        if (!running) return@LaunchedEffect
-        val clock = NotflixBillboardClock(fraction)
-        while (true) {
-            val frame = withFrameNanos { clock.frame(it) }
-            if (!latestRunning || ambientController?.isShowing?.value == true || !latestAllowed()) { fraction = 0f; break }
-            fraction = frame.fraction
-            if (frame.advance) {
-                if (latestRunning && latestAllowed()) latestAdvance()
-                break
-            }
-        }
-    }
     // Perf (TV GPU): no own background, the Notflix shell root already paints it; fewer full-width fills.
     Box(Modifier.fillMaxWidth().height(Spec.HERO_HEIGHT.dp).clipToBounds().testTag("notflix-editorial")
         .onFocusChanged { interacting = it.hasFocus; onInteraction(it.hasFocus) }.focusGroup()) {
         key(binding) {
-            Crossfade(identity, Modifier.matchParentSize(), animationSpec = if (reduced) snap() else tween(450), label = "notflix-billboard-art") { shownIdentity ->
-                var retained by remember(shownIdentity) { mutableStateOf(item) }
-                val shown = if (shownIdentity == identity) item else retained
-                SideEffect { if (shownIdentity == identity) retained = item }
-                val art = shown.background ?: shown.landscapePoster
-                if (!art.isNullOrBlank()) AsyncImage(art, null, Modifier.fillMaxSize().graphicsLayer {
-                        val phase = if (shownIdentity == identity) fraction else 1f
+            NotflixRetainedBackdrop(item.background ?: item.landscapePoster, binding, reduced,
+                Modifier.matchParentSize().testTag("notflix-editorial-art"), alignment = BiasAlignment(0f, -.6f),
+                imageLayer = { current ->
+                    val phase = if (current) fraction else 1f
                     scaleX = if (reduced) 1f else 1.02f + phase * .035f
                     scaleY = scaleX
                     translationX = if (reduced) 0f else -size.width * phase * .01f
-                }.testTag("notflix-editorial-art"), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.6f))
-            }
+                })
         }
         // Perf: each scrim only covers the band where it is not transparent (same look, less fill rate).
         Box(Modifier.fillMaxHeight().fillMaxWidth(.75f).background(Brush.horizontalGradient(

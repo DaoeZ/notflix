@@ -18,9 +18,13 @@ import com.nuvio.tv.domain.model.MetaPreview
 import com.nuvio.tv.domain.model.PosterShape
 import com.nuvio.tv.domain.model.RatingSource
 import com.nuvio.tv.domain.model.TmdbCollectionMediaType
+import com.nuvio.tv.domain.model.TmdbCollectionFilters
 import com.nuvio.tv.domain.model.TmdbCollectionSort
 import com.nuvio.tv.domain.model.TmdbCollectionSource
 import com.nuvio.tv.domain.model.TmdbCollectionSourceType
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -31,6 +35,11 @@ import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import dagger.hilt.android.qualifiers.ApplicationContext
+
+/** M68: minimum size of a certificate-filtered KIDS row before it is completed. */
+private const val CERTIFIED_ROW_MIN = 20
+private const val CERTIFIED_FALLBACK_COUNTRY = "US"
+private const val CERTIFIED_FALLBACK_RATING = "G"
 
 data class TmdbSourceImportMetadata(
     val title: String? = null,
@@ -56,7 +65,17 @@ class TmdbCollectionSourceResolver @Inject constructor(
         }
         val result = runCatching {
             withContext(Dispatchers.IO) {
-                val language = tmdbSettingsDataStore.settings.first().language
+                val rawLanguage = tmdbSettingsDataStore.settings.first().language
+                val language = when (rawLanguage.trim().replace('_', '-').lowercase()) {
+                    "es" -> "es-ES"
+                    "es-419" -> "es-MX"
+                    "pt-br" -> "pt-BR"
+                    "pt" -> "pt-PT"
+                    "fr" -> "fr-FR"
+                    "de" -> "de-DE"
+                    "it" -> "it-IT"
+                    else -> rawLanguage
+                }
                 when (source.sourceType) {
                     TmdbCollectionSourceType.LIST -> resolveList(source, language, page)
                     TmdbCollectionSourceType.COLLECTION -> resolveCollection(source, language)
@@ -70,7 +89,10 @@ class TmdbCollectionSourceResolver @Inject constructor(
         }
         result.fold(
             onSuccess = { emit(NetworkResult.Success(it)) },
-            onFailure = { emit(NetworkResult.Error(it.message ?: string(R.string.tmdb_error_load_source))) }
+            onFailure = {
+                if (it is CancellationException) throw it
+                emit(NetworkResult.Error(it.message ?: string(R.string.tmdb_error_load_source)))
+            }
         )
     }
 
@@ -278,7 +300,14 @@ class TmdbCollectionSourceResolver @Inject constructor(
                 withWatchMonetizationTypes = if (!filters.withWatchProviders.isNullOrBlank()) "flatrate|free|ads|rent|buy" else null,
                 withoutCompanies = filters.withoutCompanies,
                 withoutGenres = filters.withoutGenres,
-                withoutWatchProviders = filters.withoutWatchProviders
+                withoutWatchProviders = filters.withoutWatchProviders,
+                // M68: certified rows ask TMDB to filter by age on its side.
+                certificationCountry = filters.certificationCountry,
+                certification = filters.certification,
+                certificationLte = filters.certificationLte,
+                runtimeLte = filters.runtimeLte,
+                runtimeGte = filters.runtimeGte,
+                includeAdult = false
             ).body()
             TmdbCollectionMediaType.TV -> tmdbApi.discoverTv(
                 apiKey = tmdbKey(),
@@ -315,13 +344,70 @@ class TmdbCollectionSourceResolver @Inject constructor(
                 withoutWatchProviders = filters.withoutWatchProviders
             ).body()
         } ?: error(string(R.string.tmdb_error_discover_no_data))
-        val items = response.results.orEmpty().mapNotNull { it.toPreview(mediaType) }.distinctBy { it.id }
+        val certifiedTp = mediaType == TmdbCollectionMediaType.MOVIE &&
+            isCertifiedAllAgesFilter(filters)
+        val initialItems = response.results.orEmpty()
+            .mapNotNull { result ->
+                result.toPreview(mediaType)?.let { preview ->
+                    // Trust server-certified Discover queries so Kids rows skip 20+ redundant HTTP calls.
+                    if (certifiedTp && preview.ageRating.isNullOrBlank()) preview.copy(ageRating = "TP") else preview
+                }
+            }
+            .distinctBy { it.id }
+        val items = if (mediaType == TmdbCollectionMediaType.MOVIE) {
+            completeCertifiedMovies(initialItems, filters, source, language, page)
+        } else {
+            initialItems
+        }
         return row(
             source = source.copy(mediaType = mediaType),
             page = response.page ?: page,
             hasMore = (response.page ?: page) < (response.totalPages ?: page) && items.isNotEmpty(),
             items = items
         )
+    }
+
+    private fun isCertifiedAllAgesFilter(filters: TmdbCollectionFilters): Boolean {
+        val country = filters.certificationCountry?.uppercase().orEmpty()
+        val cert = filters.certification?.uppercase().orEmpty()
+        val certLte = filters.certificationLte?.uppercase().orEmpty()
+        return (country == "ES" && (cert == "A|AI" || cert == "A" || certLte == "A" || certLte == "AI")) ||
+            (country == "US" && (cert == "G" || certLte == "G"))
+    }
+
+    /** M68: complete certified Kids movie rows in parallel (US G + page 2) for a rich, instant catalog. */
+    private suspend fun completeCertifiedMovies(
+        items: List<MetaPreview>,
+        filters: TmdbCollectionFilters,
+        source: TmdbCollectionSource,
+        language: String,
+        page: Int
+    ): List<MetaPreview> {
+        if (page != 1 || filters.certificationCountry != "ES" ||
+            (filters.certification != "A|Ai" && filters.certificationLte != "A")
+        ) return items
+        val targetSize = 20
+        if (items.size >= targetSize) return items
+        val extra = try {
+            resolveDiscover(
+                source.copy(
+                    filters = filters.copy(
+                        certificationCountry = CERTIFIED_FALLBACK_COUNTRY,
+                        certification = CERTIFIED_FALLBACK_RATING,
+                        certificationLte = null
+                    )
+                ),
+                language,
+                page = 1
+            ).items
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            emptyList()
+        }
+        val seen = items.mapTo(mutableSetOf()) { it.id }
+        return items + extra.asSequence().filter { seen.add(it.id) }
+            .take((targetSize - items.size).coerceAtLeast(0)).toList()
     }
 
     private fun row(source: TmdbCollectionSource, page: Int, hasMore: Boolean, items: List<MetaPreview>): CatalogRow {

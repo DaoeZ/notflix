@@ -63,8 +63,18 @@ internal fun SliderSettingsItem(
     subtitle: String? = null,
     onFocused: () -> Unit = {},
     enabled: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    settingId: String? = null,
+    notflixValueScale: Float = 1f,
+    notflixValueLabel: ((Int) -> String)? = null
 ) {
+    if (!notflixSettingsRowVisible(settingId)) return
+    if (LocalNotflixSettingsFrame.current) {
+        NotflixNumberSettingsRow(title, subtitle, value,
+            notflixNumberOptions(minValue, maxValue, step, value), valueText, enabled,
+            modifier, settingId, notflixValueScale, onValueChange, notflixValueLabel)
+        return
+    }
     val span = (maxValue - minValue).toFloat()
     val progress = if (span > 0f) (value - minValue).toFloat() / span else 0f
 
@@ -97,9 +107,16 @@ internal fun SliderSettingsItem(
     subtitle: String? = null,
     onFocused: () -> Unit = {},
     enabled: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    settingId: String? = null
 ) {
+    if (!notflixSettingsRowVisible(settingId)) return
     require(values.isNotEmpty()) { "SliderSettingsItem.values must not be empty" }
+    if (LocalNotflixSettingsFrame.current) {
+        NotflixNumberSettingsRow(title, subtitle, selected, values, valueText, enabled,
+            modifier, settingId, 1f, onValueChange)
+        return
+    }
 
     val index = values.indexOf(selected).coerceAtLeast(0)
     val lastIndex = values.lastIndex
@@ -313,14 +330,16 @@ internal fun ColorSettingsItem(
     showTransparent: Boolean = false,
     onClick: () -> Unit,
     onFocused: () -> Unit = {},
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    settingId: String? = null
 ) {
+    if (!notflixSettingsRowVisible(settingId)) return
     var isFocused by remember { mutableStateOf(false) }
     val contentAlpha = if (enabled) 1f else 0.4f
 
     Card(
         onClick = { if (enabled) onClick() },
-        modifier = Modifier
+        modifier = Modifier.notflixSettingsRowFocus(settingId ?: title, enabled, onClick)
             .fillMaxWidth()
             .onFocusChanged { state ->
                 val nowFocused = state.isFocused

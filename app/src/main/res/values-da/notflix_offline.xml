@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Downloads</string>
+    <string name="notflix_offline_receive">Modtag fra telefon</string>
+    <string name="notflix_offline_pairing">Manuel indtastning: %1$s · %2$s. Koden er gyldig i 5 minutter.</string>
+    <string name="notflix_offline_scan">Scan med telefonens kamera for at åbne Notflix Downloads.</string>
+    <string name="notflix_offline_expired">Sessionen er udløbet. Vælg Modtag fra telefon for at oprette forbindelse igen.</string>
+    <string name="notflix_offline_empty">Download en video fra Kilder, eller send en fra din telefon.</string>
+    <string name="notflix_offline_profile">Downloads er ikke tilgængelige på denne profil.</string>
+    <string name="notflix_offline_unavailable">Filen er ikke tilgængelig</string>
+    <string name="notflix_offline_confirm_remove">Bekræft fjernelse</string>
+    <string name="notflix_offline_choose_source">Vælg en kilde at downloade</string>
+    <string name="notflix_offline_started">Download sat i kø</string>
+    <string name="notflix_offline_failed">Filen kunne ikke åbnes eller downloades. Prøv en direkte videofil.</string>
+</resources>

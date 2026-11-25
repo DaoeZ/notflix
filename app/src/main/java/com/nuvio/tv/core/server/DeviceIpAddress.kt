@@ -10,18 +10,28 @@ object DeviceIpAddress {
     fun get(context: Context): String? {
         // Try WifiManager first
         val wifiManager = context.applicationContext
-            .getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val wifiIp = wifiManager.connectionInfo.ipAddress
+            .getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        val wifiIp = runCatching { wifiManager?.connectionInfo?.ipAddress ?: 0 }.getOrDefault(0)
         if (wifiIp != 0) {
-            return formatIp(wifiIp)
+            val formatted = formatIp(wifiIp)
+            if (!formatted.startsWith("169.254.") && !formatted.startsWith("127.")) {
+                return formatted
+            }
         }
 
-        // Fallback: iterate NetworkInterface for Ethernet / other connections
+        // Fallback: iterate active physical NetworkInterfaces (Ethernet / Wi-Fi) preferring RFC 1918 site-local IPv4
         return try {
-            NetworkInterface.getNetworkInterfaces()?.toList()
-                ?.flatMap { it.inetAddresses.toList() }
-                ?.firstOrNull { !it.isLoopbackAddress && it is Inet4Address }
-                ?.hostAddress
+            val candidates = NetworkInterface.getNetworkInterfaces()?.toList().orEmpty()
+                .filter { iface ->
+                    runCatching { iface.isUp && !iface.isLoopback && !iface.isVirtual }.getOrDefault(false) &&
+                        !iface.name.startsWith("tun", ignoreCase = true) &&
+                        !iface.name.startsWith("ppp", ignoreCase = true) &&
+                        !iface.name.startsWith("rmnet", ignoreCase = true)
+                }
+                .flatMap { it.inetAddresses.toList() }
+                .filterIsInstance<Inet4Address>()
+                .filter { !it.isLoopbackAddress && !it.isLinkLocalAddress }
+            (candidates.firstOrNull { it.isSiteLocalAddress } ?: candidates.firstOrNull())?.hostAddress
         } catch (e: Exception) {
             null
         }

@@ -34,6 +34,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -79,7 +80,7 @@ fun NotflixCalendarScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // Al entrar de nuevo en la pantalla se refresca; dentro de la misma visita solo se recarga
     // cuando cambia la fuente de Nuvio (evita repetir la petición a Trakt).
-    var firstLoad by remember { mutableStateOf(true) }
+    var firstLoad by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
     LaunchedEffect(nuvioUpcoming) {
         viewModel.load(nuvioUpcoming, force = firstLoad)
         firstLoad = false
@@ -89,8 +90,11 @@ fun NotflixCalendarScreen(
     var focusRequested by remember { mutableStateOf(false) }
     LaunchedEffect(state.loading, state.error, state.days) {
         if (!state.loading && !state.error && state.days.isNotEmpty() && !focusRequested) {
-            focusRequested = true
-            runCatching { firstCardFocus.requestFocus() }
+            androidx.compose.runtime.withFrameNanos { }
+            androidx.compose.runtime.withFrameNanos { }
+            if (runCatching { firstCardFocus.requestFocus() }.isSuccess) {
+                focusRequested = true
+            }
         }
     }
 
@@ -124,14 +128,27 @@ fun NotflixCalendarScreen(
             state.error -> CalendarError(onRetry = viewModel::retry)
             state.loading -> CalendarSkeleton()
             state.days.isEmpty() -> CalendarEmpty()
-            else -> CalendarDays(
-                days = state.days,
-                posters = state.posters,
-                today = today,
-                firstCardFocus = firstCardFocus,
-                onNeedPoster = viewModel::ensurePoster,
-                onClick = onNavigateToDetail
-            )
+            else -> {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                CalendarDays(
+                    days = state.days,
+                    posters = state.posters,
+                    remindedKeys = state.remindedKeys,
+                    reminderKeyFor = viewModel::reminderKeyFor,
+                    today = today,
+                    firstCardFocus = firstCardFocus,
+                    onNeedPoster = viewModel::ensurePoster,
+                    onToggleReminder = { entry ->
+                        val added = viewModel.toggleReminder(entry)
+                        val msg = context.getString(
+                            if (added) R.string.calendar_remind_added else R.string.calendar_remind_removed,
+                            entry.seriesName
+                        )
+                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    onClick = onNavigateToDetail
+                )
+            }
         }
     }
 }
@@ -140,9 +157,12 @@ fun NotflixCalendarScreen(
 private fun CalendarDays(
     days: List<CalendarDay>,
     posters: Map<String, String>,
+    remindedKeys: Set<String>,
+    reminderKeyFor: (CalendarEntry) -> String,
     today: LocalDate,
     firstCardFocus: FocusRequester,
     onNeedPoster: (CalendarEntry) -> Unit,
+    onToggleReminder: (CalendarEntry) -> Unit,
     onClick: (String, String) -> Unit
 ) {
     LazyColumn(
@@ -161,12 +181,17 @@ private fun CalendarDays(
                 )
                 Spacer(Modifier.height(7.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    itemsIndexed(day.entries) { entryIndex, entry ->
+                    itemsIndexed(
+                        items = day.entries,
+                        key = { _, entry -> "${entry.contentId}:${entry.season ?: 0}:${entry.episode ?: 0}" }
+                    ) { entryIndex, entry ->
                         CalendarCard(
                             entry = entry,
                             poster = entry.poster?.takeIf { it.isNotBlank() } ?: posters[entry.contentId],
+                            reminded = reminderKeyFor(entry) in remindedKeys,
                             focusRequester = if (dayIndex == 0 && entryIndex == 0) firstCardFocus else null,
                             onNeedPoster = { onNeedPoster(entry) },
+                            onLongPress = { onToggleReminder(entry) },
                             onClick = { onClick(entry.contentId, entry.contentType) }
                         )
                     }
@@ -180,8 +205,10 @@ private fun CalendarDays(
 private fun CalendarCard(
     entry: CalendarEntry,
     poster: String?,
+    reminded: Boolean,
     focusRequester: FocusRequester?,
     onNeedPoster: () -> Unit,
+    onLongPress: () -> Unit,
     onClick: () -> Unit
 ) {
     LaunchedEffect(entry.contentId, poster) {
@@ -189,6 +216,7 @@ private fun CalendarCard(
     }
     var focused by remember { mutableStateOf(false) }
     val confirmSound = rememberNotflixConfirmSound()
+    val longPressTracker = com.nuvio.tv.ui.util.rememberLongPressKeyTracker()
     val scale by animateFloatAsState(
         targetValue = if (focused) 1.04f else 1f,
         animationSpec = tween(Spec.FOCUS_MS),
@@ -221,6 +249,16 @@ private fun CalendarCard(
             .clip(RoundedCornerShape(5.dp))
             .background(Spec.Surface)
             .border(2.dp, if (focused) Spec.Text else Color.Transparent, RoundedCornerShape(5.dp))
+            .onPreviewKeyEvent {
+                longPressTracker.handle(
+                    event = it.nativeKeyEvent,
+                    isLongPressKey = { keyCode ->
+                        keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER ||
+                            keyCode == android.view.KeyEvent.KEYCODE_ENTER
+                    },
+                    onLongPress = onLongPress
+                )
+            }
             .clickable(role = Role.Button, onClick = { confirmSound(); onClick() })
             .semantics { contentDescription = entry.seriesName }
             .padding(5.dp)
@@ -250,6 +288,24 @@ private fun CalendarCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.align(Alignment.Center).padding(8.dp)
                 )
+            }
+            if (reminded) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(5.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Spec.Accent)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.calendar_remind_active),
+                        color = Spec.Text,
+                        fontFamily = Spec.BodyFont,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
         Spacer(Modifier.height(5.dp))
@@ -340,6 +396,12 @@ private fun CalendarEmpty() {
 @Composable
 private fun CalendarError(onRetry: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
+    val retryFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        androidx.compose.runtime.withFrameNanos { }
+        androidx.compose.runtime.withFrameNanos { }
+        runCatching { retryFocus.requestFocus() }
+    }
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = Spec.GUTTER.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -355,6 +417,7 @@ private fun CalendarError(onRetry: () -> Unit) {
         Spacer(Modifier.height(14.dp))
         Box(
             Modifier
+                .focusRequester(retryFocus)
                 .onFocusChanged { focused = it.isFocused }
                 .border(
                     width = 2.dp,

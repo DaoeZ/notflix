@@ -2,6 +2,7 @@ package com.nuvio.tv.data.local
 
 import android.content.Context
 import android.util.Log
+import com.nuvio.tv.core.profile.ProfileScopedCredentialStore
 import com.nuvio.tv.core.profile.ProtectedProfilePreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
@@ -23,7 +24,9 @@ data class NotflixIntegrationCredentials(
     val tmdbApiKey: String = "",
     val introDbBaseUrl: String = "",
     val traktClientId: String = "",
-    val traktClientSecret: String = ""
+    val traktClientSecret: String = "",
+    /** S4: when these keys were last saved (epoch ms); across devices the newest save wins. 0 = never. */
+    val updatedAt: Long = 0
 ) {
     fun normalized(): NotflixIntegrationCredentials = copy(
         tmdbApiKey = tmdbApiKey.trim(),
@@ -45,7 +48,7 @@ fun interface NotflixIntegrationValuesSource {
 @Singleton
 class NotflixIntegrationStore @Inject constructor(
     @ApplicationContext context: Context
-) : NotflixIntegrationValuesSource {
+) : NotflixIntegrationValuesSource, ProfileScopedCredentialStore {
     private val preferences = ProtectedProfilePreferences(context, PREFERENCES_NAME, KEY_ALIAS)
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val lock = Any()
@@ -79,12 +82,28 @@ class NotflixIntegrationStore @Inject constructor(
         }
     }
 
-    suspend fun save(credentials: NotflixIntegrationCredentials) = withContext(Dispatchers.IO) {
-        val normalized = credentials.normalized()
+    suspend fun save(
+        credentials: NotflixIntegrationCredentials,
+        updatedAt: Long = System.currentTimeMillis()
+    ) = withContext(Dispatchers.IO) {
+        val normalized = credentials.normalized().copy(updatedAt = updatedAt)
         synchronized(lock) {
             preferences.write(DEVICE_PROFILE_ID, json.encodeToString(normalized))
             snapshot = normalized
             mutableValues.value = normalized
+        }
+    }
+
+    /** Device-level keys do not belong to a viewing profile. */
+    override fun removeProfile(profileId: Int) = Unit
+
+    /** Sign-out: someone else's device keeps nothing of this account's keys. */
+    override fun clearAllProfiles() {
+        synchronized(lock) {
+            preferences.clear()
+            val empty = NotflixIntegrationCredentials()
+            snapshot = empty
+            mutableValues.value = empty
         }
     }
 
@@ -104,10 +123,20 @@ class NotflixIntegrationConfig(
     /** Notflix's own Trakt app from the build; used only when the user has not typed a Client ID. */
     private val builtInTraktClientId: String = com.nuvio.tv.BuildConfig.TRAKT_CLIENT_ID,
     private val builtInTraktClientSecret: String = com.nuvio.tv.BuildConfig.TRAKT_CLIENT_SECRET,
+    /** M68: Notflix's own TMDB key from the build; the user's own key always wins when present. */
+    private val builtInTmdbApiKey: String = com.nuvio.tv.BuildConfig.TMDB_API_KEY,
     // Last, so callers keep writing NotflixIntegrationConfig { credentials }.
     private val source: NotflixIntegrationValuesSource
 ) {
-    fun tmdbApiKey(): String = source.read().tmdbApiKey.trim()
+    /** The user's key when typed, otherwise the build's. The two are never mixed. */
+    fun tmdbApiKey(): String = source.read().tmdbApiKey.trim().ifEmpty { builtInTmdbApiKey.trim() }
+
+    /** True when the key in use is Notflix's own: the user has not typed one and the build has it. */
+    fun isTmdbBuiltInKeyInUse(): Boolean =
+        source.read().tmdbApiKey.isBlank() && builtInTmdbApiKey.isNotBlank()
+
+    /** The build ships a TMDB key, whether or not the user has typed their own. */
+    fun hasBuiltInTmdbKey(): Boolean = builtInTmdbApiKey.isNotBlank()
 
     fun isTmdbEnabled(): Boolean = tmdbApiKey().isNotEmpty()
 

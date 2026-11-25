@@ -95,8 +95,13 @@ fun HomeViewModel.togglePosterLibrary(item: MetaPreview, addonBaseUrl: String?) 
     val statusKey = homeItemStatusKey(item.id, item.apiType)
     if (statusKey in _uiState.value.posterLibraryPending) return
 
+    val previousValue = _uiState.value.posterLibraryMembership[statusKey]
+    val optimisticValue = !(previousValue ?: false)
     _uiState.update { state ->
-        state.copy(posterLibraryPending = state.posterLibraryPending + statusKey)
+        state.copy(
+            posterLibraryPending = state.posterLibraryPending + statusKey,
+            posterLibraryMembership = state.posterLibraryMembership + (statusKey to optimisticValue)
+        )
     }
 
     viewModelScope.launch {
@@ -104,6 +109,14 @@ fun HomeViewModel.togglePosterLibrary(item: MetaPreview, addonBaseUrl: String?) 
             libraryRepository.toggleDefault(item.toLibraryEntryInput(addonBaseUrl))
         }.onFailure { error ->
             Log.w(HomeViewModel.TAG, "Failed to toggle poster library for ${item.id}: ${error.message}")
+            _uiState.update { state ->
+                val reverted = if (previousValue != null) {
+                    state.posterLibraryMembership + (statusKey to previousValue)
+                } else {
+                    state.posterLibraryMembership - statusKey
+                }
+                state.copy(posterLibraryMembership = reverted)
+            }
         }
         runCatching {
             val isNowInLibrary = libraryRepository.isInLibrary(item.id, item.apiType).first()
@@ -324,10 +337,12 @@ fun HomeViewModel.togglePosterMovieWatched(item: MetaPreview) {
     // The live watched set is the truth; the status map is only filled for Nuvio posters (promoter 09-11).
     val currentlyWatched = item.id in _uiState.value.watchedMovieIds ||
         _uiState.value.movieWatchedStatus[statusKey] == true
+    val optimisticWatched = !currentlyWatched
     _uiState.update { state ->
         state.copy(
             movieWatchedPending = state.movieWatchedPending + statusKey,
-            movieWatchedStatus = state.movieWatchedStatus + (statusKey to !currentlyWatched)
+            movieWatchedStatus = state.movieWatchedStatus + (statusKey to optimisticWatched),
+            watchedMovieIds = if (optimisticWatched) state.watchedMovieIds + item.id else state.watchedMovieIds - item.id
         )
     }
 
@@ -341,7 +356,10 @@ fun HomeViewModel.togglePosterMovieWatched(item: MetaPreview) {
         }.onFailure { error ->
             Log.w(HomeViewModel.TAG, "Failed to toggle poster watched status for ${item.id}: ${error.message}")
             _uiState.update { state ->
-                state.copy(movieWatchedStatus = state.movieWatchedStatus + (statusKey to currentlyWatched))
+                state.copy(
+                    movieWatchedStatus = state.movieWatchedStatus + (statusKey to currentlyWatched),
+                    watchedMovieIds = if (currentlyWatched) state.watchedMovieIds + item.id else state.watchedMovieIds - item.id
+                )
             }
         }
         _uiState.update { state ->
@@ -379,11 +397,17 @@ fun HomeViewModel.togglePosterSeriesWatched(item: MetaPreview) {
     val currentlyWatched = item.id in _uiState.value.fullyWatchedSeriesIds ||
         _uiState.value.movieWatchedStatus[statusKey] == true
 
-    // Optimistically update the UI immediately
+    // Optimistically update the UI immediately (including dimmed badge set)
+    val optimisticWatched = !currentlyWatched
     _uiState.update { state ->
         state.copy(
             movieWatchedPending = state.movieWatchedPending + statusKey,
-            movieWatchedStatus = state.movieWatchedStatus + (statusKey to !currentlyWatched)
+            movieWatchedStatus = state.movieWatchedStatus + (statusKey to optimisticWatched),
+            fullyWatchedSeriesIds = if (optimisticWatched) {
+                state.fullyWatchedSeriesIds + item.id
+            } else {
+                state.fullyWatchedSeriesIds - item.id
+            }
         )
     }
 
@@ -399,7 +423,12 @@ fun HomeViewModel.togglePosterSeriesWatched(item: MetaPreview) {
             // Revert optimistic update on failure
             _uiState.update { state ->
                 state.copy(
-                    movieWatchedStatus = state.movieWatchedStatus + (statusKey to currentlyWatched)
+                    movieWatchedStatus = state.movieWatchedStatus + (statusKey to currentlyWatched),
+                    fullyWatchedSeriesIds = if (currentlyWatched) {
+                        state.fullyWatchedSeriesIds + item.id
+                    } else {
+                        state.fullyWatchedSeriesIds - item.id
+                    }
                 )
             }
         }
@@ -470,8 +499,10 @@ private suspend fun HomeViewModel.fetchSeriesEpisodes(item: MetaPreview): List<c
     return episodes
 }
 
+private val LIBRARY_YEAR_REGEX = Regex("(\\d{4})")
+
 private fun MetaPreview.toLibraryEntryInput(addonBaseUrl: String?): LibraryEntryInput {
-    val year = Regex("(\\d{4})").find(releaseInfo ?: "")
+    val year = LIBRARY_YEAR_REGEX.find(releaseInfo ?: "")
         ?.groupValues
         ?.getOrNull(1)
         ?.toIntOrNull()

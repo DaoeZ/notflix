@@ -316,12 +316,12 @@
 
     <!-- SupportersContributorsScreen -->
     <string name="supporters_contributors_title">Podržavaoci i Saradnici</string>
-    <string name="supporters_contributors_subtitle">Ljudi koji podržavaju Nuvio i saradnici koji ga grade na TV-u i mobilnim uređajima.</string>
+    <string name="supporters_contributors_subtitle">Ljudi koji podržavaju Notflix i saradnici koji ga grade na TV-u i mobilnim uređajima.</string>
     <string name="supporters_contributors_supporters_copy">Podržavaoci i donatori pomažu da projekat napreduje, finansiraju infrastrukturu i ostavljaju prostor za ambiciozne funkcije.</string>
-    <string name="supporters_contributors_donate_copy">Nuvio će ostati besplatan i open source. Ako želite podržati projekt, možete pomoći u pokrivanju vremena i infrastrukture koja stoji iza njega.</string>
-    <string name="supporters_contributors_donate_button">Donirajte za Nuvio</string>
+    <string name="supporters_contributors_donate_copy">Notflix će ostati besplatan i open source. Ako želite podržati projekt, možete pomoći u pokrivanju vremena i infrastrukture koja stoji iza njega.</string>
+    <string name="supporters_contributors_donate_button">Donirajte za Notflix</string>
     <string name="supporters_contributors_qr_title">Skenirajte za donaciju</string>
-    <string name="supporters_contributors_qr_subtitle">Otvorite link na telefonu kako biste podržali Nuvio.</string>
+    <string name="supporters_contributors_qr_subtitle">Otvorite link na telefonu kako biste podržali Notflix.</string>
     <string name="supporters_contributors_qr_hint">Usmjerite kameru na QR kod ili koristite dugme ispod.</string>
     <string name="supporters_contributors_back_button">Nazad na detalje</string>
     <string name="supporters_tab">Podržavaoci</string>
@@ -370,8 +370,8 @@
     <string name="playback_resolution_matching_sub">Dozvoli promjene načina prikaza kako bi odgovaralo rezoluciji videa.</string>
     <string name="playback_player_external_desc">Uvijek otvaraj streamove u vanjskoj aplikaciji</string>
     <string name="playback_player_ask_desc">Odaberi player svaki put</string>
-    <string name="playback_engine_exoplayer_desc">Najbolja kompatibilnost sa trenutnim Nuvio funkcijama.</string>
-    <string name="playback_engine_mvplayer_desc">Koristi libmpv sa Nuvio OSD kontrolama. Eksperimentalno.</string>
+    <string name="playback_engine_exoplayer_desc">Najbolja kompatibilnost sa trenutnim Notflix funkcijama.</string>
+    <string name="playback_engine_mvplayer_desc">Koristi libmpv sa Notflix OSD kontrolama. Eksperimentalno.</string>
 
     <!-- PlaybackAudioSettings -->
     <string name="audio_trailer_section">Trailer</string>
@@ -669,13 +669,13 @@
     <string name="trakt_watch_progress_title">Napredak Gledanja</string>
     <string name="trakt_watch_progress_subtitle">Odaberi koji izvor napretka upravlja opcijama nastavi i nastavi gledati</string>
     <string name="trakt_watch_progress_dialog_title">Napredak Gledanja</string>
-    <string name="trakt_watch_progress_dialog_subtitle">Odaberi da li nastavi i nastavi gledati treba da koriste Trakt ili Nuvio Sync, dok Trakt scrobble ostaje aktivan.</string>
+    <string name="trakt_watch_progress_dialog_subtitle">Odaberi da li nastavi i nastavi gledati treba da koriste Trakt ili Notflix Sync, dok Trakt scrobble ostaje aktivan.</string>
     <string name="trakt_watch_progress_source_trakt">Trakt</string>
-    <string name="trakt_watch_progress_source_nuvio">Nuvio Sync</string>
+    <string name="trakt_watch_progress_source_nuvio">Notflix Sync</string>
     <string name="trakt_setting_on">Uključeno</string>
     <string name="trakt_setting_off">Isključeno</string>
     <string name="trakt_watch_progress_trakt_selected">Izvor napretka gledanja postavljen na Trakt</string>
-    <string name="trakt_watch_progress_nuvio_selected">Izvor napretka gledanja postavljen na Nuvio Sync</string>
+    <string name="trakt_watch_progress_nuvio_selected">Izvor napretka gledanja postavljen na Notflix Sync</string>
     <string name="trakt_continue_watching_window">Prozor za Nastavi Gledati</string>
     <string name="trakt_continue_watching_subtitle">Trakt historija koja se uzima u obzir za nastavi gledati</string>
     <string name="trakt_unaired_next_up">Neemitovane Sljedeće Epizode</string>
@@ -803,7 +803,7 @@
     <string name="profile_pin_overlay_set_support">Ovaj PIN će biti potreban prije otvaranja ovog profila.</string>
     <string name="profile_pin_overlay_confirm_support">Ponovo unesi iste 4 cifre da završiš podešavanje.</string>
     <string name="profile_pin_overlay_mismatch">PIN-ovi se ne poklapaju. Ponovo unesi novi PIN.</string>
-    <string name="profile_pin_overlay_forgot_hint">Zaboravljen PIN? Resetuj ga sa svog Nuvio računa na Nuvio web stranici.</string>
+    <string name="profile_pin_overlay_forgot_hint">Zaboravljen PIN? Resetuj ga sa svog Notflix računa na Notflix web stranici.</string>
     <string name="profile_pin_overlay_back_hint">Pritisni nazad za otkazivanje</string>
 
     <!-- AddonManagerScreen -->
@@ -854,7 +854,7 @@
     <string name="stream_type_torrent">Torrent</string>
     <string name="stream_type_youtube">YouTube</string>
     <string name="p2p_consent_title">P2P Streaming</string>
-    <string name="p2p_consent_body">Ovaj stream koristi peer-to-peer (P2P) tehnologiju. Omogućavanjem P2P-a, slažete se sa sljedećim:\n\n• Vaša IP adresa će biti vidljiva drugim učesnicima u mreži\n• Vi ste isključivo odgovorni za sadržaj kojem pristupate\n• Potvrđujete da imate zakonsko pravo streamati ovaj sadržaj u vašoj državi\n• Nuvio ne hosta, ne distribuira i ne kontroliše bilo kakav P2P sadržaj\n• Nuvio ne snosi odgovornost za bilo kakve pravne posljedice koje proizilaze iz vašeg korištenja P2P streaminga\n\nOvu funkciju koristite u potpunosti na vlastiti rizik. P2P možete isključiti bilo kada u Postavkama.</string>
+    <string name="p2p_consent_body">Ovaj stream koristi peer-to-peer (P2P) tehnologiju. Omogućavanjem P2P-a, slažete se sa sljedećim:\n\n• Vaša IP adresa će biti vidljiva drugim učesnicima u mreži\n• Vi ste isključivo odgovorni za sadržaj kojem pristupate\n• Potvrđujete da imate zakonsko pravo streamati ovaj sadržaj u vašoj državi\n• Notflix ne hosta, ne distribuira i ne kontroliše bilo kakav P2P sadržaj\n• Notflix ne snosi odgovornost za bilo kakve pravne posljedice koje proizilaze iz vašeg korištenja P2P streaminga\n\nOvu funkciju koristite u potpunosti na vlastiti rizik. P2P možete isključiti bilo kada u Postavkama.</string>
     <string name="p2p_consent_enable">Omogući P2P</string>
     <string name="p2p_consent_cancel">Otkaži</string>
     <string name="settings_p2p_title">P2P Streaming</string>
@@ -1094,7 +1094,7 @@
     <string name="library_delete_subtitle">Ovo uklanja listu i sve stavke sa Trakta.</string>
     <string name="library_delete_confirm">Izbriši</string>
     <string name="library_source_local">LOKALNO</string>
-    <string name="library_source_nuvio">NUVIO</string>
+    <string name="library_source_nuvio">NOTFLIX</string>
     <string name="library_source_trakt">TRAKT</string>
     <string name="library_syncing_library">Sinhronizacija biblioteke…</string>
     <string name="library_type_all">Sve</string>
@@ -1210,7 +1210,7 @@
     <string name="catalog_see_all_empty_subtitle">Pokušaj sa drugim katalogom ili provjeri kasnije</string>
 
     <!-- LayoutSelectionScreen -->
-    <string name="layout_selection_welcome">Dobrodošli u Nuvio</string>
+    <string name="layout_selection_welcome">Dobrodošli u Notflix</string>
     <string name="layout_selection_subtitle">Odaberi raspored početnog ekrana</string>
     <string name="layout_selection_continue">Nastavi</string>
 
@@ -1223,7 +1223,7 @@
 
     <!-- AccountScreen -->
     <string name="account_title">Račun</string>
-    <string name="account_sign_in_description">Prijavi se za sinhronizaciju biblioteke, napretka gledanja, addona i plugina na svim uređajima. Sinhronizacija biblioteke koristi Nuvio Sync kada Trakt nije povezan, a napredak gledanja može koristiti i Trakt i Nuvio Sync.</string>
+    <string name="account_sign_in_description">Prijavi se za sinhronizaciju biblioteke, napretka gledanja, addona i plugina na svim uređajima. Sinhronizacija biblioteke koristi Notflix Sync kada Trakt nije povezan, a napredak gledanja može koristiti i Trakt i Notflix Sync.</string>
     <string name="account_sync_code_title">Sync Kod</string>
     <string name="account_sync_code_description">Sinhronizuj uređaje bez kreiranja računa.</string>
     <string name="account_linked_devices">Povezani Uređaji (%1$d)</string>
@@ -1395,7 +1395,7 @@
     <string name="cd_preview">Pregled</string>
     <string name="cd_test">Testiraj</string>
     <string name="cd_unlink">Odspoji</string>
-    <string name="cd_nuvio_logo">NuvioTV</string>
+    <string name="cd_nuvio_logo">Notflix TV</string>
     <string name="cd_trakt_logo">Trakt Logo</string>
     <string name="cd_trakt_qr">Trakt QR za aktivaciju</string>
     <string name="cd_imdb">IMDb</string>
@@ -1406,7 +1406,7 @@
     <string name="cd_expand">Proširi %1$s</string>
     <string name="cd_collapse">Skupi %1$s</string>
     <string name="cd_qr_login">QR kod za prijavu</string>
-    <string name="cd_nuvio">Nuvio</string>
+    <string name="cd_nuvio">Notflix</string>
 
     <!-- Debug -->
     <string name="debug_signin_success">Uspješno prijavljeno</string>
@@ -1498,6 +1498,7 @@
     <string name="autoplay_priority_priority_language">Jezik</string>
     <string name="autoplay_priority_audio_order_title">Odabrani jezici, po redu</string>
     <string name="layout_cw_card_style_title">Stil za nastavak gledanja</string>
+    <string name="notflix_for_you">Za tebe</string>
     <string name="notflix_player_seek_backward">%1$d s nazad</string>
     <string name="notflix_player_seek_forward">%1$d s naprijed</string>
     <string name="cd_notflix_sharpen_on">Oštrina uključena</string>

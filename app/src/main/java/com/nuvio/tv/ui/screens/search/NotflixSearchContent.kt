@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -28,6 +29,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed as rowItemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -76,12 +78,14 @@ import com.nuvio.tv.ui.appearance.NotflixVisualSpec as Spec
 import com.nuvio.tv.core.ui.rememberNotflixConfirmSound
 import com.nuvio.tv.ui.screens.home.RatingBadge
 import kotlinx.coroutines.launch
+import java.text.Normalizer
+import java.util.Locale
 
 /** One grid for every catalog: the first appearance wins and an id never repeats. */
 private const val NOTFLIX_SEARCH_COLUMNS = 4
 private const val NOTFLIX_KEY_COLUMNS = 6
-/** M61: how many results per list are offered for a cached TMDB title lookup. */
-private const val NOTFLIX_TITLE_LOOKUPS = 96
+/** Keep artwork requests around the visible rows. */
+private const val NOTFLIX_TITLE_LOOKUPS = 16
 private const val NOTFLIX_PLACEHOLDER_PREFIX = "__placeholder_"
 private val NotflixSearchKeys: List<Char> = ('A'..'Z') + ('0'..'9')
 
@@ -97,28 +101,56 @@ internal fun notflixSearchResults(rows: List<CatalogRow>, query: String = ""): L
     rows.forEachIndexed { rowIndex, row ->
         row.items.forEachIndexed { position, item ->
             if (item.id.startsWith(NOTFLIX_PLACEHOLDER_PREFIX)) return@forEachIndexed
-            val previous = best[item.id]
-            if (previous == null) best[item.id] = Hit(item, position, rowIndex)
-            else if (position < previous.position) best[item.id] = previous.copy(position = position)
+            val key = notflixDiscoverKey(item)
+            val previous = best[key]
+            if (previous == null) {
+                best[key] = Hit(item, position, rowIndex)
+            } else if (item.originalTitle != null || previous.item.originalTitle != null) {
+                val catalog = if (item.originalTitle == null) item else previous.item
+                val tmdb = if (item.originalTitle != null) item else previous.item
+                best[key] = Hit(catalog.copy(
+                    name = tmdb.name, originalTitle = tmdb.originalTitle,
+                    poster = tmdb.poster ?: catalog.poster, rawPosterUrl = catalog.rawPosterUrl ?: catalog.poster
+                ), if (item.originalTitle != null) position else previous.position, rowIndex)
+            } else if (position < previous.position) {
+                best[key] = previous.copy(position = position)
+            }
         }
     }
-    val queryLower = query.trim().lowercase()
+    val queryLower = normalizeSearchTitle(query)
     if (queryLower.isEmpty()) return best.values.map { it.item }
-    return best.values.sortedWith(
-        compareBy<Hit> { notflixTitleMatchRank(it.item.name, queryLower) }
-            .thenBy { it.position }
-            .thenByDescending { it.item.imdbRating ?: 0f }
-            .thenBy { it.row }
-    ).map { it.item }
+    return best.values.map { hit ->
+        val rank = minOf(
+            normalizedTitleMatchRank(hit.item.name, queryLower),
+            hit.item.originalTitle?.let { normalizedTitleMatchRank(it, queryLower) } ?: Int.MAX_VALUE
+        )
+        hit to rank
+    }.sortedWith(
+        compareBy<Pair<Hit, Int>> { it.second }
+            .thenByDescending { it.first.item.originalTitle != null }
+            .thenBy { it.first.position }
+            .thenByDescending { it.first.item.imdbRating ?: 0f }
+            .thenBy { it.first.row }
+    ).map { it.first.item }
 }
 
 /** 0 exact, 1 prefix, 2 a word starts with it, 3 contains, 4 every query word starts a title word, 5 other. */
 private val NOTFLIX_WORD_SPLIT = Regex("""[^\p{L}\p{N}]+""")
+private val NOTFLIX_LEADING_ARTICLE = Regex("^(the|el|la|los|las) ")
+private val NOTFLIX_DIACRITICS = Regex("""\p{M}+""")
 
-internal fun notflixTitleMatchRank(title: String, queryLower: String): Int {
-    val titleLower = title.trim().lowercase()
-    if (titleLower == queryLower) return 0
-    if (titleLower.startsWith(queryLower)) return 1
+private fun normalizeSearchTitle(text: String): String =
+    NOTFLIX_DIACRITICS.replace(Normalizer.normalize(text.lowercase(Locale.ROOT), Normalizer.Form.NFD), "")
+        .trim()
+
+internal fun notflixTitleMatchRank(title: String, query: String): Int =
+    normalizedTitleMatchRank(title, normalizeSearchTitle(query))
+
+private fun normalizedTitleMatchRank(title: String, queryLower: String): Int {
+    val titleLower = normalizeSearchTitle(title)
+    val withoutArticle = titleLower.replaceFirst(NOTFLIX_LEADING_ARTICLE, "")
+    if (titleLower == queryLower || withoutArticle == queryLower) return 0
+    if (titleLower.startsWith(queryLower) || withoutArticle.startsWith(queryLower)) return 1
     val words = titleLower.split(NOTFLIX_WORD_SPLIT).filter { it.isNotEmpty() }
     if (words.any { it.startsWith(queryLower) }) return 2
     if (titleLower.contains(queryLower)) return 3
@@ -148,14 +180,18 @@ fun NotflixSearchContent(
     onQueryChange: (String) -> Unit,
     onRecentSearchClick: (String) -> Unit,
     onVoiceSearch: () -> Unit,
+    onOpenCompanion: (() -> Unit)? = null,
     onRetry: () -> Unit,
     onRememberSearch: () -> Unit = {},
     onNavigateToDetail: (String, String, String) -> Unit,
     onItemFocused: (MetaPreview) -> Unit = {},
     onItemSelected: (MetaPreview) -> Unit = {},
     localizedTitles: Map<String, String> = emptyMap(),
+    localizedPosters: Map<String, String> = emptyMap(),
     onRequestTitles: (List<MetaPreview>) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    recommendedResults: List<MetaPreview> = emptyList(),
+    recommendationTitle: String? = null
 ) {
     val trimmedQuery = query.trim()
     val hasValidQuery = trimmedQuery.length >= MIN_SEARCH_QUERY_LENGTH
@@ -169,7 +205,12 @@ fun NotflixSearchContent(
     val firstResultRequester = remember { FocusRequester() }
     val resultsGridState = rememberLazyGridState()
     val discoverGridState = rememberLazyGridState()
-    val lookupItems = if (hasValidQuery) results else discoverResults
+    val startRecommendations = remember(recommendedResults) { recommendedResults.distinctBy(::notflixDiscoverKey) }
+    val startExplore = remember(discoverResults, startRecommendations) {
+        val recommended = startRecommendations.map(::notflixDiscoverKey).toSet()
+        discoverResults.filterNot { notflixDiscoverKey(it) in recommended }
+    }
+    val lookupItems = if (trimmedQuery.isNotEmpty()) results else startRecommendations + startExplore
     val lookupGrid = if (hasValidQuery) resultsGridState else discoverGridState
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle, lookupItems, lookupGrid, onRequestTitles) {
@@ -202,7 +243,8 @@ fun NotflixSearchContent(
 
     fun focusFirstResult() {
         scope.launch {
-            if (resultsGridState.firstVisibleItemIndex != 0) resultsGridState.scrollToItem(0)
+            val grid = if (trimmedQuery.isEmpty()) discoverGridState else resultsGridState
+            if (grid.firstVisibleItemIndex != 0) grid.scrollToItem(0)
             repeat(2) { withFrameNanos { } }
             runCatching { firstResultRequester.requestFocus() }
         }
@@ -248,6 +290,26 @@ fun NotflixSearchContent(
                 if (isVoiceSearchAvailable) {
                     NotflixMicButton(isVoiceListening, onVoiceSearch)
                 }
+                if (onOpenCompanion != null) {
+                    Spacer(Modifier.size(6.dp))
+                    var phoneFocused by remember { mutableStateOf(false) }
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(19.dp))
+                            .background(if (phoneFocused) Spec.Text else Color.White.copy(alpha = 0.12f))
+                            .onFocusChanged { phoneFocused = it.isFocused }
+                            .clickable(role = Role.Button, onClick = onOpenCompanion),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        androidx.tv.material3.Icon(
+                            imageVector = Icons.Default.Phone,
+                            contentDescription = stringResource(R.string.companion_button_cd),
+                            tint = if (phoneFocused) Spec.Background else Spec.Text,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
 
             NotflixKeyboard(
@@ -258,8 +320,8 @@ fun NotflixSearchContent(
                 onBackspace = { if (query.isNotEmpty()) onQueryChange(query.dropLast(1)) },
                 onClear = { if (query.isNotEmpty()) onQueryChange("") },
                 onRightEdge = {
-                    if (hasValidQuery && results.isNotEmpty()) {
-                        onRememberSearch()
+                    if ((hasValidQuery && results.isNotEmpty()) || (trimmedQuery.isEmpty() && lookupItems.isNotEmpty())) {
+                        if (hasValidQuery) onRememberSearch()
                         focusFirstResult()
                         true
                     } else {
@@ -270,16 +332,21 @@ fun NotflixSearchContent(
         }
 
         Box(modifier = Modifier.weight(0.70f).fillMaxHeight()) {
-            if (!hasValidQuery) {
+            if (trimmedQuery.isEmpty()) {
                 NotflixSearchStart(
                     gridState = discoverGridState,
                     recentSearches = recentSearches,
-                    discoverResults = discoverResults,
+                    discoverResults = startExplore,
+                    recommendedResults = startRecommendations,
+                    recommendationTitle = recommendationTitle,
+                    firstResultRequester = firstResultRequester,
+                    onBackToKeyboard = ::returnToKeyboard,
                     onRecentSearchClick = onRecentSearchClick,
                     onItemFocused = onItemFocused,
                     onItemSelected = onItemSelected,
                     onNavigateToDetail = onNavigateToDetail,
-                    localizedTitles = localizedTitles
+                    localizedTitles = localizedTitles,
+                    localizedPosters = localizedPosters
                 )
             } else {
                 NotflixSearchResults(
@@ -294,7 +361,8 @@ fun NotflixSearchContent(
                     onItemFocused = onItemFocused,
                     onItemSelected = onItemSelected,
                     onNavigateToDetail = onNavigateToDetail,
-                    localizedTitles = localizedTitles
+                    localizedTitles = localizedTitles,
+                    localizedPosters = localizedPosters
                 )
             }
         }
@@ -313,11 +381,12 @@ private fun NotflixKeyboard(
 ) {
     val spaceIndex = NotflixSearchKeys.size
     val backspaceIndex = NotflixSearchKeys.size + 1
+    val keyRows = remember { NotflixSearchKeys.chunked(NOTFLIX_KEY_COLUMNS) }
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        NotflixSearchKeys.chunked(NOTFLIX_KEY_COLUMNS).forEachIndexed { rowIndex, row ->
+        keyRows.forEachIndexed { rowIndex, row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -462,50 +531,90 @@ private fun NotflixSearchStart(
     onItemFocused: (MetaPreview) -> Unit,
     onItemSelected: (MetaPreview) -> Unit,
     onNavigateToDetail: (String, String, String) -> Unit,
-    localizedTitles: Map<String, String> = emptyMap()
+    localizedTitles: Map<String, String> = emptyMap(),
+    localizedPosters: Map<String, String> = emptyMap(),
+    recommendedResults: List<MetaPreview> = emptyList(),
+    recommendationTitle: String? = null,
+    firstResultRequester: FocusRequester,
+    onBackToKeyboard: () -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    var focused by remember { mutableStateOf(false) }
+    BackHandler(focused) { onBackToKeyboard() }
+    LazyVerticalGrid(state = gridState, columns = GridCells.Fixed(NOTFLIX_SEARCH_COLUMNS),
+        modifier = Modifier.fillMaxSize().onFocusChanged { focused = it.hasFocus },
+        contentPadding = PaddingValues(bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        if (recommendedResults.isNotEmpty()) {
+            item(key = "recommended-title", span = { GridItemSpan(maxLineSpan) }) {
+                NotflixSectionTitle(recommendationTitle ?: stringResource(R.string.notflix_search_explore))
+            }
+            itemsIndexed(recommendedResults, key = { _, item -> "recommended:${notflixDiscoverKey(item)}" }) { index, item ->
+                NotflixSearchPoster(item = item, title = localizedTitles[notflixDiscoverKey(item)] ?: item.name,
+                    localizedPoster = localizedPosters[notflixDiscoverKey(item)],
+                    modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)
+                        .then(if (index == 0) Modifier.focusRequester(firstResultRequester) else Modifier)
+                        .onPreviewKeyEvent { event ->
+                            if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionLeft && index % NOTFLIX_SEARCH_COLUMNS == 0) {
+                                onBackToKeyboard(); true
+                            } else false
+                        }.testTag("notflix-search-recommended-${item.id}"),
+                    onFocused = { onItemFocused(item) }, onClick = {
+                        onItemSelected(item); onNavigateToDetail(item.id, item.apiType, item.sourceAddonBaseUrl.orEmpty())
+                    })
+            }
+        }
         if (recentSearches.isNotEmpty()) {
-            NotflixSectionTitle(stringResource(R.string.notflix_search_recent))
-            LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                rowItemsIndexed(recentSearches, key = { index, recent -> "$index-$recent" }) { index, recent ->
-                    NotflixRecentChip(
-                        text = recent,
-                        tag = "notflix-search-recent-$index",
-                        onClick = { onRecentSearchClick(recent) }
-                    )
+            item(key = "recent", span = { GridItemSpan(maxLineSpan) }) {
+                Column {
+                    NotflixSectionTitle(stringResource(R.string.notflix_search_recent))
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        rowItemsIndexed(recentSearches, key = { index, recent -> "$index-$recent" }) { index, recent ->
+                            Box(
+                                modifier = Modifier.onPreviewKeyEvent { event ->
+                                    if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionLeft && index == 0) {
+                                        onBackToKeyboard(); true
+                                    } else false
+                                }
+                            ) {
+                                NotflixRecentChip(
+                                    text = recent,
+                                    tag = "notflix-search-recent-$index",
+                                    onClick = { onRecentSearchClick(recent) }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
         if (discoverResults.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(if (recentSearches.isEmpty()) 0.dp else 18.dp))
-            NotflixSectionTitle(stringResource(R.string.notflix_search_explore))
-            LazyVerticalGrid(
-                state = gridState,
-                columns = GridCells.Fixed(NOTFLIX_SEARCH_COLUMNS),
-                modifier = Modifier.fillMaxWidth().weight(1f).padding(top = 8.dp),
-                contentPadding = PaddingValues(bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                gridItems(discoverResults, key = { notflixDiscoverKey(it) }) { item ->
-                    NotflixSearchPoster(
-                        item = item,
-                        title = localizedTitles[notflixDiscoverKey(item)] ?: item.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(2f / 3f)
-                            .testTag("notflix-search-explore-${item.id}"),
-                        onFocused = { onItemFocused(item) },
-                        onClick = {
-                            onItemSelected(item)
-                            onNavigateToDetail(item.id, item.apiType, item.sourceAddonBaseUrl.orEmpty())
+            item(key = "explore-title", span = { GridItemSpan(maxLineSpan) }) {
+                NotflixSectionTitle(stringResource(R.string.notflix_search_explore))
+            }
+            itemsIndexed(discoverResults, key = { _, item -> "explore:${notflixDiscoverKey(item)}" }) { index, item ->
+                NotflixSearchPoster(
+                    item = item,
+                    title = localizedTitles[notflixDiscoverKey(item)] ?: item.name,
+                    localizedPoster = localizedPosters[notflixDiscoverKey(item)],
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(2f / 3f)
+                        .then(if (index == 0 && recommendedResults.isEmpty()) Modifier.focusRequester(firstResultRequester) else Modifier)
+                        .onPreviewKeyEvent { event ->
+                            if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionLeft && index % NOTFLIX_SEARCH_COLUMNS == 0) {
+                                onBackToKeyboard(); true
+                            } else false
                         }
-                    )
-                }
+                        .testTag("notflix-search-explore-${item.id}"),
+                    onFocused = { onItemFocused(item) },
+                    onClick = {
+                        onItemSelected(item)
+                        onNavigateToDetail(item.id, item.apiType, item.sourceAddonBaseUrl.orEmpty())
+                    }
+                )
             }
         }
     }
@@ -524,7 +633,8 @@ private fun NotflixSearchResults(
     onItemFocused: (MetaPreview) -> Unit,
     onItemSelected: (MetaPreview) -> Unit,
     onNavigateToDetail: (String, String, String) -> Unit,
-    localizedTitles: Map<String, String> = emptyMap()
+    localizedTitles: Map<String, String> = emptyMap(),
+    localizedPosters: Map<String, String> = emptyMap()
 ) {
     var gridFocused by remember { mutableStateOf(false) }
     // Typing reorders the results and LazyGrid follows its old first item down the list (promoter
@@ -557,10 +667,11 @@ private fun NotflixSearchResults(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                itemsIndexed(results, key = { _, item -> item.id }) { index, item ->
+                itemsIndexed(results, key = { _, item -> notflixDiscoverKey(item) }) { index, item ->
                     NotflixSearchPoster(
                         item = item,
-                        title = localizedTitles["${item.apiType}:${item.id}"] ?: item.name,
+                        title = localizedTitles[notflixDiscoverKey(item)] ?: item.name,
+                        localizedPoster = localizedPosters[notflixDiscoverKey(item)],
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(2f / 3f)
@@ -606,6 +717,7 @@ private fun NotflixSearchPoster(
     item: MetaPreview,
     modifier: Modifier = Modifier,
     title: String = item.name,
+    localizedPoster: String? = null,
     onFocused: () -> Unit = {},
     onClick: () -> Unit
 ) {
@@ -636,14 +748,21 @@ private fun NotflixSearchPoster(
             .clickable(role = Role.Button, onClick = { confirmSound(); onClick() })
     ) {
         // A poster URL that fails to load left an empty tile (promoter 09-11): fall back to the title, as Home does.
-        var posterFailed by remember(item.poster) { mutableStateOf(false) }
-        if (!item.poster.isNullOrBlank() && !posterFailed) {
+        val candidates = remember(localizedPoster, item.poster, item.rawPosterUrl) {
+            listOfNotNull(localizedPoster, item.poster, item.rawPosterUrl)
+                .filter { it.startsWith("https://", true) || it.startsWith("http://", true) }.distinct()
+        }
+        var posterIndex by remember(candidates) { mutableIntStateOf(0) }
+        val poster = candidates.getOrNull(posterIndex)
+        if (poster != null) {
             AsyncImage(
-                model = item.poster,
+                model = poster,
                 contentDescription = title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                onError = { posterFailed = true }
+                onError = {
+                    if (candidates.getOrNull(posterIndex) == poster) posterIndex++
+                }
             )
         } else {
             Text(

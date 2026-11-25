@@ -348,7 +348,8 @@ data class PlayerSettings(
     val enableBufferLogs: Boolean = false,
     val resizeMode: Int = 0,
     // Nuvio ExoPlayer Performance Mode
-    val nuvioPerformanceModeEnabled: Boolean = DEFAULT_NUVIO_PERFORMANCE_MODE_ENABLED
+    val nuvioPerformanceModeEnabled: Boolean = DEFAULT_NUVIO_PERFORMANCE_MODE_ENABLED,
+    val notflixPlayerButtons: List<String> = com.nuvio.tv.domain.model.NotflixPlayerActions.defaults
 ) {
     /** Prefer FFmpeg/extension audio decoder (EXTENSION_RENDERER_MODE_PREFER). */
     val isPreferAppDecoder: Boolean
@@ -548,6 +549,7 @@ class PlayerSettingsDataStore @Inject constructor(
 
     // Keys
     private val playerPreferenceKey = stringPreferencesKey("player_preference")
+    private val notflixPlayerButtonsKey = stringPreferencesKey("notflix_player_buttons")
     private val internalPlayerEngineKey = stringPreferencesKey("internal_player_engine")
     private val autoSwitchInternalPlayerOnErrorKey = booleanPreferencesKey("auto_switch_internal_player_on_error")
     private val useLibassKey = booleanPreferencesKey("use_libass")
@@ -916,6 +918,7 @@ class PlayerSettingsDataStore @Inject constructor(
     }.map { prefs ->
         try {
             PlayerSettings(
+                notflixPlayerButtons = com.nuvio.tv.domain.model.NotflixPlayerActions.decode(prefs[notflixPlayerButtonsKey]),
                 playerPreference = prefs[playerPreferenceKey]?.let {
                     runCatching { PlayerPreference.valueOf(it) }.getOrDefault(PlayerPreference.INTERNAL)
                 } ?: PlayerPreference.INTERNAL,
@@ -1259,6 +1262,13 @@ class PlayerSettingsDataStore @Inject constructor(
     suspend fun setPreferredAudioLanguage(language: String) {
         store().edit { it[preferredAudioLanguageKey] = normalizeSelectableLanguageCode(language.ifBlank { AudioLanguageOption.DEVICE }) }
     }
+
+    suspend fun setNotflixPlayerButtons(ids: List<String>, profileId: Int = profileManager.activeProfileId.value) {
+        val normalized = com.nuvio.tv.domain.model.NotflixPlayerActions.normalize(ids)
+        store(profileId).edit { it[notflixPlayerButtonsKey] = normalized.joinToString(",") }
+    }
+
+    fun activeProfileId(): Int = profileManager.activeProfileId.value
 
     suspend fun setSecondaryPreferredAudioLanguage(language: String?) {
         store().edit { prefs ->

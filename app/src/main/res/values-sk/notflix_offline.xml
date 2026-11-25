@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Stiahnuté</string>
+    <string name="notflix_offline_receive">Prijať z telefónu</string>
+    <string name="notflix_offline_pairing">Ručné zadanie: %1$s · %2$s. Kód platí 5 minút.</string>
+    <string name="notflix_offline_scan">Naskenujte fotoaparátom telefónu a otvorte Stiahnuté v Notflixe.</string>
+    <string name="notflix_offline_expired">Relácia vypršala. Ak sa chcete znova pripojiť, vyberte Prijať z telefónu.</string>
+    <string name="notflix_offline_empty">Stiahnite video zo Zdrojov alebo ho pošlite z telefónu.</string>
+    <string name="notflix_offline_profile">Sťahovanie nie je v tomto profile dostupné.</string>
+    <string name="notflix_offline_unavailable">Súbor nie je dostupný</string>
+    <string name="notflix_offline_confirm_remove">Potvrdiť odstránenie</string>
+    <string name="notflix_offline_choose_source">Vyberte zdroj na stiahnutie</string>
+    <string name="notflix_offline_started">Sťahovanie zaradené do frontu</string>
+    <string name="notflix_offline_failed">Tento súbor sa nepodarilo otvoriť ani stiahnuť. Skúste priamy videosúbor.</string>
+</resources>

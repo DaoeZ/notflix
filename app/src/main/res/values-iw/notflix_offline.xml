@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">הורדות</string>
+    <string name="notflix_offline_receive">קבלה מהטלפון</string>
+    <string name="notflix_offline_pairing">הזנה ידנית: %1$s · %2$s. הקוד תקף ל-5 דקות.</string>
+    <string name="notflix_offline_scan">סרקו במצלמת הטלפון כדי לפתוח את ההורדות של Notflix.</string>
+    <string name="notflix_offline_expired">פג תוקף ההפעלה. בחרו ״קבלה מהטלפון״ כדי להתחבר מחדש.</string>
+    <string name="notflix_offline_empty">הורידו סרטון מ״מקורות״ או שלחו אחד מהטלפון.</string>
+    <string name="notflix_offline_profile">ההורדות אינן זמינות בפרופיל הזה.</string>
+    <string name="notflix_offline_unavailable">הקובץ אינו זמין</string>
+    <string name="notflix_offline_confirm_remove">אישור הסרה</string>
+    <string name="notflix_offline_choose_source">בחרו מקור להורדה</string>
+    <string name="notflix_offline_started">ההורדה נוספה לתור</string>
+    <string name="notflix_offline_failed">לא ניתן לפתוח או להוריד את הקובץ. נסו קובץ וידאו ישיר.</string>
+</resources>

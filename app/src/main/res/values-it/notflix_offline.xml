@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Download</string>
+    <string name="notflix_offline_receive">Ricevi dal telefono</string>
+    <string name="notflix_offline_pairing">Inserimento manuale: %1$s · %2$s. Il codice è valido per 5 minuti.</string>
+    <string name="notflix_offline_scan">Scansiona con la fotocamera del telefono per aprire i Download di Notflix.</string>
+    <string name="notflix_offline_expired">La sessione è scaduta. Seleziona Ricevi dal telefono per riconnetterti.</string>
+    <string name="notflix_offline_empty">Scarica un video da Sorgenti o inviane uno dal telefono.</string>
+    <string name="notflix_offline_profile">I download non sono disponibili su questo profilo.</string>
+    <string name="notflix_offline_unavailable">File non disponibile</string>
+    <string name="notflix_offline_confirm_remove">Conferma rimozione</string>
+    <string name="notflix_offline_choose_source">Scegli una sorgente da scaricare</string>
+    <string name="notflix_offline_started">Download in coda</string>
+    <string name="notflix_offline_failed">Impossibile aprire o scaricare questo file. Prova un file video diretto.</string>
+</resources>

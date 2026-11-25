@@ -201,4 +201,6 @@
         <item>Simkl kini dapat dihubungkan.</item>
         <item>Trakt: hubungkan hanya dengan kode, tanpa pengaturan.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Kunci Notflix</string>
+    <string name="notflix_tmdb_attribution">Produk ini menggunakan API TMDB tetapi tidak didukung atau disertifikasi oleh TMDB.</string>
 </resources>

@@ -62,6 +62,7 @@ class NotflixPreviewSession internal constructor(
     private var resumePositionMs = 0L
     private var resumeIdentity: String? = null
     internal val billboardReady: Boolean get() = host.billboardReady(runCatching(liveBlocked).getOrDefault(true))
+    internal val billboardRotationReady: Boolean get() = host.billboardRotationReady()
     private var cardBlocked = false
     internal val ownsVideo: Boolean get() = coordinator.state.value is PreviewPhase.Playing
 
@@ -223,7 +224,8 @@ internal fun rememberNotflixPreviewSession(
         resumed = lifecycle.isAtLeast(Lifecycle.State.RESUMED), windowFocused = windowFocused,
         introActive = intro !is IntroPhase.Finished,
         blocked = dialog || pool == null || !startupReady || !routeActive,
-        otherVideo = externalOverlay != null || (poolPlaying && !session.ownsVideo))
+        otherVideo = externalOverlay != null || (poolPlaying && !session.ownsVideo),
+        rotationBlocked = !startupReady || !routeActive)
     SideEffect { session.environment(environment) }
     return session
 }

@@ -36,6 +36,7 @@ class NotflixCardActionsComposeTest {
         var manage = false
         val expanded = mutableListOf<String>(); val library = mutableListOf<String>(); val watched = mutableListOf<String>()
         val plays = mutableListOf<String>()
+        var onHide: (MetaPreview) -> Unit = {}
     }
 
     private fun PreviewFixtureState.withRuntime(runtime: String?) = apply {
@@ -55,7 +56,8 @@ class NotflixCardActionsComposeTest {
         val context = remember(s.spanish) { if (s.spanish) base.createConfigurationContext(Configuration(base.resources.configuration).apply { setLocale(Locale("es")) }) else base }
         val host = remember(h) {
             NotflixCardActionsHost(status = { h.status }, manageLists = h.manage, onExpanded = { h.expanded += it.id },
-                onLibrary = { meta, _ -> h.library += meta.id }, onWatched = { meta -> h.watched += meta.id })
+                onLibrary = { meta, _ -> h.library += meta.id }, onWatched = { meta -> h.watched += meta.id },
+                onHide = { meta -> h.onHide(meta) })
         }
         CompositionLocalProvider(LocalContext provides context, LocalConfiguration provides context.resources.configuration,
             LocalLifecycleOwner provides s.lifecycle, LocalNotflixPresentation provides NotflixPresentation(true, s.navigation, s.environment.reduced)) {
@@ -100,7 +102,7 @@ class NotflixCardActionsComposeTest {
         val s = PreviewFixtureState(); val h = show(s); mounted(s)
         key(s, Key.DirectionDown)
         card(s).assertIsFocused(); action(s, "play").assertIsSelected(); label(s).assertTextEquals("Play")
-        repeat(6) { key(s, Key.DirectionRight) }
+        repeat(4) { key(s, Key.DirectionRight) }
         action(s, "sound").assertIsSelected(); action(s, "play").assertIsNotSelected()
         repeat(9) { key(s, Key.DirectionLeft) }
         action(s, "play").assertIsSelected()
@@ -116,6 +118,20 @@ class NotflixCardActionsComposeTest {
         key(s, Key.DirectionDown); key(s, Key.DirectionDown)
         compose.waitUntil(10_000) { runCatching { card(s, 1).assertIsFocused(); true }.getOrDefault(false) }
         compose.runOnIdle { assertEquals(1, s.fake.closes) }
+    }
+
+    // M70 on the TV: hiding the open card from its own action left focus on the top bar.
+    @Test fun hideFromTheOpenCardKeepsFocusOnTheNextCardAndDownReachesUndo() {
+        val s = PreviewFixtureState(); val h = Host()
+        h.onHide = { meta ->
+            s.state = s.state.copy(hiddenTitleKeys = s.state.hiddenTitleKeys + com.nuvio.tv.data.local.hiddenTitleKey(meta.apiType, meta.id))
+        }
+        show(s, h); mounted(s)
+        key(s, Key.DirectionDown); repeat(5) { key(s, Key.DirectionRight) }
+        action(s, "hide").assertIsSelected()
+        key(s, Key.DirectionCenter)
+        compose.waitUntil(5_000) { runCatching { card(s, 0, 1).assertIsFocused(); true }.getOrDefault(false) }
+        assertFalse(s.navigation.topFocused)
     }
 
     @Test fun centerDispatchesEachOfficialCallbackOnceAndPlayReturnsToTheSameTitle() {

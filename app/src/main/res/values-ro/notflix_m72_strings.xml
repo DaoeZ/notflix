@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Profil și cont</string>
+    <string name="notflix_settings_home">Ecran principal</string>
+    <string name="notflix_settings_connected_accounts">Conturi conectate</string>
+    <string name="notflix_settings_system">Sistem</string>
+    <string name="notflix_settings_advanced_options">Opțiuni avansate</string>
+    <string name="notflix_settings_trailers">Trailere</string>
+    <string name="notflix_settings_updates">Actualizări</string>
+    <string name="notflix_settings_home_collection">Colecția principală Notflix</string>
+    <string name="notflix_settings_ratings">Evaluări</string>
+    <string name="notflix_settings_metadata">Date și cataloage</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

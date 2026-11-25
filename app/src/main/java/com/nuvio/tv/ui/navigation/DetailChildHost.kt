@@ -255,6 +255,7 @@ internal fun DetailChildHost(
                             childNav.navigateNestedDetail(itemId, itemType, addonBaseUrl)
                         },
                         onPlayClick = parentNavController::navigateToDetailStream,
+                        onDownloadClick = parentNavController::navigateToDetailDownload,
                         onPlayManuallyClick = { videoId, contentType, contentId, title, poster, backdrop, logo, season, episode, episodeName, genres, year, runtime, contentLanguage ->
                             parentNavController.navigateToDetailStream(
                                 videoId, contentType, contentId, title, poster, backdrop, logo,
@@ -375,7 +376,8 @@ internal fun NavHostController.navigateToDetailStream(
     runtime: Int?,
     contentLanguage: String?,
     manualSelection: Boolean = false,
-    startFromBeginning: Boolean = false
+    startFromBeginning: Boolean = false,
+    downloadSelection: Boolean = false
 ) {
     navigate(
         Screen.Stream.createRoute(
@@ -394,9 +396,30 @@ internal fun NavHostController.navigateToDetailStream(
             contentName = title,
             runtime = runtime,
             manualSelection = manualSelection,
+            downloadSelection = downloadSelection,
             startFromBeginning = startFromBeginning,
             returnToDetailOnBack = contentType.equals("series", ignoreCase = true),
             contentLanguage = contentLanguage
         )
     )
 }
+
+internal fun NavHostController.navigateToDetailDownload(
+    videoId: String,
+    contentType: String,
+    contentId: String,
+    title: String,
+    poster: String?,
+    backdrop: String?,
+    logo: String?,
+    season: Int?,
+    episode: Int?,
+    episodeName: String?,
+    genres: String?,
+    year: String?,
+    runtime: Int?,
+    contentLanguage: String?
+) = navigateToDetailStream(
+    videoId, contentType, contentId, title, poster, backdrop, logo, season, episode, episodeName,
+    genres, year, runtime, contentLanguage, manualSelection = true, downloadSelection = true
+)

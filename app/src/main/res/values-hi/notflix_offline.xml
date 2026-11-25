@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">डाउनलोड</string>
+    <string name="notflix_offline_receive">फ़ोन से प्राप्त करें</string>
+    <string name="notflix_offline_pairing">मैन्युअल एंट्री: %1$s · %2$s. कोड 5 मिनट तक मान्य है।</string>
+    <string name="notflix_offline_scan">Notflix डाउनलोड खोलने के लिए अपने फ़ोन के कैमरे से स्कैन करें।</string>
+    <string name="notflix_offline_expired">सेशन समाप्त हो गया। फिर से कनेक्ट करने के लिए “फ़ोन से प्राप्त करें” चुनें।</string>
+    <string name="notflix_offline_empty">सोर्स से कोई वीडियो डाउनलोड करें या अपने फ़ोन से भेजें।</string>
+    <string name="notflix_offline_profile">इस प्रोफ़ाइल पर डाउनलोड उपलब्ध नहीं हैं।</string>
+    <string name="notflix_offline_unavailable">फ़ाइल उपलब्ध नहीं है</string>
+    <string name="notflix_offline_confirm_remove">हटाने की पुष्टि करें</string>
+    <string name="notflix_offline_choose_source">डाउनलोड के लिए कोई सोर्स चुनें</string>
+    <string name="notflix_offline_started">डाउनलोड कतार में है</string>
+    <string name="notflix_offline_failed">यह फ़ाइल खोली या डाउनलोड नहीं की जा सकी। कोई डायरेक्ट वीडियो फ़ाइल आज़माएँ।</string>
+</resources>

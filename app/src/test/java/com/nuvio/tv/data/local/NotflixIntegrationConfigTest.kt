@@ -33,6 +33,43 @@ class NotflixIntegrationConfigTest {
         assertTrue(config(introDb = "   ").isIntroDbEnabled())
     }
 
+    // M68: the build can carry Notflix's own TMDB key; the user's key always wins and they never mix.
+    private fun buildConfig(tmdb: String = "", builtIn: String = "") = NotflixIntegrationConfig(
+        builtInTraktClientId = "",
+        builtInTraktClientSecret = "",
+        builtInTmdbApiKey = builtIn,
+        source = NotflixIntegrationValuesSource { NotflixIntegrationCredentials(tmdbApiKey = tmdb) }
+    )
+
+    @Test
+    fun theBuiltInTmdbKeyIsUsedWhenTheUserHasNotTypedOne() {
+        val config = buildConfig(tmdb = "  ", builtIn = "  build-key  ")
+
+        assertEquals("build-key", config.tmdbApiKey())
+        assertTrue(config.isTmdbEnabled())
+        assertTrue(config.isTmdbBuiltInKeyInUse())
+        assertTrue(config.hasBuiltInTmdbKey())
+    }
+
+    @Test
+    fun theUserTmdbKeyAlwaysWinsOverTheBuiltInOne() {
+        val config = buildConfig(tmdb = " user-key ", builtIn = "build-key")
+
+        assertEquals("user-key", config.tmdbApiKey())
+        assertFalse(config.isTmdbBuiltInKeyInUse())
+        assertTrue(config.hasBuiltInTmdbKey())
+    }
+
+    @Test
+    fun withoutAnyTmdbKeyTheProviderStaysOff() {
+        val config = buildConfig()
+
+        assertEquals("", config.tmdbApiKey())
+        assertFalse(config.isTmdbEnabled())
+        assertFalse(config.isTmdbBuiltInKeyInUse())
+        assertFalse(config.hasBuiltInTmdbKey())
+    }
+
     @Test
     fun introDbUrlIsNormalizedWithoutTrailingSlash() {
         assertEquals("https://example.invalid/api", config(introDb = " example.invalid/api/ ").introDbBaseUrl())

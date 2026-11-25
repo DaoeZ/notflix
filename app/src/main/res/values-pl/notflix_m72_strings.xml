@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Profil i konto</string>
+    <string name="notflix_settings_home">Ekran główny</string>
+    <string name="notflix_settings_connected_accounts">Połączone konta</string>
+    <string name="notflix_settings_system">System</string>
+    <string name="notflix_settings_advanced_options">Opcje zaawansowane</string>
+    <string name="notflix_settings_trailers">Zwiastuny</string>
+    <string name="notflix_settings_updates">Aktualizacje</string>
+    <string name="notflix_settings_home_collection">Kolekcja główna Notflix</string>
+    <string name="notflix_settings_ratings">Oceny</string>
+    <string name="notflix_settings_metadata">Dane i katalogi</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

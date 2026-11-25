@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Top 10 por país -->
+    <string name="top10_movies_country">Top 10 películas en %1$s hoy</string>
+    <string name="top10_series_country">Top 10 series en %1$s hoy</string>
+    <string name="top10_kids_country">Top 10 infantil en %1$s hoy</string>
+
+    <!-- Catálogo infantil ampliado -->
+    <string name="kids_row_adventures">Aventuras en familia</string>
+    <string name="kids_row_comedy">Comedia infantil</string>
+    <string name="kids_row_fantasy">Fantasía y magia</string>
+    <string name="kids_row_new_releases">Estrenos familiares</string>
+    <string name="kids_row_bedtime">Cortas para antes de dormir (&lt; 95 min)</string>
+
+    <!-- Filtro rápido -->
+    <string name="quick_pick_title">¿Qué ver hoy?</string>
+    <string name="quick_pick_kids_title">¿Qué vemos hoy?</string>
+    <string name="quick_pick_short">Menos de 100 min</string>
+    <string name="quick_pick_bedtime">Antes de dormir (&lt; 90 min)</string>
+    <string name="quick_pick_top_rated">Bien valoradas (7.5+)</string>
+    <string name="quick_pick_my_list">Sin ver de Mi lista</string>
+    <string name="quick_pick_animation">Animación</string>
+    <string name="quick_pick_surprise">¡Sorpréndeme!</string>
+    <string name="quick_pick_another">Otra sugerencia</string>
+    <string name="quick_pick_play">Reproducir ya</string>
+    <string name="quick_pick_details">Más información</string>
+    <string name="quick_pick_empty">Aún no hay títulos que coincidan con este filtro.</string>
+
+    <!-- Mando y teclado desde móvil -->
+    <string name="companion_title">Mando y teclado desde el móvil</string>
+    <string name="companion_subtitle">Escanea con tu móvil o abre esta dirección en el mismo Wi-Fi para escribir búsquedas, controlar el reproductor o enviar desde Notflix Móvil.</string>
+    <string name="companion_pair_code">Código: %1$s</string>
+    <string name="companion_no_wifi">Conecta la TV al Wi-Fi o Ethernet para vincular un móvil.</string>
+    <string name="companion_blocked_kids">Bloqueado por el límite de edad del perfil Infantil.</string>
+    <string name="companion_button_cd">Teclado y mando desde móvil</string>
+    <string name="companion_web_placeholder">Buscar película o serie en la TV…</string>
+    <string name="companion_web_search">Buscar</string>
+    <string name="companion_web_back">Atrás</string>
+    <string name="companion_web_home">Inicio</string>
+    <string name="companion_web_sent">Enviado</string>
+    <string name="companion_web_error">Error</string>
+    <string name="companion_web_offline">Sin conexión con la TV</string>
+    <string name="companion_web_enter_code">Introduce el código de 6 caracteres que aparece en tu TV para conectar el mando.</string>
+    <string name="companion_web_code_placeholder">Código (ej. A1B2C3)</string>
+    <string name="companion_web_connect">Conectar</string>
+    <string name="companion_web_invalid_code">Código incorrecto. Comprueba el código en tu TV e inténtalo de nuevo.</string>
+
+    <!-- Temporizador de sueño -->
+    <string name="sleep_timer_label">Temporizador</string>
+    <string name="sleep_timer_off">Desactivado</string>
+    <string name="sleep_timer_end_episode">Al acabar el episodio</string>
+    <string name="sleep_timer_minutes">%1$d min</string>
+    <string name="sleep_timer_remaining">%1$d min restantes</string>
+    <string name="sleep_timer_paused">Temporizador: reproducción pausada</string>
+
+    <!-- Modo noche / Diálogo claro -->
+    <string name="night_mode_label">Modo noche</string>
+    <string name="night_mode_subtitle">Diálogo claro y explosiones suaves</string>
+    <string name="night_mode_on">Modo noche ACTIVADO</string>
+    <string name="night_mode_off">Modo noche DESACTIVADO</string>
+
+    <!-- Resumen de temporada -->
+    <string name="recap_season_button">Resumen T%1$d</string>
+    <string name="recap_searching">Buscando resumen de la temporada %1$d…</string>
+    <string name="recap_not_found">No se encontró resumen de la temporada %1$d</string>
+
+    <!-- Recordatorios de calendario -->
+    <string name="calendar_remind_set">Avísame</string>
+    <string name="calendar_remind_active">Aviso activo</string>
+    <string name="calendar_remind_added">Aviso activado para %1$s</string>
+    <string name="calendar_remind_removed">Aviso desactivado para %1$s</string>
+    <string name="extras_country_title">País o región (Top 10)</string>
+    <string name="extras_country_subtitle">Elige el país del Top 10 que aparece en Inicio</string>
+    <string name="extras_country_auto">Automático (%1$s)</string>
+</resources>

@@ -201,4 +201,6 @@
         <item>Simkl artık bağlanabilir.</item>
         <item>Trakt: tek bir kodla bağlanın, kurulum gerekmez.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Notflix anahtarı</string>
+    <string name="notflix_tmdb_attribution">Bu ürün TMDB API\'sini kullanır ancak TMDB tarafından onaylanmamış veya sertifikalandırılmamıştır.</string>
 </resources>

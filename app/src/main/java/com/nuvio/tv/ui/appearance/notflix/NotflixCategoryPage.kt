@@ -608,17 +608,17 @@ private fun NotflixCategoryExpandedCard(
         if (reducedMotion) progress.snapTo(1f) else progress.animateTo(1f, tween(Spec.EXPAND_MS))
         onOpened()
     }
-    val openWidth = posterWidth + (targetWidth - posterWidth) * progress.value
-    val openHeight = posterHeight + (targetHeight - posterHeight) * progress.value
+    val openWidth = { posterWidth + (targetWidth - posterWidth) * progress.value }
+    val openHeight = { posterHeight + (targetHeight - posterHeight) * progress.value }
     val posterPx = with(density) { posterWidth.toPx() }
-    val openWidthPx = with(density) { openWidth.toPx() }
-    val openHeightPx = with(density) { openHeight.toPx() }
     val cursorIndex = notflixCardCursorIndex(true, cursor, identity, actions.size)
     Box(Modifier.fillMaxSize().zIndex(1f)) {
         Box(
             Modifier
                 .align(AbsoluteAlignment.TopLeft)
                 .absoluteOffset {
+                    val openWidthPx = with(density) { openWidth().toPx() }
+                    val openHeightPx = with(density) { openHeight().toPx() }
                     // Se relee la posición del póster: si la rejilla se mueve, la tarjeta la sigue.
                     val fresh = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == spec.key } ?: info
                     val viewport = gridState.layoutInfo.viewportSize
@@ -657,8 +657,7 @@ private fun NotflixCategoryExpandedCard(
                 interactive = false,
                 looksFocused = true,
                 widthOverride = openWidth,
-                heightOverride = openHeight,
-                panelProgressOverride = progress.value
+                heightOverride = openHeight
             )
         }
     }

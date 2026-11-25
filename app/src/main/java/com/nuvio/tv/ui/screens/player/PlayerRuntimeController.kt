@@ -225,6 +225,7 @@ class PlayerRuntimeController(
     internal var currentAddonLogo: String? = navigationArgs.addonLogo
     internal var currentStreamDescription: String? = navigationArgs.streamDescription
     internal var contentLanguage: String? = navigationArgs.contentLanguage
+    internal var autoPlayAudioLanguage: String? = navigationArgs.autoPlayAudioLanguage
     internal var currentVideoCodec: String? = null
     internal var currentVideoWidth: Int? = null
     internal var currentVideoHeight: Int? = null
@@ -602,6 +603,9 @@ class PlayerRuntimeController(
     internal var lastNextEpisodeEvaluationUptimeMs: Long = 0L
     internal var bufferLogJob: Job? = null
     internal val gainAudioProcessor = GainAudioProcessor()
+    internal val nightModeAudioProcessor = NightModeDrcAudioProcessor()
+    internal var sleepTimerJob: Job? = null
+    internal var sleepTimerOriginalVolume: Float? = null
     internal var loudnessEnhancer: LoudnessEnhancer? = null
     internal var trackSelector: DefaultTrackSelector? = null
     internal var currentMediaSession: MediaSession? = null
@@ -765,6 +769,7 @@ class PlayerRuntimeController(
         observeDeviceLocalTransparentLetterbox()
         observeDeviceLocalTunneledSurfaceFill()
         observePlayerStatsHud()
+        loadNightModePreference()
     }
 
     private fun observeTorrentSettings() {

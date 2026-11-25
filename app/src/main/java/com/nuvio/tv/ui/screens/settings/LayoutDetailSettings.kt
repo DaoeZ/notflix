@@ -24,24 +24,28 @@ internal fun LayoutDetailPageSection(
 
     SettingsSectionLabel(text = stringResource(R.string.layout_detail_group_episodes))
     SettingsActionRow(
+        settingId = "LayoutDetailSettings.layout_episode_options_overlay",
         title = stringResource(R.string.layout_episode_options_overlay),
         subtitle = stringResource(R.string.layout_episode_options_overlay_sub),
         value = episodeOptionsOverlayStyleLabel(uiState.episodeOptionsOverlayStyle),
         onClick = { showOverlayStyleDialog = true }
     )
     SettingsToggleRow(
+        settingId = "LayoutDetailSettings.random_episode_title",
         title = stringResource(R.string.random_episode_title),
         subtitle = stringResource(R.string.layout_random_episode_sub),
         checked = uiState.randomEpisodeEnabled,
         onToggle = { onEvent(LayoutSettingsEvent.SetRandomEpisodeEnabled(!uiState.randomEpisodeEnabled)) }
     )
     SettingsToggleRow(
+        settingId = "LayoutDetailSettings.layout_blur_unwatched",
         title = stringResource(R.string.layout_blur_unwatched),
         subtitle = stringResource(R.string.layout_blur_unwatched_sub),
         checked = uiState.blurUnwatchedEpisodes,
         onToggle = { onEvent(LayoutSettingsEvent.SetBlurUnwatchedEpisodes(!uiState.blurUnwatchedEpisodes)) }
     )
     SettingsActionRow(
+        settingId = "LayoutDetailSettings.layout_episode_ratings",
         title = stringResource(R.string.layout_episode_ratings),
         subtitle = stringResource(R.string.layout_episode_ratings_sub),
         value = episodeRatingsVisibilityLabel(uiState.detailImdbRatingsVisibility),
@@ -51,6 +55,7 @@ internal fun LayoutDetailPageSection(
     SettingsSectionLabel(text = stringResource(R.string.layout_detail_group_trailers))
     if (AppFeaturePolicy.inAppTrailerPlaybackEnabled) {
         SettingsToggleRow(
+            settingId = "LayoutDetailSettings.audio_autoplay_trailers",
             title = stringResource(R.string.audio_autoplay_trailers),
             subtitle = stringResource(R.string.audio_autoplay_trailers_sub),
             checked = uiState.detailPageTrailerAutoplayEnabled,
@@ -60,6 +65,7 @@ internal fun LayoutDetailPageSection(
         )
         if (uiState.detailPageTrailerAutoplayEnabled) {
             SettingsToggleRow(
+                settingId = "LayoutDetailSettings.layout_trailer_play_in_background",
                 title = stringResource(R.string.layout_trailer_play_in_background),
                 subtitle = stringResource(R.string.layout_trailer_play_in_background_sub),
                 checked = uiState.detailPageTrailerPlayInBackground,
@@ -69,6 +75,7 @@ internal fun LayoutDetailPageSection(
             )
             if (uiState.detailPageTrailerPlayInBackground) {
                 SettingsToggleRow(
+                    settingId = "LayoutDetailSettings.layout_trailer_pause_on_scroll",
                     title = stringResource(R.string.layout_trailer_pause_on_scroll),
                     subtitle = stringResource(R.string.layout_trailer_pause_on_scroll_sub),
                     checked = uiState.detailPageTrailerPauseOnScroll,
@@ -78,6 +85,7 @@ internal fun LayoutDetailPageSection(
                 )
             }
             SliderSettingsItem(
+                settingId = "LayoutDetailSettings.audio_trailer_delay",
                 title = stringResource(R.string.audio_trailer_delay),
                 value = uiState.detailPageTrailerAutoplayDelaySeconds,
                 valueText = "${uiState.detailPageTrailerAutoplayDelaySeconds}s",
@@ -90,6 +98,7 @@ internal fun LayoutDetailPageSection(
             )
         }
         SettingsToggleRow(
+            settingId = "LayoutDetailSettings.layout_trailer_4k",
             title = stringResource(R.string.layout_trailer_4k),
             subtitle = stringResource(R.string.layout_trailer_4k_sub),
             checked = uiState.trailer4kEnabled,
@@ -97,6 +106,7 @@ internal fun LayoutDetailPageSection(
         )
     }
     SettingsToggleRow(
+        settingId = "LayoutDetailSettings.layout_trailer_button",
         title = stringResource(R.string.layout_trailer_button),
         subtitle = stringResource(R.string.layout_trailer_button_sub),
         checked = uiState.detailPageTrailerButtonEnabled,
@@ -107,6 +117,7 @@ internal fun LayoutDetailPageSection(
 
     SettingsSectionLabel(text = stringResource(R.string.layout_detail_group_metadata))
     SettingsToggleRow(
+        settingId = "LayoutDetailSettings.layout_prefer_external_meta",
         title = stringResource(R.string.layout_prefer_external_meta),
         subtitle = stringResource(R.string.layout_prefer_external_meta_sub),
         checked = uiState.preferExternalMetaAddonDetail,
@@ -115,6 +126,7 @@ internal fun LayoutDetailPageSection(
         }
     )
     SettingsToggleRow(
+        settingId = "LayoutDetailSettings.layout_show_full_release_date",
         title = stringResource(R.string.layout_show_full_release_date),
         subtitle = stringResource(R.string.layout_show_full_release_date_sub),
         checked = uiState.showFullReleaseDate,
@@ -158,23 +170,27 @@ internal fun LayoutStreamsSection(
 
     SettingsSectionLabel(text = stringResource(R.string.settings_stream_badges_section))
     SettingsToggleRow(
+        settingId = "LayoutDetailSettings.settings_stream_size_badges_title",
         title = stringResource(R.string.settings_stream_size_badges_title),
         subtitle = stringResource(R.string.settings_stream_size_badges_description),
         checked = streamBadgeUiState.showFileSizeBadges,
         onToggle = { onShowFileSizeBadgesChange(!streamBadgeUiState.showFileSizeBadges) }
     )
     SettingsActionRow(
+        settingId = "LayoutDetailSettings.settings_stream_badge_position_title",
         title = stringResource(R.string.settings_stream_badge_position_title),
         subtitle = null,
         value = streamBadgePlacementLabel(streamBadgeUiState.badgePlacement),
         onClick = { showPositionDialog = true }
     )
     SettingsActionRow(
+        settingId = "LayoutDetailSettings.settings_stream_badge_urls_title",
         title = stringResource(R.string.settings_stream_badge_urls_title),
         subtitle = streamBadgeRulesPreview(streamBadgeUiState),
         onClick = onConfigureBadges
     )
     SettingsToggleRow(
+        settingId = "LayoutDetailSettings.settings_stream_badges_in_player_title",
         title = stringResource(R.string.settings_stream_badges_in_player_title),
         subtitle = stringResource(R.string.settings_stream_badges_in_player_description),
         checked = streamBadgeUiState.showInPlayer,
@@ -183,6 +199,7 @@ internal fun LayoutStreamsSection(
     )
     if (streamBadgeUiState.showInPlayer && streamBadgeUiState.rules.hasImport) {
         SettingsActionRow(
+            settingId = "LayoutDetailSettings.settings_stream_player_badges_title",
             title = stringResource(R.string.settings_stream_player_badges_title),
             subtitle = playerBadgesLabel(streamBadgeUiState),
             onClick = { showPlayerBadgesDialog = true }
@@ -191,6 +208,7 @@ internal fun LayoutStreamsSection(
 
     SettingsSectionLabel(text = stringResource(R.string.settings_stream_display_section))
     SettingsToggleRow(
+        settingId = "LayoutDetailSettings.settings_stream_addon_logo_title",
         title = stringResource(R.string.settings_stream_addon_logo_title),
         subtitle = stringResource(R.string.settings_stream_addon_logo_description),
         checked = streamBadgeUiState.showAddonLogo,

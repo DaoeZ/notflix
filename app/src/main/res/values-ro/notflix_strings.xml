@@ -203,4 +203,6 @@
         <item>Simkl poate fi acum conectat.</item>
         <item>Trakt: conectare doar cu un cod, fără configurare.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Cheie Notflix</string>
+    <string name="notflix_tmdb_attribution">Acest produs folosește API-ul TMDB, dar nu este aprobat sau certificat de TMDB.</string>
 </resources>

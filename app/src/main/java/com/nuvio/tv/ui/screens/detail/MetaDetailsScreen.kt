@@ -445,6 +445,10 @@ fun MetaDetailsScreen(
         runtime: Int?,
         contentLanguage: String?
     ) -> Unit = { _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> },
+    onDownloadClick: ((
+        String, String, String, String, String?, String?, String?, Int?, Int?, String?,
+        String?, String?, Int?, String?
+    ) -> Unit)? = null,
     onPlayStartFromBeginningClick: (
         videoId: String,
         contentType: String,
@@ -463,7 +467,14 @@ fun MetaDetailsScreen(
     ) -> Unit = { _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> }
 ) {
     val playbackAvailability = LocalPlaybackAvailability.current
+    val offlineModel: com.nuvio.tv.core.offline.NotflixOfflineViewModel? =
+        if (com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active && onDownloadClick != null) hiltViewModel() else null
+    val canDownload = offlineModel?.owner?.collectAsStateWithLifecycle()?.value != null
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // A language change recreates the activity but keeps this ViewModel and its resolved texts.
+    val trailerLanguage = LocalConfiguration.current.locales[0].toLanguageTag()
+        .takeIf { com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active }
+    LaunchedEffect(trailerLanguage) { viewModel.notifyLocaleChanged(trailerLanguage) }
     val wikipediaExtract = rememberWikipediaDetailExtract(uiState.meta)
     val posterCardCornerRadiusDp by viewModel.posterCardCornerRadiusDp.collectAsStateWithLifecycle()
     val effectiveAutoplayEnabled by viewModel.effectiveAutoplayEnabled.collectAsStateWithLifecycle(
@@ -905,6 +916,16 @@ fun MetaDetailsScreen(
                     onEpisodeManualPlayClick = playEpisodeManually,
                     onPlayClick = playTitle,
                     onPlayManuallyClick = playTitleManually,
+                    onDownload = onDownloadClick?.takeIf { canDownload }?.let { download ->
+                        { video: Video? ->
+                            val id = video?.id ?: meta.id
+                            if (playbackAvailability.canStream(meta.apiType, id, meta.id, video)) {
+                                download(id, meta.apiType, meta.id, meta.name, video?.thumbnail ?: meta.poster,
+                                    meta.backdropUrl, meta.logo, video?.season, video?.episode, video?.title,
+                                    genresString, yearString, video?.runtime, meta.resolveContentLanguage())
+                            }
+                        }
+                    },
                     onEpisodeStartFromBeginningClick = onEpisodeStartFromBeginningClick@{ video ->
                         if (!playbackAvailability.canStream(meta.apiType, video.id, meta.id, video)) {
                             Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()
@@ -1052,6 +1073,7 @@ fun MetaDetailsScreen(
                         viewModel.onEvent(MetaDetailsEvent.OnTrailerEnded)
                     },
                     onTrailerButtonClick = { viewModel.onEvent(MetaDetailsEvent.OnTrailerButtonClick) },
+                    onPlaySeasonRecap = { prevSeason -> viewModel.onEvent(MetaDetailsEvent.OnPlaySeasonRecap(prevSeason)) },
                     onSharedTrailerSelected = { viewModel.onEvent(MetaDetailsEvent.OnSharedTrailerSelected(it)) },
                     onDismissSharedTrailer = { viewModel.onEvent(MetaDetailsEvent.OnDismissSharedTrailer) },
                     onRetrySharedTrailer = { viewModel.onEvent(MetaDetailsEvent.OnRetrySharedTrailer) },
@@ -1245,6 +1267,7 @@ internal fun MetaDetailsContent(
     onEpisodeStartFromBeginningClick: (Video) -> Unit = {},
     onPlayClick: (String) -> Unit,
     onPlayManuallyClick: (String) -> Unit,
+    onDownload: ((Video?) -> Unit)? = null,
     onPlayStartFromBeginningClick: (String) -> Unit = {},
     showManualPlayOption: Boolean,
     onPlayButtonFocused: () -> Unit,
@@ -1278,6 +1301,7 @@ internal fun MetaDetailsContent(
     onTrailerProgressChanged: (Long, Long) -> Unit,
     onTrailerEnded: () -> Unit,
     onTrailerButtonClick: () -> Unit,
+    onPlaySeasonRecap: (Int) -> Unit = {},
     onSharedTrailerSelected: (MetaTrailer) -> Unit,
     onDismissSharedTrailer: () -> Unit,
     onRetrySharedTrailer: () -> Unit,
@@ -1872,7 +1896,13 @@ internal fun MetaDetailsContent(
     }
     val hasCastSection = directorWriterMembers.isNotEmpty() || normalCastMembers.isNotEmpty()
     val hasMoreLikeThisSection = moreLikeThis.isNotEmpty()
-    val hasTrailerSection = remember(meta.trailers) { meta.trailers.any { !it.ytId.isNullOrBlank() } }
+    val trailerLanguage = LocalConfiguration.current.locales[0].toLanguageTag()
+    val detailTrailers = remember(meta.trailers, notflix, trailerLanguage) {
+        if (notflix) meta.trailers.filter {
+            com.nuvio.tv.data.trailer.matchesNotflixTrailerLanguage(it.lang, trailerLanguage)
+        } else meta.trailers
+    }
+    val hasTrailerSection = detailTrailers.any { !it.ytId.isNullOrBlank() }
     val showEpisodeImdbRatings = detailImdbRatingsVisibility.showEpisodeRatings
     val visibleEpisodeImdbRatings = remember(
         episodeImdbRatings,
@@ -2300,6 +2330,8 @@ internal fun MetaDetailsContent(
             nextToWatch = nextToWatch,
             onPlayClick = { if (shufflePoolEmpty) showRandomEpisodeOverlay = true else heroPlayClick() },
             isPlayEnabled = shufflePoolEmpty || isPlayEnabled,
+            onDownload = onDownload?.takeIf { notflix && isPlayEnabled && (!isSeries || heroVideo != null) }
+                ?.let { download -> { download(heroVideo) } },
             onPlayLongPress = if (!shufflePoolEmpty && isPlayEnabled && (showManualPlayOption || nextToWatch?.isResume == true)) {
                 { showHeroPlayOptionsDialog = true }
             } else {
@@ -2318,6 +2350,8 @@ internal fun MetaDetailsContent(
             showFullReleaseDate = showFullReleaseDate,
             trailerAvailable = trailerButtonEnabled && !trailerUrl.isNullOrBlank(),
             onTrailerClick = onTrailerButtonClick,
+            previousSeasonForRecap = if (isSeries && selectedSeason > 1) selectedSeason - 1 else null,
+            onPlaySeasonRecap = onPlaySeasonRecap,
             showRandomEpisodeButton = showRandomEpisodeButton,
             onRandomEpisodeClick = {
                 if (!episodeShuffle.enabled) {
@@ -2831,7 +2865,7 @@ internal fun MetaDetailsContent(
 
                             PeopleSectionTab.TRAILER -> {
                                 TrailerSection(
-                                    trailers = meta.trailers,
+                                    trailers = detailTrailers,
                                     listState = trailerListState,
                                     posterCardCornerRadius = posterCardCornerRadiusDp.dp,
                                     upFocusRequester = if (hasVisiblePeopleTabs) trailerTabFocusRequester else seasonDownFocusRequester ?: heroPlayFocusRequester,
@@ -3335,7 +3369,7 @@ private fun BackdropLayer(
             isScrolledPastHero -> 0.15f
             else -> 1f
         },
-        animationSpec = tween(durationMillis = if (isScrolledPastHero) 300 else 800),
+        animationSpec = tween(durationMillis = if (isScrolledPastHero) 220 else 280),
         label = "backdropFade"
     )
     val backgroundTrailerAlphaState = animateFloatAsState(
@@ -3344,12 +3378,12 @@ private fun BackdropLayer(
             isScrolledPastHero -> 0.15f
             else -> 1f
         },
-        animationSpec = tween(durationMillis = if (isScrolledPastHero) 300 else 800),
+        animationSpec = tween(durationMillis = if (isScrolledPastHero) 220 else 280),
         label = "backgroundTrailerFade"
     )
     val gradientAlphaState = animateFloatAsState(
         targetValue = if (isTrailerPlaying || isScrolledPastHero) 0f else 1f,
-        animationSpec = tween(durationMillis = if (isScrolledPastHero) 300 else 800),
+        animationSpec = tween(durationMillis = if (isScrolledPastHero) 220 else 280),
         label = "gradientFade"
     )
     Box(modifier = Modifier.fillMaxSize()) {
@@ -3359,8 +3393,7 @@ private fun BackdropLayer(
             AsyncImage(
                 model = heroBackdropRequest,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                alpha = backdropAlphaState.value,
+                modifier = Modifier.fillMaxSize().graphicsLayer { alpha = backdropAlphaState.value },
                 contentScale = ContentScale.Crop,
                 alignment = if (notflix) androidx.compose.ui.BiasAlignment(0f, -.6f) else Alignment.TopEnd
             )
@@ -3368,8 +3401,7 @@ private fun BackdropLayer(
         AsyncImage(
             model = backdropRequest,
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            alpha = backdropAlphaState.value,
+            modifier = Modifier.fillMaxSize().graphicsLayer { alpha = backdropAlphaState.value },
             onSuccess = { showHeroBackdropUnderlay = false },
             contentScale = ContentScale.Crop,
             alignment = if (notflix) androidx.compose.ui.BiasAlignment(0f, -.6f) else Alignment.TopEnd

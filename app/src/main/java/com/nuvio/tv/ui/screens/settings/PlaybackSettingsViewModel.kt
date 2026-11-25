@@ -54,6 +54,9 @@ class PlaybackSettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val playerSettings: Flow<PlayerSettings> = playerSettingsDataStore.playerSettings
+    fun playerButtonsProfileId(): Int = playerSettingsDataStore.activeProfileId()
+    suspend fun setNotflixPlayerButtons(ids: List<String>, profileId: Int) =
+        playerSettingsDataStore.setNotflixPlayerButtons(ids, profileId)
     val transparentLetterbox: Flow<Boolean> = deviceLocalPlayerPreferences.transparentLetterbox
     val trailerSettings: Flow<TrailerSettings> = trailerSettingsDataStore.settings
     val torrentSettingsFlow: Flow<TorrentSettingsData> = torrentSettings.settings

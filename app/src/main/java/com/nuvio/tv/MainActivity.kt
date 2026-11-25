@@ -132,6 +132,7 @@ import com.nuvio.tv.ui.components.StartupDestination
 import com.nuvio.tv.ui.components.shouldShowStartupSplash
 import com.nuvio.tv.ui.components.startupDestinationForRoute
 import com.nuvio.tv.core.runtime.PluginRuntimeHooks
+import com.nuvio.tv.core.util.withAppLocale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -368,6 +369,17 @@ open class MainActivity : ComponentActivity() {
     lateinit var externalPlaybackTracker: com.nuvio.tv.core.player.ExternalPlaybackTracker
 
     @Inject
+    lateinit var companionBus: com.nuvio.tv.core.server.NotflixCompanionBus
+
+    @Inject
+    lateinit var ageGate: com.nuvio.tv.core.profile.ActiveProfileAgeGate
+
+    @Volatile
+    private var companionServer: com.nuvio.tv.core.server.NotflixCompanionServer? = null
+    private var companionServerJob: kotlinx.coroutines.Job? = null
+    private val companionServerLock = Any()
+
+    @Inject
     lateinit var deepLinkHandler: DeepLinkHandler
 
     @Inject
@@ -400,6 +412,9 @@ open class MainActivity : ComponentActivity() {
             config.setLocale(locale)
             super.attachBaseContext(newBase.createConfigurationContext(config))
         } else {
+            // "" means the user went back to the system language: undo the default set for the
+            // previous app language, or formats and Accept-Language stay in it until a restart.
+            if (tag == "") Locale.setDefault(android.content.res.Resources.getSystem().configuration.locales[0])
             // Cache not ready yet (very early cold start) — use system locale
             // The IO coroutine in Application.onCreate will finish before any activity
             // is usually created, but if not, we just use system locale until next launch
@@ -578,14 +593,24 @@ open class MainActivity : ComponentActivity() {
                 profiles.firstOrNull { it.id == activeProfileId }
             }
             var profilePinStates by remember { mutableStateOf<Map<Int, Boolean>>(emptyMap()) }
+            var profilePinStatesResolved by remember { mutableStateOf(false) }
 
             LaunchedEffect(authState, profiles) {
-                if (authState is AuthState.FullAccount) {
-                    profileSyncService.pullProfileLockStates()
-                        .onSuccess { profilePinStates = it }
-                        .onFailure { profilePinStates = emptyMap() }
-                } else {
-                    profilePinStates = emptyMap()
+                when (authState) {
+                    is AuthState.Loading -> {
+                        profilePinStatesResolved = false
+                    }
+                    is AuthState.FullAccount -> {
+                        profilePinStatesResolved = false
+                        profileSyncService.pullProfileLockStates()
+                            .onSuccess { profilePinStates = it }
+                            .onFailure { profilePinStates = emptyMap() }
+                        profilePinStatesResolved = true
+                    }
+                    else -> {
+                        profilePinStates = emptyMap()
+                        profilePinStatesResolved = true
+                    }
                 }
             }
 
@@ -594,15 +619,16 @@ open class MainActivity : ComponentActivity() {
             }
 
             var profileSwitchedManually by remember { mutableStateOf(false) }
-            val shouldAutoSelectProfile = rememberLastProfileEnabled &&
+            val shouldAutoSelectProfile = profilePinStatesResolved &&
+                rememberLastProfileEnabled &&
                 hasEverSelectedProfile && !activeProfileHasPin &&
                 !hasSelectedProfileThisSession && !profileSwitchedManually
-            if (shouldAutoSelectProfile && !splashTriggered) {
-                splashTriggered = true
-                hasSelectedProfileThisSession = true
-            }
             LaunchedEffect(shouldAutoSelectProfile) {
                 if (shouldAutoSelectProfile) {
+                    if (!splashTriggered) {
+                        splashTriggered = true
+                        hasSelectedProfileThisSession = true
+                    }
                     if (authManager.authState.value is AuthState.FullAccount) {
                         startupSyncService.requestSyncNow()
                     }
@@ -1239,7 +1265,10 @@ open class MainActivity : ComponentActivity() {
                             add(Screen.Search.route)
                             add(Screen.Library.route)
                             add(Screen.Settings.route)
-                            if (notflixActive) add(Screen.Calendar.route)
+                            if (notflixActive) {
+                                add(Screen.Calendar.route)
+                                add(Screen.Downloads.route)
+                            }
                             if (discoverLocation == DiscoverLocation.IN_SIDEBAR) {
                                 add(Screen.Discover.route)
                             }
@@ -1251,6 +1280,7 @@ open class MainActivity : ComponentActivity() {
                     val strNavSearch = stringResource(R.string.nav_search)
                     val strNavLibrary = stringResource(R.string.nav_library)
                     val strNavCalendar = stringResource(R.string.nav_calendar)
+                    val strNavDownloads = stringResource(R.string.notflix_offline_title)
                     // M46: nombre de la pestaña Biblioteca en la apariencia Notflix.
                     val strNavMyList = stringResource(R.string.notflix_my_list)
                     val strNavSettings = stringResource(R.string.nav_settings)
@@ -1303,13 +1333,20 @@ open class MainActivity : ComponentActivity() {
                         }
                     }
                     // Calendario solo existe en la apariencia Notflix y va entre Biblioteca y Configuración.
-                    val shellDrawerItems = remember(drawerItems, strNavCalendar, strNavMyList, notflixActive) {
+                    val shellDrawerItems = remember(drawerItems, strNavCalendar, strNavMyList, strNavDownloads, notflixActive) {
                         if (!notflixActive) {
                             drawerItems
                         } else {
                             buildList {
                                 drawerItems.forEach { item ->
                                     if (item.route == Screen.Settings.route) {
+                                        add(
+                                            DrawerItem(
+                                                route = Screen.Downloads.route,
+                                                label = strNavDownloads,
+                                                iconRes = R.raw.sidebar_library
+                                            )
+                                        )
                                         add(
                                             DrawerItem(
                                                 route = Screen.Calendar.route,
@@ -1421,7 +1458,7 @@ open class MainActivity : ComponentActivity() {
                                         onSwitchProfile = handleSwitchProfile,
                                         onNavigate = { target ->
                                             optimisticRoute = target
-                                            navigateToDrawerRoute(navController, currentRoute, target)
+                                            navigateToDrawerRoute(navController, currentRoute, target, resetSearch = true)
                                         },
                                         onExit = handleExitApp,
                                         longPressBackHeld = longPressBackHeld
@@ -1487,6 +1524,66 @@ open class MainActivity : ComponentActivity() {
                                         startDestination = startDestination,
                                         hideBuiltInHeaders = notflixActive || hideBuiltInHeadersForFloatingPill
                                     )
+                                }
+                                LaunchedEffect(navController) {
+                                    companionBus.commands.collect { command ->
+                                        when (command) {
+                                            is com.nuvio.tv.core.server.CompanionCommand.Cast -> {
+                                                val limit = ageGate.currentLimit()
+                                                if (limit != null) {
+                                                    val rating = ageGate.ratingFor(
+                                                        apiType = command.itemType,
+                                                        id = command.itemId,
+                                                        ownRating = null
+                                                    )
+                                                    if (!com.nuvio.tv.core.profile.isAllowed(limit = limit, rating = rating)) {
+                                                        android.widget.Toast.makeText(
+                                                            this@MainActivity,
+                                                            getString(R.string.companion_blocked_kids),
+                                                            android.widget.Toast.LENGTH_SHORT
+                                                        ).show()
+                                                        return@collect
+                                                    }
+                                                }
+                                                navController.navigate(
+                                                    Screen.Detail.createRoute(
+                                                        itemId = command.itemId,
+                                                        itemType = command.itemType,
+                                                        playOnLoad = command.autoPlay
+                                                    )
+                                                )
+                                            }
+                                            is com.nuvio.tv.core.server.CompanionCommand.Search -> {
+                                                if (navController.currentDestination?.route != Screen.Search.route) {
+                                                    navController.navigate(Screen.Search.route) {
+                                                        launchSingleTop = true
+                                                    }
+                                                }
+                                            }
+                                            is com.nuvio.tv.core.server.CompanionCommand.RemoteKey -> {
+                                                val keyCode = when (command.action.lowercase()) {
+                                                    "up" -> KeyEvent.KEYCODE_DPAD_UP
+                                                    "down" -> KeyEvent.KEYCODE_DPAD_DOWN
+                                                    "left" -> KeyEvent.KEYCODE_DPAD_LEFT
+                                                    "right" -> KeyEvent.KEYCODE_DPAD_RIGHT
+                                                    "select", "enter", "ok" -> KeyEvent.KEYCODE_DPAD_CENTER
+                                                    "back" -> KeyEvent.KEYCODE_BACK
+                                                    "play_pause", "play", "pause" -> KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
+                                                    "rewind", "seek_back" -> KeyEvent.KEYCODE_MEDIA_REWIND
+                                                    "forward", "seek_fwd" -> KeyEvent.KEYCODE_MEDIA_FAST_FORWARD
+                                                    "home" -> {
+                                                        navController.popBackStack(Screen.Home.route, inclusive = false)
+                                                        null
+                                                    }
+                                                    else -> null
+                                                }
+                                                if (keyCode != null) {
+                                                    dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+                                                    dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyCode))
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                                 }
                                 }
@@ -1701,6 +1798,7 @@ open class MainActivity : ComponentActivity() {
         super.onStart()
         startupSyncService.startPeriodicSurfacePulls()
         androidTvChannelSyncService.onForegroundChanged(true)
+        startCompanionServerAsync()
     }
 
     override fun onStop() {
@@ -1710,6 +1808,76 @@ open class MainActivity : ComponentActivity() {
         // App going to background (e.g. user returning to the launcher): reconcile the
         // Continue Watching channel once so Projectivy repaints it with fresh progress.
         androidTvChannelSyncService.onForegroundChanged(false)
+        stopCompanionServer()
+    }
+
+    private fun loadOrCreateCompanionCode(): String {
+        val prefs = applicationContext.getSharedPreferences("notflix_companion", MODE_PRIVATE)
+        val existing = prefs.getString("pair_code", null)?.trim()
+        if (!existing.isNullOrBlank() && existing.length >= 6) return existing
+        val created = com.nuvio.tv.core.server.NotflixCompanionServer.generateCode()
+        prefs.edit().putString("pair_code", created).apply()
+        return created
+    }
+
+    private fun startCompanionServerAsync() {
+        synchronized(companionServerLock) {
+            if (companionServer != null || companionServerJob?.isActive == true) return
+            companionServerJob = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val ip = com.nuvio.tv.core.server.DeviceIpAddress.get(applicationContext)
+                    val stableCode = loadOrCreateCompanionCode()
+                    val server = com.nuvio.tv.core.server.NotflixCompanionServer.startOnAvailablePort(
+                        onCommand = { companionBus.emit(it) },
+                        webStringsProvider = {
+                            val localized = applicationContext.withAppLocale()
+                            val tag = localized.resources.configuration.locales[0]?.toLanguageTag() ?: "en"
+                            com.nuvio.tv.core.server.CompanionWebStrings(
+                                langTag = tag,
+                                placeholder = localized.getString(R.string.companion_web_placeholder),
+                                search = localized.getString(R.string.companion_web_search),
+                                back = localized.getString(R.string.companion_web_back),
+                                home = localized.getString(R.string.companion_web_home),
+                                sent = localized.getString(R.string.companion_web_sent),
+                                error = localized.getString(R.string.companion_web_error),
+                                offline = localized.getString(R.string.companion_web_offline),
+                                enterCode = localized.getString(R.string.companion_web_enter_code),
+                                codePlaceholder = localized.getString(R.string.companion_web_code_placeholder),
+                                connect = localized.getString(R.string.companion_web_connect),
+                                invalidCode = localized.getString(R.string.companion_web_invalid_code)
+                            )
+                        },
+                        fixedCode = stableCode
+                    ) ?: return@launch
+                    val keep = synchronized(companionServerLock) {
+                        val active = lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED) &&
+                            companionServer == null
+                        if (active) {
+                            companionServer = server
+                            companionBus.activePairCode = server.code
+                            companionBus.activeUrl = ip?.let { "http://$it:${server.listeningPort}" }
+                        }
+                        active
+                    }
+                    if (!keep) {
+                        runCatching { server.stop() }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun stopCompanionServer() {
+        val server = synchronized(companionServerLock) {
+            companionServerJob?.cancel()
+            companionServerJob = null
+            val current = companionServer
+            companionServer = null
+            companionBus.activeUrl = null
+            companionBus.activePairCode = null
+            current
+        } ?: return
+        runCatching { server.stop() }
     }
 
     override fun onDestroy() {
@@ -2663,7 +2831,8 @@ private fun CollapsedSidebarPill(
 private fun navigateToDrawerRoute(
     navController: NavHostController,
     currentRoute: String?,
-    targetRoute: String
+    targetRoute: String,
+    resetSearch: Boolean = false
 ) {
     if (currentRoute == targetRoute) {
         if (targetRoute == Screen.Home.route) {
@@ -2680,6 +2849,11 @@ private fun navigateToDrawerRoute(
         return
     }
     try {
+        if (resetSearch && currentRoute == Screen.Search.route) {
+            val searchEntry = navController.getBackStackEntry(Screen.Search.route)
+            androidx.lifecycle.ViewModelProvider(searchEntry)[com.nuvio.tv.ui.screens.search.SearchViewModel::class.java]
+                .clearNotflixQuery()
+        }
         navController.navigate(targetRoute) {
             popUpTo(navController.graph.startDestinationId) {
                 saveState = true

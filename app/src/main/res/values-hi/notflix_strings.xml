@@ -201,4 +201,6 @@
         <item>अब Simkl जोड़ा जा सकता है।</item>
         <item>Trakt: सिर्फ़ एक कोड से जुड़ें, कोई सेटअप नहीं।</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Notflix कुंजी</string>
+    <string name="notflix_tmdb_attribution">यह उत्पाद TMDB API का उपयोग करता है लेकिन TMDB द्वारा समर्थित या प्रमाणित नहीं है।</string>
 </resources>

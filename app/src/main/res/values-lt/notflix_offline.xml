@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Atsisiuntimai</string>
+    <string name="notflix_offline_receive">Gauti iš telefono</string>
+    <string name="notflix_offline_pairing">Rankinis įvedimas: %1$s · %2$s. Kodas galioja 5 minutes.</string>
+    <string name="notflix_offline_scan">Nuskaitykite telefono kamera, kad atidarytumėte Notflix atsisiuntimus.</string>
+    <string name="notflix_offline_expired">Seansas baigėsi. Pasirinkite „Gauti iš telefono“, kad prisijungtumėte iš naujo.</string>
+    <string name="notflix_offline_empty">Atsisiųskite vaizdo įrašą iš „Šaltinių“ arba nusiųskite jį iš telefono.</string>
+    <string name="notflix_offline_profile">Atsisiuntimai šiame profilyje nepasiekiami.</string>
+    <string name="notflix_offline_unavailable">Failas nepasiekiamas</string>
+    <string name="notflix_offline_confirm_remove">Patvirtinti pašalinimą</string>
+    <string name="notflix_offline_choose_source">Pasirinkite šaltinį atsisiuntimui</string>
+    <string name="notflix_offline_started">Atsisiuntimas įtrauktas į eilę</string>
+    <string name="notflix_offline_failed">Nepavyko atidaryti ar atsisiųsti šio failo. Pabandykite tiesioginį vaizdo failą.</string>
+</resources>

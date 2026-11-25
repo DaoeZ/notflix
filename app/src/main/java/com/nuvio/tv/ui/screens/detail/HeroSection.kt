@@ -73,6 +73,7 @@ import com.nuvio.tv.ui.components.SynopsisDescription
 import com.nuvio.tv.ui.theme.NuvioTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.ui.platform.LocalConfiguration
@@ -97,6 +98,7 @@ fun HeroContentSection(
     onPlayClick: () -> Unit,
     isPlayEnabled: Boolean = true,
     onPlayLongPress: (() -> Unit)? = null,
+    onDownload: (() -> Unit)? = null,
     isInLibrary: Boolean,
     onToggleLibrary: () -> Unit,
     onLibraryLongPress: () -> Unit,
@@ -105,6 +107,8 @@ fun HeroContentSection(
     onToggleMovieWatched: () -> Unit,
     trailerAvailable: Boolean = false,
     onTrailerClick: () -> Unit = {},
+    previousSeasonForRecap: Int? = null,
+    onPlaySeasonRecap: ((Int) -> Unit)? = null,
     showRandomEpisodeButton: Boolean = false,
     episodeShuffle: com.nuvio.tv.domain.model.EpisodeShuffleSettings = com.nuvio.tv.domain.model.EpisodeShuffleSettings(),
     shuffleActionPending: Boolean = false,
@@ -177,6 +181,15 @@ fun HeroContentSection(
                 }
             )
 
+            if (notflix && onDownload != null) {
+                com.nuvio.tv.ui.appearance.notflix.NotflixFlatButton(
+                    label = stringResource(R.string.update_download),
+                    onClick = onDownload,
+                    modifier = Modifier.onFocusChanged { if (it.hasFocus) onHeroActionFocused() },
+                    trailing = ""
+                )
+            }
+
             ActionIconButton(
                 icon = if (isInLibrary) Icons.Default.Check else null,
                 painter = if (!isInLibrary) {
@@ -216,6 +229,15 @@ fun HeroContentSection(
                     painter = trailerPainter,
                     contentDescription = stringResource(R.string.hero_play_trailer),
                     onClick = onTrailerClick,
+                    onFocused = onHeroActionFocused
+                )
+            }
+
+            if (previousSeasonForRecap != null && previousSeasonForRecap >= 1 && onPlaySeasonRecap != null) {
+                ActionIconButton(
+                    icon = Icons.Default.Refresh,
+                    contentDescription = stringResource(R.string.recap_season_button, previousSeasonForRecap),
+                    onClick = { onPlaySeasonRecap(previousSeasonForRecap) },
                     onFocused = onHeroActionFocused
                 )
             }
@@ -718,7 +740,6 @@ private fun MetaInfoRow(
             else -> meta.status?.trim()?.takeIf { it.isNotBlank() }?.uppercase()
         }
     }
-    Log.d("HeroBadge", "name=${meta.name} ageRating=${meta.ageRating} status=${meta.status} ageRatingBadge=$ageRatingBadge statusBadge=$statusBadge")
     val secondaryItems = remember(runtimeText, meta.country, meta.language) {
         buildList<String> {
             runtimeText?.takeIf { it.isNotBlank() }?.let { add(it) }

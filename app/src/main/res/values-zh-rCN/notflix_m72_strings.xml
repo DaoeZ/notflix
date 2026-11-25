@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">个人资料与账号</string>
+    <string name="notflix_settings_home">主屏幕</string>
+    <string name="notflix_settings_connected_accounts">已连接的账号</string>
+    <string name="notflix_settings_system">系统</string>
+    <string name="notflix_settings_advanced_options">高级选项</string>
+    <string name="notflix_settings_trailers">预告片</string>
+    <string name="notflix_settings_updates">更新</string>
+    <string name="notflix_settings_home_collection">Notflix首页合集</string>
+    <string name="notflix_settings_ratings">评分</string>
+    <string name="notflix_settings_metadata">资料与目录</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

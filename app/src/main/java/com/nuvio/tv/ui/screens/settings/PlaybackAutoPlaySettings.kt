@@ -2,6 +2,8 @@
 
 package com.nuvio.tv.ui.screens.settings
 
+import com.nuvio.tv.ui.screens.detail.requestFocusAfterFrames
+import androidx.compose.ui.platform.LocalWindowInfo
 import com.nuvio.tv.ui.theme.NuvioTheme
 
 import android.view.KeyEvent
@@ -94,6 +96,7 @@ internal fun PlaybackStreamSelectionSection(
     }
 
     SettingsActionRow(
+        settingId = "PlaybackAutoPlaySettings.autoplay_stream_selection",
         title = stringResource(R.string.autoplay_stream_selection),
         subtitle = null,
         value = when (settings.streamAutoPlayMode) {
@@ -107,6 +110,7 @@ internal fun PlaybackStreamSelectionSection(
 
     if (settings.streamAutoPlayMode == StreamAutoPlayMode.PRIORITY_LIST) {
         SettingsActionRow(
+            settingId = "PlaybackAutoPlaySettings.autoplay_priority_list_title",
             title = stringResource(R.string.autoplay_priority_list_title),
             subtitle = if (settings.streamAutoPlayPriorityList.isEmpty()) {
                 stringResource(R.string.autoplay_priority_list_empty)
@@ -123,6 +127,7 @@ internal fun PlaybackStreamSelectionSection(
 
     if (settings.streamAutoPlayMode == StreamAutoPlayMode.REGEX_MATCH) {
         SettingsActionRow(
+            settingId = "PlaybackAutoPlaySettings.autoplay_regex_title",
             title = stringResource(R.string.autoplay_regex_title),
             subtitle = settings.streamAutoPlayRegex.ifBlank { stringResource(R.string.autoplay_regex_placeholder) },
             onClick = { onOpenDialog(PlaybackDialog.STREAM_REGEX) }
@@ -131,6 +136,7 @@ internal fun PlaybackStreamSelectionSection(
 
     if (settings.streamAutoPlayMode != StreamAutoPlayMode.MANUAL) {
         SettingsActionRow(
+            settingId = "PlaybackAutoPlaySettings.autoplay_scope",
             title = stringResource(R.string.autoplay_scope),
             subtitle = null,
             value = when (effectiveAutoPlaySource) {
@@ -143,6 +149,7 @@ internal fun PlaybackStreamSelectionSection(
 
         if (effectiveAutoPlaySource != StreamAutoPlaySource.ENABLED_PLUGINS_ONLY) {
             SettingsActionRow(
+                settingId = "PlaybackAutoPlaySettings.autoplay_allowed_addons",
                 title = stringResource(R.string.autoplay_allowed_addons),
                 subtitle = null,
                 value = selectionSummary(
@@ -158,6 +165,7 @@ internal fun PlaybackStreamSelectionSection(
             effectiveAutoPlaySource != StreamAutoPlaySource.INSTALLED_ADDONS_ONLY
         ) {
             SettingsActionRow(
+                settingId = "PlaybackAutoPlaySettings.autoplay_allowed_plugins",
                 title = stringResource(R.string.autoplay_allowed_plugins),
                 subtitle = null,
                 value = selectionSummary(
@@ -171,6 +179,7 @@ internal fun PlaybackStreamSelectionSection(
 
     val timeoutSeconds = settings.streamAutoPlayTimeoutSeconds
     SliderSettingsItem(
+        settingId = "PlaybackAutoPlaySettings.autoplay_timeout_title",
         title = stringResource(R.string.autoplay_timeout_title),
         subtitle = stringResource(R.string.autoplay_timeout_sub),
         values = PlayerSettings.STREAM_AUTOPLAY_TIMEOUT_VALUES,
@@ -184,6 +193,7 @@ internal fun PlaybackStreamSelectionSection(
     )
 
     SettingsToggleRow(
+        settingId = "PlaybackAutoPlaySettings.autoplay_preload_next_episode",
         title = stringResource(R.string.autoplay_preload_next_episode),
         subtitle = stringResource(R.string.autoplay_preload_next_episode_sub),
         checked = settings.preloadNextEpisodeSources,
@@ -191,6 +201,7 @@ internal fun PlaybackStreamSelectionSection(
     )
 
     SettingsToggleRow(
+        settingId = "PlaybackAutoPlaySettings.autoplay_reuse_last_link",
         title = stringResource(R.string.autoplay_reuse_last_link),
         subtitle = stringResource(R.string.autoplay_reuse_last_link_sub),
         checked = settings.streamReuseLastLinkEnabled,
@@ -199,6 +210,7 @@ internal fun PlaybackStreamSelectionSection(
 
     if (settings.streamReuseLastLinkEnabled) {
         SettingsActionRow(
+            settingId = "PlaybackAutoPlaySettings.autoplay_last_link_cache",
             title = stringResource(R.string.autoplay_last_link_cache),
             subtitle = null,
             value = formatReuseCacheDuration(settings.streamReuseLastLinkCacheHours),
@@ -214,6 +226,7 @@ internal fun PlaybackUpNextSection(
     onOpenDialog: (PlaybackDialog) -> Unit
 ) {
     SettingsToggleRow(
+        settingId = "PlaybackAutoPlaySettings.autoplay_next_episode",
         title = stringResource(R.string.autoplay_next_episode),
         subtitle = stringResource(R.string.autoplay_next_episode_sub),
         checked = settings.streamAutoPlayNextEpisodeEnabled,
@@ -222,6 +235,7 @@ internal fun PlaybackUpNextSection(
 
     if (settings.streamAutoPlayNextEpisodeEnabled && settings.streamAutoPlayMode == StreamAutoPlayMode.MANUAL) {
         SettingsToggleRow(
+            settingId = "PlaybackAutoPlaySettings.autoplay_next_episode_fallback",
             title = stringResource(R.string.autoplay_next_episode_fallback),
             subtitle = stringResource(R.string.autoplay_next_episode_fallback_sub),
             checked = settings.streamAutoPlayNextEpisodeFallbackEnabled,
@@ -232,6 +246,7 @@ internal fun PlaybackUpNextSection(
     }
 
     SettingsActionRow(
+        settingId = "PlaybackAutoPlaySettings.autoplay_threshold_mode",
         title = stringResource(R.string.autoplay_threshold_mode),
         subtitle = null,
         value = when (settings.nextEpisodeThresholdMode) {
@@ -243,20 +258,24 @@ internal fun PlaybackUpNextSection(
 
     when (settings.nextEpisodeThresholdMode) {
         NextEpisodeThresholdMode.PERCENTAGE -> SliderSettingsItem(
+            settingId = "PlaybackAutoPlaySettings.autoplay_threshold_pct_title",
             title = stringResource(R.string.autoplay_threshold_pct_title),
             subtitle = stringResource(R.string.autoplay_threshold_pct_sub),
             value = (settings.nextEpisodeThresholdPercent * 2f).roundToInt(),
             valueText = "${formatHalfStepValue(settings.nextEpisodeThresholdPercent)}%",
+            notflixValueScale = .5f,
             minValue = 194,
             maxValue = 200,
             step = 1,
             onValueChange = { value -> onUpdate { setNextEpisodeThresholdPercent(value / 2f) } }
         )
         NextEpisodeThresholdMode.MINUTES_BEFORE_END -> SliderSettingsItem(
+            settingId = "PlaybackAutoPlaySettings.autoplay_threshold_min_title",
             title = stringResource(R.string.autoplay_threshold_min_title),
             subtitle = stringResource(R.string.autoplay_threshold_pct_sub),
             value = (settings.nextEpisodeThresholdMinutesBeforeEnd * 2f).roundToInt(),
             valueText = "${formatHalfStepValue(settings.nextEpisodeThresholdMinutesBeforeEnd)} min",
+            notflixValueScale = .5f,
             minValue = 0,
             maxValue = 7,
             step = 1,
@@ -266,6 +285,7 @@ internal fun PlaybackUpNextSection(
 
     if (settings.streamAutoPlayNextEpisodeEnabled) {
         SettingsToggleRow(
+            settingId = "PlaybackAutoPlaySettings.still_watching_setting_title",
             title = stringResource(R.string.still_watching_setting_title),
             subtitle = stringResource(R.string.still_watching_setting_sub),
             checked = settings.stillWatchingEnabled,
@@ -274,6 +294,7 @@ internal fun PlaybackUpNextSection(
 
         if (settings.stillWatchingEnabled) {
             SliderSettingsItem(
+                settingId = "PlaybackAutoPlaySettings.still_watching_threshold_title",
                 title = stringResource(R.string.still_watching_threshold_title),
                 subtitle = stringResource(R.string.still_watching_threshold_sub),
                 value = settings.stillWatchingEpisodeThreshold,
@@ -287,6 +308,7 @@ internal fun PlaybackUpNextSection(
     }
 
     SettingsToggleRow(
+        settingId = "PlaybackAutoPlaySettings.autoplay_prefer_binge_group",
         title = stringResource(R.string.autoplay_prefer_binge_group),
         subtitle = stringResource(R.string.autoplay_prefer_binge_group_sub),
         checked = settings.streamAutoPlayPreferBingeGroupForNextEpisode,
@@ -299,6 +321,7 @@ internal fun PlaybackUpNextSection(
 
     if (settings.streamAutoPlayPreferBingeGroupForNextEpisode) {
         SettingsToggleRow(
+            settingId = "PlaybackAutoPlaySettings.autoplay_reuse_binge_group",
             title = stringResource(R.string.autoplay_reuse_binge_group),
             subtitle = stringResource(R.string.autoplay_reuse_binge_group_sub),
             checked = settings.streamAutoPlayReuseBingeGroup,
@@ -307,6 +330,7 @@ internal fun PlaybackUpNextSection(
     }
 
     SettingsToggleRow(
+        settingId = "PlaybackAutoPlaySettings.autoplay_post_play_recommendations",
         title = stringResource(R.string.autoplay_post_play_recommendations),
         subtitle = stringResource(R.string.autoplay_post_play_recommendations_sub),
         checked = settings.postPlayRecommendationsEnabled,
@@ -315,6 +339,7 @@ internal fun PlaybackUpNextSection(
 
     if (settings.postPlayRecommendationsEnabled) {
         SliderSettingsItem(
+            settingId = "PlaybackAutoPlaySettings.autoplay_post_play_movie_threshold",
             title = stringResource(R.string.autoplay_post_play_movie_threshold),
             subtitle = stringResource(R.string.autoplay_post_play_movie_threshold_sub),
             value = settings.postPlayMovieThresholdPercent,
@@ -888,21 +913,6 @@ internal fun StreamAutoPlayPriorityDialog(
     val audioFocus = remember { FocusRequester() }
     val priorityFocus = remember { FocusRequester() }
     val listState = rememberLazyListState()
-    LaunchedEffect(restoreAudioFocus) {
-        if (restoreAudioFocus) {
-            repeat(2) { withFrameNanos { } }
-            runCatching { audioFocus.requestFocus() }
-            restoreAudioFocus = false
-        }
-    }
-    LaunchedEffect(restorePriorityFocus) {
-        if (restorePriorityFocus) {
-            listState.scrollToItem(6 + working.addons.size.coerceAtLeast(1) + working.qualities.size)
-            repeat(2) { withFrameNanos { } }
-            runCatching { priorityFocus.requestFocus() }
-            restorePriorityFocus = false
-        }
-    }
     val anyAddon = stringResource(R.string.autoplay_priority_any_addon_order)
     val addonOptions = installedAddonNames.filter { it !in working.addons }
     val qualityOptions = StreamAutoPlayQuality.entries.filter { it !in working.qualities }
@@ -990,6 +1000,22 @@ internal fun StreamAutoPlayPriorityDialog(
         width = 760.dp,
         suppressFirstKeyUp = false
     ) {
+        // Closing a picker recreates this dialog's window. Its first focus lands on the first row,
+        // so restore the row only once the new window holds focus.
+        val windowFocused = LocalWindowInfo.current.isWindowFocused
+        LaunchedEffect(restoreAudioFocus, windowFocused) {
+            if (restoreAudioFocus && windowFocused) {
+                audioFocus.requestFocusAfterFrames(2)
+                restoreAudioFocus = false
+            }
+        }
+        LaunchedEffect(restorePriorityFocus, windowFocused) {
+            if (restorePriorityFocus && windowFocused) {
+                listState.scrollToItem(6 + working.addons.size.coerceAtLeast(1) + working.qualities.size)
+                priorityFocus.requestFocusAfterFrames(2)
+                restorePriorityFocus = false
+            }
+        }
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxWidth().heightIn(max = 460.dp).testTag("autoplay-priority-entries"),
@@ -1060,6 +1086,7 @@ internal fun StreamAutoPlayPriorityDialog(
             }
             item(key = "cached_only") {
                 SettingsToggleRow(
+                    settingId = "PlaybackAutoPlaySettings.autoplay_priority_cached_only_title",
                     title = stringResource(R.string.autoplay_priority_cached_only_title),
                     subtitle = stringResource(R.string.autoplay_priority_cached_only_desc),
                     checked = working.cachedOnly,
@@ -1069,6 +1096,7 @@ internal fun StreamAutoPlayPriorityDialog(
             item(key = if (notflix) "audio_languages" else "spanish_only") {
                 if (notflix) {
                     SettingsActionRow(
+                        settingId = "PlaybackAutoPlaySettings.autoplay_priority_audio_languages_title",
                         title = stringResource(R.string.autoplay_priority_audio_languages_title),
                         subtitle = stringResource(R.string.autoplay_priority_audio_languages_desc),
                         value = audioLanguagesSummary(working.audioLanguages),
@@ -1077,6 +1105,7 @@ internal fun StreamAutoPlayPriorityDialog(
                     )
                 } else {
                     SettingsToggleRow(
+                        settingId = "PlaybackAutoPlaySettings.autoplay_priority_spanish_only_title",
                         title = stringResource(R.string.autoplay_priority_spanish_only_title),
                         subtitle = stringResource(R.string.autoplay_priority_spanish_only_desc),
                         checked = "es" in working.audioLanguages,
@@ -1091,6 +1120,7 @@ internal fun StreamAutoPlayPriorityDialog(
             if (notflix && working.audioLanguages.isNotEmpty()) {
                 item(key = "priority") {
                     SettingsActionRow(
+                        settingId = "PlaybackAutoPlaySettings.autoplay_priority_priority_title",
                         title = stringResource(R.string.autoplay_priority_priority_title),
                         subtitle = stringResource(R.string.autoplay_priority_priority_desc),
                         value = priorityLabel(working.priority),
@@ -1114,7 +1144,7 @@ private val PrioritySelectedNamesSaver = listSaver<Set<String>, String>(
 )
 
 @Composable
-private fun PriorityEntryRow(
+internal fun PriorityEntryRow(
     label: String,
     canMoveUp: Boolean,
     canMoveDown: Boolean,

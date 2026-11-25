@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">ডাউনলোড</string>
+    <string name="notflix_offline_receive">ফোন থেকে গ্রহণ করুন</string>
+    <string name="notflix_offline_pairing">ম্যানুয়াল এন্ট্রি: %1$s · %2$s. কোডটি 5 মিনিট বৈধ থাকবে।</string>
+    <string name="notflix_offline_scan">Notflix ডাউনলোড খুলতে আপনার ফোনের ক্যামেরা দিয়ে স্ক্যান করুন।</string>
+    <string name="notflix_offline_expired">সেশনের মেয়াদ শেষ হয়েছে। আবার সংযোগ করতে “ফোন থেকে গ্রহণ করুন” বেছে নিন।</string>
+    <string name="notflix_offline_empty">সোর্স থেকে একটি ভিডিও ডাউনলোড করুন অথবা ফোন থেকে পাঠান।</string>
+    <string name="notflix_offline_profile">এই প্রোফাইলে ডাউনলোড উপলব্ধ নয়।</string>
+    <string name="notflix_offline_unavailable">ফাইল উপলব্ধ নয়</string>
+    <string name="notflix_offline_confirm_remove">সরানো নিশ্চিত করুন</string>
+    <string name="notflix_offline_choose_source">ডাউনলোডের জন্য একটি সোর্স বেছে নিন</string>
+    <string name="notflix_offline_started">ডাউনলোড সারিতে যোগ হয়েছে</string>
+    <string name="notflix_offline_failed">এই ফাইলটি খোলা বা ডাউনলোড করা যায়নি। সরাসরি একটি ভিডিও ফাইল চেষ্টা করুন।</string>
+</resources>

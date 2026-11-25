@@ -14,10 +14,13 @@ import com.nuvio.tv.core.tmdb.TmdbMetadataService
 import com.nuvio.tv.data.local.TmdbSettingsDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import javax.inject.Inject
@@ -81,9 +84,12 @@ class TmdbEntityBrowseViewModel @Inject constructor(
         } ?: return
         if (!targetRail.hasMore || targetRail.isLoading || !inFlightRailLoads.add(railKey)) return
 
-        _uiState.value = TmdbEntityBrowseUiState.Success(
-            currentSuccess.data.withUpdatedRail(mediaType, railType) { it.copy(isLoading = true) }
-        )
+        _uiState.update { current ->
+            val data = (current as? TmdbEntityBrowseUiState.Success)?.data ?: return@update current
+            TmdbEntityBrowseUiState.Success(
+                data.withUpdatedRail(mediaType, railType) { it.copy(isLoading = true) }
+            )
+        }
 
         viewModelScope.launch {
             try {
@@ -101,36 +107,48 @@ class TmdbEntityBrowseViewModel @Inject constructor(
                     language = language,
                     page = nextPage
                 )
-                val mergedItems = (latestRail.items + pageResult.items)
-                    .distinctBy { it.id }
 
                 val pattern = layoutPreferenceDataStore.customPosterUrlPattern.first()
                 val enabledScreens = layoutPreferenceDataStore.customPosterEnabledScreens.first()
-                _uiState.value = TmdbEntityBrowseUiState.Success(
-                    latestData.withUpdatedRail(mediaType, railType) {
-                        it.copy(
-                            items = mergedItems.withCustomPosterUrls(
-                                com.nuvio.tv.core.poster.patternForScreen(pattern, com.nuvio.tv.core.poster.CustomPosterScreen.DETAILS, enabledScreens)
-                            ),
-                            currentPage = nextPage,
-                            hasMore = pageResult.hasMore,
-                            isLoading = false
-                        )
-                    }
+                val customPattern = com.nuvio.tv.core.poster.patternForScreen(
+                    pattern,
+                    com.nuvio.tv.core.poster.CustomPosterScreen.DETAILS,
+                    enabledScreens
                 )
+                _uiState.update { current ->
+                    val data = (current as? TmdbEntityBrowseUiState.Success)?.data ?: return@update current
+                    TmdbEntityBrowseUiState.Success(
+                        data.withUpdatedRail(mediaType, railType) { rail ->
+                            val mergedItems = (rail.items + pageResult.items).distinctBy { it.id }
+                            rail.copy(
+                                items = mergedItems.withCustomPosterUrls(customPattern),
+                                currentPage = nextPage,
+                                hasMore = pageResult.hasMore,
+                                isLoading = false
+                            )
+                        }
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
-                val fallback = (_uiState.value as? TmdbEntityBrowseUiState.Success)?.data ?: return@launch
-                _uiState.value = TmdbEntityBrowseUiState.Success(
-                    fallback.withUpdatedRail(mediaType, railType) { it.copy(isLoading = false) }
-                )
+                _uiState.update { current ->
+                    val data = (current as? TmdbEntityBrowseUiState.Success)?.data ?: return@update current
+                    TmdbEntityBrowseUiState.Success(
+                        data.withUpdatedRail(mediaType, railType) { it.copy(isLoading = false) }
+                    )
+                }
             } finally {
                 inFlightRailLoads.remove(railKey)
             }
         }
     }
 
+    private var loadJob: Job? = null
+
     private fun load() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             try {
                 val language = tmdbSettingsDataStore.settings.first().language
                 val browseData = tmdbMetadataService.fetchEntityBrowse(
@@ -155,6 +173,8 @@ class TmdbEntityBrowseViewModel @Inject constructor(
                         }
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = TmdbEntityBrowseUiState.Error(
                     e.message ?: context.getString(R.string.tmdb_entity_error_load)

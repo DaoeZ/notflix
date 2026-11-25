@@ -10,6 +10,7 @@ import com.nuvio.tv.ui.appearance.NotflixHomeCollectionPreset
 import java.time.LocalDate
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
@@ -23,7 +24,10 @@ internal data class NotflixCollectionScope(
 )
 internal data class NotflixCollectionSpec(
     val key: String, val title: String, val folder: Pair<String, String>,
-    val source: AddonCatalogCollectionSource?, val request: CollectionCatalogRequest?
+    val source: AddonCatalogCollectionSource?, val request: CollectionCatalogRequest?,
+    /** M68: TMDB Discover row (KIDS). When present, [fallbackRequest] is the Cinemeta row. */
+    val tmdb: TmdbCollectionSource? = null,
+    val fallbackRequest: CollectionCatalogRequest? = null
 )
 
 internal fun notflixCollectionSpecs(collections: List<Collection>, addons: List<Addon>, disabled: Set<String>): List<NotflixCollectionSpec> {
@@ -32,12 +36,21 @@ internal fun notflixCollectionSpecs(collections: List<Collection>, addons: List<
 }
 
 /** M66: also used for the derived kids row group, which is never written to the collection store. */
-internal fun notflixCollectionSpecsFor(collection: Collection, addons: List<Addon>, disabled: Set<String>): List<NotflixCollectionSpec> {
+internal fun notflixCollectionSpecsFor(
+    collection: Collection,
+    addons: List<Addon>,
+    disabled: Set<String>,
+    /** M68: Cinemeta row used when a TMDB Discover row fails; only the KIDS preset provides one. */
+    fallbackSource: (String) -> AddonCatalogCollectionSource? = { null }
+): List<NotflixCollectionSpec> {
     if ("collection_${collection.id}" in disabled) return emptyList()
     return collection.folders.associateBy { it.id }.values.map { folder ->
         val source = folder.sources.singleOrNull() as? AddonCatalogCollectionSource
+        val tmdb = folder.sources.singleOrNull() as? TmdbCollectionSource
         NotflixCollectionSpec("collection_${collection.id}:${folder.id}", folder.title,
-            collection.id to folder.id, source, source?.collectionCatalogRequest(addons))
+            collection.id to folder.id, source, source?.collectionCatalogRequest(addons),
+            tmdb = tmdb,
+            fallbackRequest = if (tmdb != null) fallbackSource(folder.id)?.collectionCatalogRequest(addons) else null)
     }
 }
 
@@ -49,9 +62,14 @@ internal class NotflixCollectionRows(
     private val load: (CollectionCatalogRequest) -> Flow<NetworkResult<CatalogRow>>,
     private val stillCurrent: (NotflixCollectionScope) -> Boolean,
     private val changed: () -> Unit,
-    private val filterRow: suspend (CatalogRow) -> CatalogRow = { it }
+    private val filterRow: suspend (CatalogRow) -> CatalogRow = { it },
+    /** M68: TMDB Discover rows; the fallback request is the Cinemeta row of the same folder. */
+    private val loadTmdb: (TmdbCollectionSource, CollectionCatalogRequest?) -> Flow<NetworkResult<CatalogRow>> =
+        { _, _ -> emptyFlow() },
+    private val filterKidsRow: suspend (CatalogRow, AgeLevel, (CatalogRow, Boolean) -> Unit) -> Unit =
+        { row, _, publish -> publish(filterRow(row), true) }
 ) {
-    companion object { const val MAX_PARALLEL = 2; const val MAX_ROWS = 16; const val MAX_ITEMS = 40 }
+    companion object { const val MAX_PARALLEL = 4; const val MAX_ROWS = 16; const val MAX_ITEMS = 40 }
     private val permits = Semaphore(MAX_PARALLEL)
     private var context: NotflixCollectionScope? = null
     private var cachedContext: NotflixCollectionScope? = null
@@ -75,7 +93,9 @@ internal class NotflixCollectionRows(
         }
         val incoming = definitions.associateByTo(linkedMapOf()) { it.key }
         (specs.keys + incoming.keys).toSet().forEach { key ->
-            if (specs[key]?.request != incoming[key]?.request || specs[key]?.source != incoming[key]?.source || key !in incoming) {
+            if (specs[key]?.request != incoming[key]?.request || specs[key]?.source != incoming[key]?.source ||
+                specs[key]?.tmdb != incoming[key]?.tmdb || specs[key]?.fallbackRequest != incoming[key]?.fallbackRequest ||
+                key !in incoming) {
                 jobs.remove(key)?.cancel(); running.remove(key); data.remove(key); phases.remove(key)
             }
         }
@@ -107,10 +127,14 @@ internal class NotflixCollectionRows(
     fun request(key: String, retry: Boolean = false) {
         val captured = context ?: return
         val spec = specs[key] ?: return
-        val source = spec.request ?: return
+        val addonRequest = spec.request
+        val tmdbSource = spec.tmdb
+        if (addonRequest == null && tmdbSource == null) return
         if (!stillCurrent(captured) || key in jobs) return
         if (!retry && phases[key] in setOf(NotflixRowPhase.READY, NotflixRowPhase.ERROR)) return
-        if (jobs.size >= MAX_PARALLEL + 2) return
+        // The viewport plus its look-ahead can exceed the active permits. Keep bounded queued
+        // demand until a permit is free; silently dropping it leaves a visible row pending forever.
+        if (jobs.size >= MAX_ROWS) return
         phases[key] = NotflixRowPhase.PENDING
         lateinit var job: Job
         job = owner.launch(start = CoroutineStart.LAZY) {
@@ -118,26 +142,40 @@ internal class NotflixCollectionRows(
                 permits.withPermit {
                     if (!valid(captured, spec, job)) return@withPermit
                     running[key] = job
-                    load(source).collect { result ->
+                    notflixHomeTiming("row-request", key.hashCode())
+                    val flow = if (tmdbSource != null) loadTmdb(tmdbSource, spec.fallbackRequest)
+                        else load(addonRequest!!)
+                    flow.collect { result ->
                         if (!valid(captured, spec, job)) return@collect
                         when (result) {
                             NetworkResult.Loading -> Unit
                             is NetworkResult.Success -> {
-                                val ageAllowed = filterRow(result.data)
-                                if (!valid(captured, spec, job)) return@collect
-                                val hiddenAllowed = if (captured.hiddenKeys.isEmpty()) ageAllowed else {
-                                    ageAllowed.copy(items = ageAllowed.items.filterNot { hiddenTitleKey(it.apiType, it.id) in captured.hiddenKeys })
+                                notflixHomeTiming("row-received", key.hashCode())
+                                fun publish(ageAllowed: CatalogRow, complete: Boolean) {
+                                    if (!valid(captured, spec, job)) return
+                                    val today = if (captured.hideUnreleased) LocalDate.now() else null
+                                    val items = ageAllowed.items.filterNot {
+                                        (captured.hiddenKeys.isNotEmpty() && hiddenTitleKey(it.apiType, it.id) in captured.hiddenKeys) ||
+                                            (today != null && it.isUnreleased(today))
+                                    }.distinctBy { "${it.apiType}:${it.id}" }.take(MAX_ITEMS)
+                                    if (items.isEmpty() && !complete) return
+                                    val next = ageAllowed.copy(items = items)
+                                    val oldPhase = phases.put(key, NotflixRowPhase.READY)
+                                    if (oldPhase == NotflixRowPhase.READY && data[key] == next) return
+                                    data.remove(key)
+                                    data[key] = next
+                                    while (data.size > MAX_ROWS) {
+                                        val oldest = data.keys.firstOrNull { it !in jobs && it != key } ?: break
+                                        data.remove(oldest); phases.remove(oldest)
+                                    }
+                                    changed()
                                 }
-                                val items = if (captured.hideUnreleased) hiddenAllowed.items.filterNot { it.isUnreleased(LocalDate.now()) } else hiddenAllowed.items
-                                val seen = mutableSetOf<String>()
-                                data.remove(key)
-                                data[key] = hiddenAllowed.copy(items = items.filter { seen.add("${it.apiType}:${it.id}") }.take(MAX_ITEMS))
-                                phases[key] = NotflixRowPhase.READY
-                                while (data.size > MAX_ROWS) {
-                                    val oldest = data.keys.firstOrNull { it !in jobs && it != key } ?: break
-                                    data.remove(oldest); phases.remove(oldest)
+                                val limit = captured.ageLimit
+                                if (spec.folder.first == "notflix-kids" && limit != null) {
+                                    filterKidsRow(result.data, limit, ::publish)
+                                } else {
+                                    publish(filterRow(result.data), true)
                                 }
-                                changed()
                             }
                             is NetworkResult.Error -> { phases[key] = NotflixRowPhase.ERROR; changed() }
                         }
@@ -159,12 +197,18 @@ internal class NotflixCollectionRows(
     private fun valid(captured: NotflixCollectionScope, spec: NotflixCollectionSpec, job: Job) =
         jobs[spec.key] === job &&
         context == captured && stillCurrent(captured) && specs[spec.key]?.request == spec.request &&
-            specs[spec.key]?.source == spec.source
+            specs[spec.key]?.source == spec.source && specs[spec.key]?.tmdb == spec.tmdb &&
+            specs[spec.key]?.fallbackRequest == spec.fallbackRequest
 
     fun snapshot(): List<NotflixCatalogRow> = if (context == null) emptyList() else specs.values.map { spec ->
-        NotflixCatalogRow(spec.key, spec.key, spec.title,
-            if (spec.source == null) NotflixRowPhase.READY else if (spec.request == null) NotflixRowPhase.ERROR else phases[spec.key] ?: NotflixRowPhase.PENDING,
-            data[spec.key], folderTarget = spec.folder, sourceIdentity = spec.request)
+        val phase = when {
+            spec.tmdb != null -> phases[spec.key] ?: NotflixRowPhase.PENDING
+            spec.source == null -> NotflixRowPhase.READY
+            spec.request == null -> NotflixRowPhase.ERROR
+            else -> phases[spec.key] ?: NotflixRowPhase.PENDING
+        }
+        NotflixCatalogRow(spec.key, spec.key, spec.title, phase, data[spec.key],
+            folderTarget = spec.folder, sourceIdentity = spec.request)
     }
 }
 

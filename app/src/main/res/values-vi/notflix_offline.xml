@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Tải xuống</string>
+    <string name="notflix_offline_receive">Nhận từ điện thoại</string>
+    <string name="notflix_offline_pairing">Nhập thủ công: %1$s · %2$s. Mã có hiệu lực trong 5 phút.</string>
+    <string name="notflix_offline_scan">Quét bằng camera điện thoại để mở Tải xuống của Notflix.</string>
+    <string name="notflix_offline_expired">Phiên đã hết hạn. Chọn Nhận từ điện thoại để kết nối lại.</string>
+    <string name="notflix_offline_empty">Tải video xuống từ Nguồn hoặc gửi từ điện thoại của bạn.</string>
+    <string name="notflix_offline_profile">Tính năng tải xuống không khả dụng trên hồ sơ này.</string>
+    <string name="notflix_offline_unavailable">Tệp không khả dụng</string>
+    <string name="notflix_offline_confirm_remove">Xác nhận xóa</string>
+    <string name="notflix_offline_choose_source">Chọn một nguồn để tải xuống</string>
+    <string name="notflix_offline_started">Đã thêm vào hàng đợi tải xuống</string>
+    <string name="notflix_offline_failed">Không thể mở hoặc tải xuống tệp này. Hãy thử một tệp video trực tiếp.</string>
+</resources>

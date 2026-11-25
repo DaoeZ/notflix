@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDirection
@@ -62,6 +63,7 @@ fun NotflixProviderSettingsContent(
     initialFocusRequester: FocusRequester? = null
 ) {
     val values by viewModel.values.collectAsStateWithLifecycle()
+    val builtInTmdbKeyInUse by viewModel.builtInTmdbKeyInUse.collectAsStateWithLifecycle()
     val phoneEntry by viewModel.phoneEntry.collectAsStateWithLifecycle()
     val phoneError by viewModel.phoneError.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<ProviderField?>(null) }
@@ -91,6 +93,7 @@ fun NotflixProviderSettingsContent(
                 ) {
                     item(key = "notflix_provider_phone") {
                         SettingsActionRow(
+                            settingId = "NotflixProviderSettingsScreen.notflix_provider_phone_title",
                             title = stringResource(R.string.notflix_provider_phone_title),
                             subtitle = phoneError ?: stringResource(R.string.notflix_provider_phone_subtitle),
                             onClick = { viewModel.startPhoneEntry() },
@@ -98,24 +101,19 @@ fun NotflixProviderSettingsContent(
                         )
                     }
                     item(key = "notflix_provider_tmdb") {
-                        SettingsActionRow(
-                            title = stringResource(R.string.notflix_provider_tmdb_title),
-                            subtitle = stringResource(R.string.notflix_provider_tmdb_subtitle),
-                            value = maskProviderValue(values.tmdbApiKey, notSet),
-                            onClick = { editing = ProviderField.Tmdb },
-                            modifier = Modifier
-                                .padding(top = NuvioTheme.spacing.xxs)
-                                .then(
-                                    if (initialFocusRequester != null) {
-                                        Modifier.focusRequester(initialFocusRequester)
-                                    } else {
-                                        Modifier
-                                    }
-                                )
+                        NotflixProviderTmdbRow(
+                            value = if (builtInTmdbKeyInUse) {
+                                stringResource(R.string.notflix_provider_tmdb_built_in)
+                            } else {
+                                maskProviderValue(values.tmdbApiKey, notSet)
+                            },
+                            initialFocusRequester = initialFocusRequester,
+                            onClick = { editing = ProviderField.Tmdb }
                         )
                     }
                     item(key = "notflix_provider_introdb") {
                         SettingsActionRow(
+                            settingId = "NotflixProviderSettingsScreen.notflix_provider_introdb_title",
                             title = stringResource(R.string.notflix_provider_introdb_title),
                             subtitle = stringResource(R.string.notflix_provider_introdb_subtitle),
                             // Blank uses the public IntroDB service, so it is not "not configured".
@@ -274,6 +272,32 @@ private fun ProviderValueDialog(
             ) { Text(stringResource(R.string.action_save)) }
         }
     }
+}
+
+/** M68: one row so the «key in use» label can be checked without the whole Settings screen. */
+@Composable
+internal fun NotflixProviderTmdbRow(
+    value: String,
+    initialFocusRequester: FocusRequester?,
+    onClick: () -> Unit
+) {
+    SettingsActionRow(
+        settingId = "NotflixProviderSettingsScreen.notflix_provider_tmdb_title",
+        title = stringResource(R.string.notflix_provider_tmdb_title),
+        subtitle = stringResource(R.string.notflix_provider_tmdb_subtitle),
+        value = value,
+        onClick = onClick,
+        modifier = Modifier
+            .padding(top = NuvioTheme.spacing.xxs)
+            .testTag("notflix-provider-tmdb")
+            .then(
+                if (initialFocusRequester != null) {
+                    Modifier.focusRequester(initialFocusRequester)
+                } else {
+                    Modifier
+                }
+            )
+    )
 }
 
 private fun maskProviderValue(value: String, notSetLabel: String): String {

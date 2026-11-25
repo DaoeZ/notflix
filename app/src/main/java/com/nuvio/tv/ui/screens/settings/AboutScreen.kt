@@ -79,7 +79,8 @@ fun AboutScreen(
 fun AboutSettingsContent(
     onNavigateToSupportersContributors: () -> Unit = {},
     onNavigateToLicensesAttributions: () -> Unit = {},
-    initialFocusRequester: FocusRequester? = null
+    initialFocusRequester: FocusRequester? = null,
+    onOpenWhatsNew: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val notflix = com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active
@@ -189,15 +190,26 @@ fun AboutSettingsContent(
                                         color = NuvioTheme.colors.TextSecondary,
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                                     )
+                                    // M68: TMDB requires this attribution wherever its API is used.
+                                    Text(
+                                        text = stringResource(R.string.notflix_tmdb_attribution),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = NuvioTheme.colors.TextSecondary,
+                                        modifier = Modifier
+                                            .padding(horizontal = 16.dp)
+                                            .padding(bottom = 12.dp)
+                                            .testTag("notflix-tmdb-attribution")
+                                    )
                                 }
                                 if (whatsNewItems.isNotEmpty()) {
                                     SettingsActionRow(
+                                        settingId = "AboutScreen.notflix_whats_new_about_title",
                                         title = stringResource(R.string.notflix_whats_new_about_title),
                                         subtitle = stringResource(
                                             R.string.notflix_whats_new_about_subtitle,
                                             BuildConfig.VERSION_NAME
                                         ),
-                                        onClick = { showWhatsNew = true },
+                                        onClick = { if (onOpenWhatsNew != null) onOpenWhatsNew() else showWhatsNew = true },
                                         modifier = Modifier.focusRequester(whatsNewFocus)
                                             .testTag("notflix-whats-new-about")
                                     )
@@ -206,7 +218,7 @@ fun AboutSettingsContent(
 
                             Spacer(modifier = Modifier.height(NuvioTheme.spacing.xxs))
 
-                            if (AppFeaturePolicy.inAppUpdatesEnabled) {
+                            if (AppFeaturePolicy.inAppUpdatesEnabled && !LocalNotflixSettingsFrame.current) {
                                 UpdateChannelSettings(
                                     initialFocusRequester = if (updatesFocusable) initialFocusRequester else null,
                                     modifier = if (updatesFocusable) firstRowModifier else Modifier
@@ -214,6 +226,7 @@ fun AboutSettingsContent(
                             }
 
                             SettingsActionRow(
+                                settingId = "AboutScreen.about_privacy_policy",
                                 title = stringResource(R.string.about_privacy_policy),
                                 subtitle = stringResource(R.string.about_privacy_policy_subtitle),
                                 trailingIcon = Icons.Default.OpenInNew,
@@ -241,6 +254,7 @@ fun AboutSettingsContent(
 
                             if (AppFeaturePolicy.supportNuvioEnabled && !notflix) {
                                 SettingsActionRow(
+                                    settingId = "AboutScreen.support_nuvio_name",
                                     title = stringResource(R.string.support_nuvio_name),
                                     subtitle = stringResource(R.string.about_supporters_contributors_subtitle),
                                     trailingIcon = Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -249,6 +263,7 @@ fun AboutSettingsContent(
                             }
 
                             SettingsActionRow(
+                                settingId = "AboutScreen.about_licenses_attributions",
                                 title = stringResource(R.string.about_licenses_attributions),
                                 subtitle = stringResource(R.string.about_licenses_attributions_subtitle),
                                 trailingIcon = Icons.AutoMirrored.Filled.KeyboardArrowRight,

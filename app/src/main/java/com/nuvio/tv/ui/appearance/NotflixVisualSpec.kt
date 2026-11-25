@@ -33,8 +33,8 @@ object NotflixVisualSpec {
     const val GUTTER = 34
     const val NAV_HEIGHT = 44
     const val HERO_HEIGHT = 390
-    const val FOCUS_MS = 120
-    const val EXPAND_MS = 180
+    const val FOCUS_MS = 90
+    const val EXPAND_MS = 150
     /** La tarjeta enfocada pide una variante mayor del póster; el resto no. */
     const val SHARPER_FOCUSED_POSTER = true
     /** Tiempo sin pulsar antes de ocultar los controles de la vista grande del tráiler. */
@@ -55,8 +55,8 @@ object NotflixVisualSpec {
     const val POSTER_WIDTH = 210
     const val POSTER_HEIGHT = 311
     const val EXPANDED_WIDTH = 378
-    const val CW_WIDTH = 248
-    const val CW_HEIGHT = 140
+    const val CW_WIDTH = 336
+    const val CW_HEIGHT = 189
     // M64: the expanded card scales less than the poster so its panel never clips the action row,
     // facts and genres at the current text sizes.
     const val EXPANDED_MIN_WIDTH = 330

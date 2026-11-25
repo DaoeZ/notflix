@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Descărcări</string>
+    <string name="notflix_offline_receive">Primește de pe telefon</string>
+    <string name="notflix_offline_pairing">Introducere manuală: %1$s · %2$s. Codul este valabil 5 minute.</string>
+    <string name="notflix_offline_scan">Scanează cu camera telefonului pentru a deschide Descărcările Notflix.</string>
+    <string name="notflix_offline_expired">Sesiunea a expirat. Alege Primește de pe telefon pentru a te reconecta.</string>
+    <string name="notflix_offline_empty">Descarcă un videoclip din Surse sau trimite unul de pe telefon.</string>
+    <string name="notflix_offline_profile">Descărcările nu sunt disponibile pe acest profil.</string>
+    <string name="notflix_offline_unavailable">Fișier indisponibil</string>
+    <string name="notflix_offline_confirm_remove">Confirmă eliminarea</string>
+    <string name="notflix_offline_choose_source">Alege o sursă de descărcat</string>
+    <string name="notflix_offline_started">Descărcare adăugată în coadă</string>
+    <string name="notflix_offline_failed">Fișierul nu a putut fi deschis sau descărcat. Încearcă un fișier video direct.</string>
+</resources>

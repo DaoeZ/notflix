@@ -111,8 +111,19 @@ class ContinueWatchingEnrichmentCache @Inject constructor(
             try {
                 val file = nextUpFile()
                 if (!file.exists()) return@withContext emptyList()
-                gson.fromJson(file.readText(), object : TypeToken<List<CachedNextUpItem>>() {}.type)
-                    ?: emptyList()
+                val parsed: List<CachedNextUpItem> = gson.fromJson(
+                    file.readText(),
+                    object : TypeToken<List<CachedNextUpItem>>() {}.type
+                ) ?: return@withContext emptyList()
+                @Suppress("SENSELESS_COMPARISON")
+                val valid = parsed.filter {
+                    it != null && it.contentId != null && it.contentType != null &&
+                        it.name != null && it.videoId != null && it.genres != null
+                }
+                if (valid.size != parsed.size) {
+                    runCatching { file.delete() }
+                }
+                valid
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to read next-up cache: ${e.message}")
                 emptyList()
@@ -157,8 +168,19 @@ class ContinueWatchingEnrichmentCache @Inject constructor(
             try {
                 val file = inProgressFile()
                 if (!file.exists()) return@withContext emptyList()
-                gson.fromJson(file.readText(), object : TypeToken<List<CachedInProgressItem>>() {}.type)
-                    ?: emptyList()
+                val parsed: List<CachedInProgressItem> = gson.fromJson(
+                    file.readText(),
+                    object : TypeToken<List<CachedInProgressItem>>() {}.type
+                ) ?: return@withContext emptyList()
+                @Suppress("SENSELESS_COMPARISON")
+                val valid = parsed.filter {
+                    it != null && it.contentId != null && it.contentType != null &&
+                        it.name != null && it.videoId != null && it.genres != null
+                }
+                if (valid.size != parsed.size) {
+                    runCatching { file.delete() }
+                }
+                valid
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to read in-progress cache: ${e.message}")
                 emptyList()
@@ -185,6 +207,43 @@ class ContinueWatchingEnrichmentCache @Inject constructor(
                 _snapshotVersion.value++
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to write in-progress cache: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Immediately removes a deleted title from both disk caches so a failing remote
+     * refresh cannot resurrect an item the user explicitly removed from Continue Watching.
+     */
+    suspend fun removeContentId(contentId: String) = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            try {
+                val ipFile = inProgressFile()
+                if (ipFile.exists()) {
+                    val parsed: List<CachedInProgressItem> = gson.fromJson(
+                        ipFile.readText(),
+                        object : TypeToken<List<CachedInProgressItem>>() {}.type
+                    ) ?: emptyList()
+                    val filtered = parsed.filterNot { it?.contentId.equals(contentId, ignoreCase = true) }
+                    if (filtered.size != parsed.size) {
+                        atomicWrite(ipFile, gson.toJson(filtered))
+                        lastInProgressHash = filtered.hashCode()
+                    }
+                }
+                val nuFile = nextUpFile()
+                if (nuFile.exists()) {
+                    val parsed: List<CachedNextUpItem> = gson.fromJson(
+                        nuFile.readText(),
+                        object : TypeToken<List<CachedNextUpItem>>() {}.type
+                    ) ?: emptyList()
+                    val filtered = parsed.filterNot { it?.contentId.equals(contentId, ignoreCase = true) }
+                    if (filtered.size != parsed.size) {
+                        atomicWrite(nuFile, gson.toJson(filtered))
+                        lastNextUpHash = filtered.hashCode()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to remove $contentId from CW cache: ${e.message}")
             }
         }
     }

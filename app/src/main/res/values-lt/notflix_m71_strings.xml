@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Garsas ir subtitrai</string>
+    <string name="notflix_player_more">Daugiau</string>
+    <string name="notflix_player_speed_value">Greitis (%1$s×)</string>
+    <string name="notflix_player_remaining">Liko %1$s</string>
+    <string name="notflix_player_buttons">Leistuvo mygtukai</string>
+    <string name="notflix_player_buttons_help">Pasirinkite iki %1$d veiksmų. Daugiau lieka gale ir apima likusius.</string>
+    <string name="notflix_player_row_order">Mygtukų tvarka</string>
+</resources>
+

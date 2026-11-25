@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Audio și subtitrări</string>
+    <string name="notflix_player_more">Mai multe</string>
+    <string name="notflix_player_speed_value">Viteză (%1$s×)</string>
+    <string name="notflix_player_remaining">Au rămas %1$s</string>
+    <string name="notflix_player_buttons">Butoanele playerului</string>
+    <string name="notflix_player_buttons_help">Alege până la %1$d acțiuni. Mai multe rămâne la final și le include pe celelalte.</string>
+    <string name="notflix_player_row_order">Ordinea butoanelor</string>
+</resources>
+

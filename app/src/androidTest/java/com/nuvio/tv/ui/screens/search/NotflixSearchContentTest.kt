@@ -58,7 +58,9 @@ class NotflixSearchContentTest {
         isSearching: Boolean = false,
         recentSearches: List<String> = emptyList(),
         localizedTitles: MutableState<Map<String, String>> = mutableStateOf(emptyMap()),
-        onRequestTitles: (List<MetaPreview>) -> Unit = {}
+        onRequestTitles: (List<MetaPreview>) -> Unit = {},
+        recommendations: List<MetaPreview> = emptyList(),
+        explore: List<MetaPreview> = emptyList()
     ) {
         compose.setContent {
             back = requireNotNull(LocalOnBackPressedDispatcherOwner.current).onBackPressedDispatcher
@@ -67,7 +69,9 @@ class NotflixSearchContentTest {
                     query = query.value,
                     submittedQuery = submittedQuery,
                     recentSearches = recentSearches,
-                    discoverResults = emptyList(),
+                    discoverResults = explore,
+                    recommendedResults = recommendations,
+                    recommendationTitle = "Because you watched Fixture",
                     catalogRows = rows,
                     isSearching = isSearching,
                     error = null,
@@ -100,6 +104,21 @@ class NotflixSearchContentTest {
             }
         }
         compose.onNodeWithTag(tag).assertIsFocused()
+    }
+
+    @Test fun blankSearchHasRecommendationsThenExploreAndLeftReturnsToKeyboard() {
+        val query = mutableStateOf("")
+        show(query, rows = listOf(row("results", item("result"))),
+            recommendations = listOf(item("recommended")), explore = listOf(item("explore")))
+        compose.onNodeWithTag("notflix-search-recommended-recommended").assertIsDisplayed()
+        compose.onNodeWithTag("notflix-search-explore-explore").assertIsDisplayed()
+        compose.onNodeWithTag("notflix-search-recommended-recommended").requestFocus()
+        compose.onNodeWithTag("notflix-search-recommended-recommended").performKeyInput { pressKey(Key.DirectionLeft) }
+        awaitFocus("notflix-key-A")
+        compose.runOnIdle { query.value = "Title" }
+        compose.onNodeWithTag("notflix-search-recommended-recommended").assertDoesNotExist()
+        compose.onNodeWithTag("notflix-search-explore-explore").assertDoesNotExist()
+        compose.onNodeWithTag("notflix-search-result-result").assertExists()
     }
 
     @Test fun translatedPosterFallbackUpdatesAndUnknownTitlesKeepTheirOriginalText() {

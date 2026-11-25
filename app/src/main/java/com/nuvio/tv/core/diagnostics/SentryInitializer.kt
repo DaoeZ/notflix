@@ -27,10 +27,7 @@ object SentryInitializer {
     fun start(application: Application, settings: SentrySettingsDataStore) {
         if (started) return
         started = true
-        val initialEnabled = runBlocking(Dispatchers.IO) {
-            settings.enabled.first()
-        }
-        applyEnabled(application, initialEnabled)
+        // Avoid blocking Application.onCreate() on DataStore disk I/O.
         scope.launch {
             settings.enabled.distinctUntilChanged().collect { enabled ->
                 applyEnabled(application, enabled)

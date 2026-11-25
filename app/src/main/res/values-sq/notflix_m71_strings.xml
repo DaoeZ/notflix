@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Audio dhe titrat</string>
+    <string name="notflix_player_more">Më shumë</string>
+    <string name="notflix_player_speed_value">Shpejtësia (%1$s×)</string>
+    <string name="notflix_player_remaining">Mbeten %1$s</string>
+    <string name="notflix_player_buttons">Butonat e luajtësit</string>
+    <string name="notflix_player_buttons_help">Zgjidhni deri në %1$d veprime. Më shumë mbetet në fund dhe përmban të tjerat.</string>
+    <string name="notflix_player_row_order">Renditja e butonave</string>
+</resources>
+

@@ -292,15 +292,16 @@ internal fun NotflixLibraryPage(
                 onAction = actions.onRefresh
             )
 
-            saved && noSavedItems && filtersCount > 0 && state.allItems.isNotEmpty() -> NotflixLibraryMessageState(
-                title = stringResource(R.string.notflix_library_no_filter_match),
-                message = null,
-                actionLabel = stringResource(R.string.notflix_library_clear_filters),
-                actionRequester = emptyActionRequester,
-                onAction = actions.onClearFilters
-            )
+            saved && noSavedItems && filtersCount == 0 && state.listTabs.size <= 1 &&
+                state.sourceMode != LibrarySourceMode.LOCAL -> NotflixLibraryMessageState(
+                    title = stringResource(R.string.notflix_library_empty_title),
+                    message = null,
+                    actionLabel = stringResource(R.string.notflix_retry),
+                    actionRequester = emptyActionRequester,
+                    onAction = actions.onRefresh
+                )
 
-            saved && noSavedItems && filtersCount == 0 -> NotflixLibraryEmptyState(
+            saved && noSavedItems && filtersCount == 0 && state.listTabs.size <= 1 -> NotflixLibraryEmptyState(
                 actionRequester = emptyActionRequester,
                 onExplore = onNavigateToHome
             )
@@ -331,6 +332,10 @@ internal fun NotflixLibraryPage(
             )
 
             else -> NotflixPosterGrid(
+                columns = NotflixPosterMetrics.columns(LocalNotflixPresentation.current.cardSize),
+                posterWidth = NotflixPosterMetrics.width(LocalNotflixPresentation.current.cardSize),
+                posterHeight = NotflixPosterMetrics.height(LocalNotflixPresentation.current.cardSize),
+                centerPosters = true,
                 items = gridSpecs,
                 onClick = { spec ->
                     if (saved) {
@@ -398,6 +403,32 @@ internal fun NotflixLibraryPage(
                                 onQueryChange = actions.onCloudQuery,
                                 onCloudRefresh = actions.onCloudRefresh,
                                 onUpToTopBar = { navigation?.focusTop() }
+                            )
+                        }
+                    }
+                    if (saved && noSavedItems && filtersCount > 0 && state.allItems.isNotEmpty()) {
+                        // Keep the existing header and its requesters mounted when filtering empties
+                        // the grid. Closing/recreating the panel must still return to Filters.
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            NotflixLibraryMessageState(
+                                title = stringResource(R.string.notflix_library_no_filter_match),
+                                message = null,
+                                actionLabel = stringResource(R.string.notflix_library_clear_filters),
+                                actionRequester = emptyActionRequester,
+                                onAction = actions.onClearFilters,
+                                modifier = Modifier.fillMaxWidth().height(240.dp)
+                            )
+                        }
+                    }
+                    if (saved && noSavedItems && filtersCount == 0 && state.listTabs.size > 1) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            NotflixLibraryMessageState(
+                                title = stringResource(R.string.notflix_library_empty_title),
+                                message = null,
+                                actionLabel = null,
+                                actionRequester = null,
+                                onAction = {},
+                                modifier = Modifier.fillMaxWidth().height(240.dp)
                             )
                         }
                     }
@@ -1004,12 +1035,11 @@ private fun NotflixLibraryMessageState(
     message: String?,
     actionLabel: String?,
     actionRequester: FocusRequester?,
-    onAction: () -> Unit
+    onAction: () -> Unit,
+    modifier: Modifier = Modifier.fillMaxSize().padding(horizontal = Spec.GUTTER.dp)
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = Spec.GUTTER.dp),
+        modifier = modifier,
         verticalArrangement = Arrangement.Center
     ) {
         title?.let {

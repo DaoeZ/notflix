@@ -202,12 +202,12 @@ class NotflixBillboardPolishTest {
         step(32);assertEquals(1,playActivations)
         record("sequential-copy",JSONObject().put("stage",stage).put("sequence",frames).put("held_cancelled",true).put("fresh_repeat_dispatches",1).put("actions_bounds_unchanged",true).put("frame_bounds_unchanged",true))
     }
-    @Test fun reducedManualChangeHasOneStaticCopyAndNoAutomaticAdvance() {
+    @Test fun reducedManualChangeHasOneStaticCopyAndAutomaticAdvanceWithoutScaleMotion() {
         standalone(reduced=true);step(1000)
         compose.runOnUiThread { current=current!!.copy(id="m24:reduced",name="Static reduced title",description=null) };step(32)
         compose.onNodeWithText("Static reduced title").assertExists();compose.onNodeWithText("Original title").assertDoesNotExist()
         compose.onNodeWithTag("notflix-editorial-play").assertIsEnabled()
-        step(12_000);assertEquals(0,advances);assertEquals(0f,frameProgress(),0f);assertEquals(1f,frameScale(),0f)
+        step(12_000);assertEquals(1,advances);assertEquals(1f,frameProgress(),0f);assertEquals(1f,frameScale(),0f)
         capture("reduced-static")
     }
 }

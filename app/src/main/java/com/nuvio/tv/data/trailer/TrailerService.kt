@@ -86,7 +86,8 @@ class TrailerService(
         year: String? = null,
         tmdbId: String? = null,
         type: String? = null,
-        ignoreUseTrailersGate: Boolean = false
+        ignoreUseTrailersGate: Boolean = false,
+        appLanguage: String? = null
     ): TrailerPlaybackSource? = withContext(Dispatchers.IO) {
         // Read the TMDB settings once and reuse for both the "Disable Trailers"
         // gate and the trailer language lookup below. The gate respects the
@@ -101,9 +102,9 @@ class TrailerService(
             Log.d(TAG, "Trailers disabled in TMDB enrichment settings; skipping lookup")
             return@withContext null
         }
-        val tmdbLanguage = normalizeTmdbTrailerLanguage(tmdbSettings?.language)
+        val tmdbLanguage = normalizeTmdbTrailerLanguage(appLanguage ?: tmdbSettings?.language)
 
-        val cacheKey = "$title|$year|$tmdbId|$type|${maxTrailerVideoHeight()}"
+        val cacheKey = "$title|$year|$tmdbId|$type|$tmdbLanguage|${appLanguage != null}|${maxTrailerVideoHeight()}"
 
         cache[cacheKey]?.let { cached ->
             val hit = cached !== NEGATIVE_CACHE
@@ -121,7 +122,8 @@ class TrailerService(
                 type = type,
                 title = title,
                 year = year,
-                languageOverride = tmdbLanguage
+                languageOverride = tmdbLanguage,
+                requirePreferredLanguage = appLanguage != null
             )
             if (tmdbSource != null) {
                 cache[cacheKey] = tmdbSource
@@ -167,7 +169,8 @@ class TrailerService(
 
     suspend fun getExternalTrailerUrl(
         tmdbId: String?,
-        type: String?
+        type: String?,
+        appLanguage: String? = null
     ): String? = withContext(Dispatchers.IO) {
         // Parse the id first so an invalid/null tmdbId short-circuits without
         // touching the settings DataStore at all.
@@ -179,13 +182,8 @@ class TrailerService(
             return@withContext null
         }
         val mediaType = normalizeTmdbMediaType(type)
-        val tmdbLanguage = normalizeTmdbTrailerLanguage(tmdbSettings.language)
-        val tmdbResults = when (mediaType) {
-            "movie" -> fetchTmdbMovieVideos(numericTmdbId, tmdbLanguage)
-            "tv" -> fetchTmdbTvVideos(numericTmdbId, tmdbLanguage)
-            else -> fetchTmdbMovieVideos(numericTmdbId, tmdbLanguage) + fetchTmdbTvVideos(numericTmdbId, tmdbLanguage)
-        }
-        rankTmdbVideoCandidates(tmdbResults, preferredLanguageCode = tmdbLanguage)
+        val tmdbLanguage = normalizeTmdbTrailerLanguage(appLanguage ?: tmdbSettings.language)
+        trailerCandidates(numericTmdbId, mediaType, tmdbLanguage, requirePreferredLanguage = appLanguage != null)
             .firstOrNull()
             ?.key
             ?.trim()
@@ -201,7 +199,8 @@ class TrailerService(
         type: String?,
         title: String? = null,
         year: String? = null,
-        languageOverride: String? = null
+        languageOverride: String? = null,
+        requirePreferredLanguage: Boolean = false
     ): TrailerPlaybackSource? = withContext(Dispatchers.IO) {
         val numericTmdbId = tmdbId?.toIntOrNull() ?: return@withContext null
         val mediaType = normalizeTmdbMediaType(type)
@@ -211,13 +210,7 @@ class TrailerService(
             "TMDB trailer lookup start: tmdbId=$numericTmdbId type=${mediaType ?: "unknown"} language=$tmdbLanguage"
         )
 
-        val tmdbResults = when (mediaType) {
-            "movie" -> fetchTmdbMovieVideos(numericTmdbId, tmdbLanguage)
-            "tv" -> fetchTmdbTvVideos(numericTmdbId, tmdbLanguage)
-            else -> fetchTmdbMovieVideos(numericTmdbId, tmdbLanguage) + fetchTmdbTvVideos(numericTmdbId, tmdbLanguage)
-        }
-
-        val candidates = rankTmdbVideoCandidates(tmdbResults, preferredLanguageCode = tmdbLanguage)
+        val candidates = trailerCandidates(numericTmdbId, mediaType, tmdbLanguage, requirePreferredLanguage)
         Log.d(TAG, "TMDB candidate count: ${candidates.size}")
 
         // Big titles list a dozen trailers and teasers. When the best few all fail, the rest
@@ -252,6 +245,27 @@ class TrailerService(
         }
 
         null
+    }
+
+    private suspend fun trailerCandidates(
+        id: Int,
+        type: String?,
+        language: String,
+        requirePreferredLanguage: Boolean
+    ): List<TmdbVideoResult> {
+        if (requirePreferredLanguage) return findNotflixTrailerCandidates(language) { locale ->
+            when (type) {
+                "movie" -> fetchTmdbMovieVideosOnce(id, locale)
+                "tv" -> fetchTmdbTvVideosOnce(id, locale)
+                else -> fetchTmdbMovieVideosOnce(id, locale) + fetchTmdbTvVideosOnce(id, locale)
+            }
+        }
+        val results = when (type) {
+            "movie" -> fetchTmdbMovieVideos(id, language)
+            "tv" -> fetchTmdbTvVideos(id, language)
+            else -> fetchTmdbMovieVideos(id, language) + fetchTmdbTvVideos(id, language)
+        }
+        return rankTmdbVideoCandidates(results, preferredLanguageCode = language)
     }
 
     /**
@@ -380,6 +394,62 @@ class TrailerService(
             title = title,
             year = year
         )?.videoUrl
+    }
+
+    /**
+     * Searches YouTube for a short recap of [seasonNumber] of [showTitle] and resolves
+     * it through the in-app extractor so the user can watch it inside the trailer overlay.
+     */
+    suspend fun getSeasonRecapPlaybackSource(
+        showTitle: String,
+        seasonNumber: Int,
+        language: String? = null
+    ): TrailerPlaybackSource? = withContext(Dispatchers.IO) {
+        if (showTitle.isBlank() || seasonNumber <= 0) return@withContext null
+        val isSpanish = language?.startsWith("es", ignoreCase = true) == true
+        val queries = if (isSpanish) {
+            listOf(
+                "$showTitle resumen temporada $seasonNumber",
+                "$showTitle season $seasonNumber recap"
+            )
+        } else {
+            listOf("$showTitle season $seasonNumber recap")
+        }
+        val videoIdRegex = Regex("\"videoId\":\"([a-zA-Z0-9_-]{11})\"")
+        for (query in queries) {
+            val videoId = runCatching {
+                val encoded = java.net.URLEncoder.encode(query, "UTF-8")
+                val conn = (java.net.URL("https://www.youtube.com/results?search_query=$encoded")
+                    .openConnection() as java.net.HttpURLConnection).apply {
+                    connectTimeout = 4_000
+                    readTimeout = 4_500
+                    setRequestProperty(
+                        "User-Agent",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                    )
+                    setRequestProperty("Accept-Language", if (isSpanish) "es-ES,es;q=0.9" else "en-US,en;q=0.9")
+                }
+                try {
+                    if (conn.responseCode !in 200..299) return@runCatching null
+                    val html = conn.inputStream.bufferedReader().use { reader ->
+                        val buf = CharArray(128 * 1024)
+                        val read = reader.read(buf)
+                        if (read > 0) String(buf, 0, read) else ""
+                    }
+                    videoIdRegex.find(html)?.groupValues?.getOrNull(1)
+                } finally {
+                    conn.disconnect()
+                }
+            }.getOrNull()
+            if (!videoId.isNullOrBlank()) {
+                val source = getTrailerPlaybackSourceFromYouTubeUrl(
+                    youtubeUrl = "https://www.youtube.com/watch?v=$videoId",
+                    title = "$showTitle S$seasonNumber Recap"
+                )
+                if (source != null) return@withContext source
+            }
+        }
+        null
     }
 
     private suspend fun fetchTmdbMovieVideos(tmdbId: Int, preferredLanguage: String): List<TmdbVideoResult> {
@@ -581,6 +651,31 @@ internal fun normalizeTmdbMediaType(type: String?): String? {
         "tv", "series", "show", "tvshow" -> "tv"
         else -> null
     }
+}
+
+internal suspend fun findNotflixTrailerCandidates(
+    language: String,
+    fetch: suspend (String) -> List<TmdbVideoResult>
+): List<TmdbVideoResult> {
+    val locale = normalizeTmdbTrailerLanguage(language)
+    val base = locale.substringBefore('-')
+    val locales = if (base == "es") {
+        listOf(locale.takeUnless { it == "es" } ?: "es-ES", "es-ES", "es-MX", "es")
+    } else listOf(locale, base)
+    for (candidate in locales.distinct()) {
+        val videos = rankTmdbVideoCandidates(
+            fetch(candidate).filter { matchesNotflixTrailerLanguage(it.iso6391, locale) },
+            preferredLanguageCode = locale
+        )
+        if (videos.isNotEmpty()) return videos
+    }
+    return emptyList()
+}
+
+internal fun matchesNotflixTrailerLanguage(candidate: String?, appLanguage: String): Boolean {
+    val code = candidate?.trim()?.substringBefore('-')?.substringBefore('_')?.lowercase() ?: return false
+    val preferred = normalizeTmdbTrailerLanguage(appLanguage).substringBefore('-')
+    return code == preferred || (preferred == "es" && code in setOf("spa", "esp"))
 }
 
 /**

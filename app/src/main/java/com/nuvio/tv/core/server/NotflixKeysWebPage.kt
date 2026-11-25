@@ -5,8 +5,10 @@ internal object NotflixKeysWebPage {
 
     fun html(labels: Map<String, String>): String {
         fun text(key: String): String = escape(labels[key].orEmpty())
+        val lang = labels["lang"]?.takeIf { it.isNotBlank() } ?: "en"
+        val dir = if (lang.substringBefore('-') in RTL_LANGUAGES) "rtl" else "ltr"
         return """<!doctype html>
-<html lang="es">
+<html lang="${escape(lang)}" dir="$dir">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -73,6 +75,7 @@ internal object NotflixKeysWebPage {
   var token = new URLSearchParams(window.location.search).get('t') || '';
   var labels = {
     none: '${text("none")}',
+    builtIn: '${text("builtIn")}',
     current: '${text("current")}',
     saved: '${text("saved")}',
     error: '${text("error")}',
@@ -84,6 +87,7 @@ internal object NotflixKeysWebPage {
     status.className = kind || '';
   }
   function describe(entry) {
+    if (entry && !entry.configured && entry.builtIn) return labels.current + ' ' + labels.builtIn;
     if (!entry || !entry.configured) return labels.current + ' ' + labels.none;
     return labels.current + ' ' + entry.hint;
   }
@@ -135,6 +139,8 @@ internal object NotflixKeysWebPage {
 </html>
 """
     }
+
+    private val RTL_LANGUAGES = setOf("ar", "he", "iw", "fa", "ur")
 
     private fun escape(value: String): String =
         value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;")

@@ -76,8 +76,10 @@ internal fun AudioSelectionOverlay(
     onCenterMixLevelChange: (Int) -> Unit,
     onPersistAmplificationChange: (Boolean) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSwitchToSubtitles: (() -> Unit)? = null
 ) {
+    val combinedTabs = com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active && onSwitchToSubtitles != null
     val tracksFocusRequester = remember { FocusRequester() }
     val delayMinusFocusRequester = remember { FocusRequester() }
     val delayPlusFocusRequester = remember { FocusRequester() }
@@ -102,8 +104,13 @@ internal fun AudioSelectionOverlay(
         mutableStateOf<AudioControlFocusTarget?>(null)
     }
 
-    LaunchedEffect(visible, tracks, selectedIndex) {
+    LaunchedEffect(visible, tracks, selectedIndex, combinedTabs) {
         if (!visible) return@LaunchedEffect
+
+        if (combinedTabs) {
+            if (tracks.isNotEmpty()) listState.scrollToItem(tracks.indexOfFirst { it.index == selectedIndex }.coerceAtLeast(0))
+            return@LaunchedEffect // The combined panel starts on its active tab, without a delayed focus steal.
+        }
 
         if (tracks.isNotEmpty()) {
             val selectedListIndex = tracks.indexOfFirst { it.index == selectedIndex }.takeIf { it >= 0 } ?: 0
@@ -168,6 +175,9 @@ internal fun AudioSelectionOverlay(
                 .fillMaxHeight(),
             verticalArrangement = Arrangement.Bottom
         ) {
+            if (com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active && onSwitchToSubtitles != null) {
+                NotflixAudioSubtitleTabs(audioSelected = true, onAudio = {}, onSubtitles = onSwitchToSubtitles)
+            }
             Text(
                 text = stringResource(R.string.audio_dialog_title),
                 style = MaterialTheme.typography.headlineMedium,

@@ -231,7 +231,7 @@ internal fun ProfileSettingsContent(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Text(
-                                        text = entry.title,
+                                        text = entry.legacyTitle,
                                         modifier = Modifier.weight(1f),
                                         color = NuvioTheme.colors.TextPrimary,
                                         maxLines = 1,

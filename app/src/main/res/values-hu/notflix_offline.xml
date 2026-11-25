@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Letöltések</string>
+    <string name="notflix_offline_receive">Fogadás telefonról</string>
+    <string name="notflix_offline_pairing">Kézi megadás: %1$s · %2$s. A kód 5 percig érvényes.</string>
+    <string name="notflix_offline_scan">Olvasd be a telefonod kamerájával a Notflix Letöltések megnyitásához.</string>
+    <string name="notflix_offline_expired">A munkamenet lejárt. Az újracsatlakozáshoz válaszd a Fogadás telefonról lehetőséget.</string>
+    <string name="notflix_offline_empty">Tölts le egy videót a Források közül, vagy küldj egyet a telefonodról.</string>
+    <string name="notflix_offline_profile">A letöltések ezen a profilon nem érhetők el.</string>
+    <string name="notflix_offline_unavailable">A fájl nem érhető el</string>
+    <string name="notflix_offline_confirm_remove">Eltávolítás megerősítése</string>
+    <string name="notflix_offline_choose_source">Válassz forrást a letöltéshez</string>
+    <string name="notflix_offline_started">Letöltés sorba állítva</string>
+    <string name="notflix_offline_failed">Ezt a fájlt nem sikerült megnyitni vagy letölteni. Próbálj egy közvetlen videofájlt.</string>
+</resources>

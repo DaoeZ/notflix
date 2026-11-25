@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Audio e sottotitoli</string>
+    <string name="notflix_player_more">Altro</string>
+    <string name="notflix_player_speed_value">Velocità (%1$s×)</string>
+    <string name="notflix_player_remaining">%1$s rimanenti</string>
+    <string name="notflix_player_buttons">Pulsanti del lettore</string>
+    <string name="notflix_player_buttons_help">Scegli fino a %1$d azioni. Altro resta alla fine e contiene le rimanenti.</string>
+    <string name="notflix_player_row_order">Ordine dei pulsanti</string>
+</resources>
+

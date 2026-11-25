@@ -288,6 +288,32 @@ class NuvioMpvSurfaceView @JvmOverloads constructor(
         }
     }
 
+    fun applyNightModeDrc(enabled: Boolean) {
+        if (!initialized) return
+        runCatching {
+            if (enabled) {
+                mpv.command(
+                    "af",
+                    "add",
+                    "@nightdrc:lavfi=[acompressor=threshold=0.1:ratio=4:attack=12:release=180:makeup=1.65]"
+                )
+            } else {
+                mpv.command("af", "remove", "@nightdrc")
+            }
+        }.onFailure {
+            Log.w(TAG, "Failed to toggle night mode DRC on mpv (enabled=$enabled): ${it.message}")
+        }
+    }
+
+    fun setVolumeFraction(fraction: Float, baseAmplificationDb: Int = 0) {
+        if (!initialized) return
+        val clampedFraction = fraction.coerceIn(0f, 1f)
+        val clampedDb = baseAmplificationDb.coerceIn(AUDIO_AMPLIFICATION_MIN_DB, AUDIO_AMPLIFICATION_MAX_DB)
+        val linearScale = 10.0.pow(clampedDb / 20.0)
+        val targetVolumePercent = (100.0 * linearScale * clampedFraction).coerceIn(0.0, MPV_MAX_VOLUME_PERCENT)
+        runCatching { mpv.setPropertyDouble("volume", targetVolumePercent) }
+    }
+
     fun applyAudioLanguagePreferences(languages: List<String>) {
         if (!initialized) return
         val normalized = languages

@@ -317,21 +317,47 @@ fun SearchScreen(
 
     // M31: Notflix presentation only. Query, debounce, suggestions, Discover and voice remain the
     // official SearchViewModel and the official screen stays byte-for-byte on its own path.
+    val pendingCompanionQuery by viewModel.companionPendingSearchQuery.collectAsState()
+    LaunchedEffect(pendingCompanionQuery) {
+        val remoteQuery = viewModel.consumeCompanionSearchQuery()
+        if (!remoteQuery.isNullOrBlank()) {
+            viewModel.onEvent(SearchEvent.QueryChanged(remoteQuery))
+        }
+    }
     if (LocalNotflixPresentation.current.active) {
-        LaunchedEffect(Unit) { viewModel.ensureDiscoverLoaded() }
+        val language = com.nuvio.tv.data.local.defaultTmdbLanguage(
+            androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+        )
+        val localizedPosters by viewModel.localizedPosters.collectAsState()
+        val checkingKidsSearch by viewModel.checkingKidsSearch.collectAsState()
+        DisposableEffect(viewModel, language) {
+            viewModel.setNotflixSearchActive(true, language)
+            onDispose { viewModel.setNotflixSearchActive(false) }
+        }
+        val personalRows = hiltViewModel<com.nuvio.tv.ui.screens.home.NotflixPersonalRowsViewModel>()
+        val becauseState by personalRows.becauseYouWatched.collectAsState()
+        val profile by personalRows.activeProfileId.collectAsState()
+        val because = becauseState?.takeIf { it.profileId == profile }
+        val startRecommendations = remember(because, ageGateState, hiddenTitleKeys) {
+            notflixSearchStartItems(because?.items.orEmpty(), ageGateState, hiddenTitleKeys)
+        }
+        var showCompanionQr by remember { mutableStateOf(false) }
         NotflixSearchContent(
+            recommendedResults = startRecommendations,
+            recommendationTitle = because?.let { stringResource(R.string.notflix_for_you) },
             query = uiState.query,
             submittedQuery = uiState.submittedQuery,
             recentSearches = uiState.recentSearches,
-            discoverResults = uiState.discoverResults,
+            discoverResults = uiState.discoverResults.takeIf { uiState.discoverProfileId == profile }.orEmpty(),
             catalogRows = uiState.catalogRows,
-            isSearching = uiState.isSearching,
+            isSearching = uiState.isSearching || checkingKidsSearch,
             error = uiState.error,
             isVoiceSearchAvailable = isVoiceSearchAvailable,
             isVoiceListening = isVoiceListening,
             onQueryChange = { viewModel.onEvent(SearchEvent.QueryChanged(it)) },
             onRecentSearchClick = { viewModel.onEvent(SearchEvent.QueryChanged(it)) },
             onVoiceSearch = launchVoiceSearch,
+            onOpenCompanion = { showCompanionQr = true },
             onRetry = { viewModel.onEvent(SearchEvent.Retry) },
             onRememberSearch = { viewModel.onEvent(SearchEvent.RememberSearchFromTextInput) },
             // M34: same warm-up the official grid runs when a card gains focus / opens.
@@ -341,8 +367,16 @@ fun SearchScreen(
             },
             onNavigateToDetail = onNavigateToDetail,
             localizedTitles = localizedTitles,
+            localizedPosters = localizedPosters,
             onRequestTitles = viewModel::requestLocalizedTitles
         )
+        if (showCompanionQr) {
+            NotflixCompanionQrDialog(
+                url = viewModel.companionUrl(),
+                pairCode = viewModel.companionPairCode(),
+                onDismiss = { showCompanionQr = false }
+            )
+        }
         return
     }
 

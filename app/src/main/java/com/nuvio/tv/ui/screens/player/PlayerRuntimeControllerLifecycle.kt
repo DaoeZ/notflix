@@ -67,6 +67,7 @@ internal fun PlayerRuntimeController.releasePlayer(
     debridResolveJob = null
     stillWatchingPromptJob?.cancel()
     stillWatchingPromptJob = null
+    cancelSleepTimer()
     errorRetryJob?.cancel()
     errorRetryJob = null
     stableProgressResetJob?.cancel()

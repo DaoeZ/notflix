@@ -113,7 +113,13 @@ data class TmdbCollectionFilters(
     val year: Int? = null,
     val watchRegion: String? = null,
     val withWatchProviders: String? = null,
-    val withoutWatchProviders: String? = null
+    val withoutWatchProviders: String? = null,
+    // M68: Discover can filter movies by age certificate on TMDB's side (KIDS rows).
+    val certificationCountry: String? = null,
+    val certification: String? = null,
+    val certificationLte: String? = null,
+    val runtimeLte: Int? = null,
+    val runtimeGte: Int? = null
 )
 
 @Immutable

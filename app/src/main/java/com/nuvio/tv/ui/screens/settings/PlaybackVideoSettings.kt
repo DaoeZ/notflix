@@ -63,6 +63,7 @@ internal fun PlaybackVideoSection(
 
     SettingsSectionLabel(text = stringResource(R.string.playback_auto_frame_rate))
     SettingsActionRow(
+        settingId = "PlaybackVideoSettings.playback_afr_mode",
         title = stringResource(R.string.playback_afr_mode),
         subtitle = null,
         value = frameRateMatchingLabel(settings.frameRateMatchingMode),
@@ -73,6 +74,7 @@ internal fun PlaybackVideoSection(
         onClick = { onOpenDialog(PlaybackDialog.FRAME_RATE_MATCHING) }
     )
     SettingsToggleRow(
+        settingId = "PlaybackVideoSettings.playback_resolution_matching",
         title = stringResource(R.string.playback_resolution_matching),
         subtitle = stringResource(
             if (resolutionSwitchingSupported) R.string.playback_resolution_matching_sub
@@ -102,6 +104,7 @@ internal fun PlaybackVideoSection(
         val dv81Conversion = settings.dv7HandlingMode == Dv7HandlingMode.DV81_LIBDOVI
         SettingsSectionLabel(text = stringResource(R.string.playback_dv_hdr_label))
         SettingsActionRow(
+            settingId = "PlaybackVideoSettings.dv7_handling_title",
             title = stringResource(R.string.dv7_handling_title),
             subtitle = null,
             value = dv7HandlingModeLabel(settings.dv7HandlingMode),
@@ -109,6 +112,7 @@ internal fun PlaybackVideoSection(
             onClick = { onOpenDialog(PlaybackDialog.DV7_HANDLING_MODE) }
         )
         SettingsToggleRow(
+            settingId = "PlaybackVideoSettings.audio_dv7_preserve_mapping_title",
             title = stringResource(R.string.audio_dv7_preserve_mapping_title),
             subtitle = stringResource(R.string.audio_dv7_preserve_mapping_sub),
             checked = settings.dv7ToDv81PreserveMappingEnabled && dv81Conversion,
@@ -116,6 +120,7 @@ internal fun PlaybackVideoSection(
             enabled = enabled && dv81Conversion
         )
         SettingsToggleRow(
+            settingId = "PlaybackVideoSettings.audio_dv5_to_dv81_title",
             title = stringResource(R.string.audio_dv5_to_dv81_title),
             subtitle = stringResource(R.string.audio_dv5_to_dv81_sub),
             checked = settings.dv5ToDv81Enabled && dv81Conversion,
@@ -123,6 +128,7 @@ internal fun PlaybackVideoSection(
             enabled = enabled && dv81Conversion
         )
         SettingsToggleRow(
+            settingId = "PlaybackVideoSettings.audio_strip_hdr10plus_title",
             title = stringResource(R.string.audio_strip_hdr10plus_title),
             subtitle = stringResource(R.string.audio_strip_hdr10plus_sub),
             checked = settings.stripHdr10PlusSei,
@@ -130,6 +136,7 @@ internal fun PlaybackVideoSection(
             enabled = enabled
         )
         SettingsToggleRow(
+            settingId = "PlaybackVideoSettings.playback_true_black_letterbox",
             title = stringResource(R.string.playback_true_black_letterbox),
             subtitle = stringResource(R.string.playback_true_black_letterbox_sub),
             checked = transparentLetterbox,
@@ -139,6 +146,7 @@ internal fun PlaybackVideoSection(
 
         SettingsSectionLabel(text = stringResource(R.string.playback_chapters_label))
         SettingsToggleRow(
+            settingId = "PlaybackVideoSettings.playback_exo_chapters_title",
             title = stringResource(R.string.playback_exo_chapters_title),
             subtitle = stringResource(R.string.playback_exo_chapters_sub),
             checked = settings.exoChaptersEnabled,
@@ -150,6 +158,7 @@ internal fun PlaybackVideoSection(
     if (settings.usesMpvEngine) {
         SettingsSectionLabel(text = stringResource(R.string.playback_mpv_decoding_label))
         SettingsActionRow(
+            settingId = "PlaybackVideoSettings.audio_mpv_hwdec_title",
             title = stringResource(R.string.audio_mpv_hwdec_title),
             subtitle = null,
             value = mpvHardwareDecodeModeLabel(settings.mpvHardwareDecodeMode),
@@ -157,6 +166,7 @@ internal fun PlaybackVideoSection(
             onClick = { onOpenDialog(PlaybackDialog.MPV_HARDWARE_DECODE_MODE) }
         )
         SettingsToggleRow(
+            settingId = "PlaybackVideoSettings.audio_mpv_hi10p_gnext_sw_title",
             title = stringResource(R.string.audio_mpv_hi10p_gnext_sw_title),
             subtitle = stringResource(R.string.audio_mpv_hi10p_gnext_sw_subtitle),
             checked = settings.mpvHi10pGnextSoftwareFallbackEnabled,

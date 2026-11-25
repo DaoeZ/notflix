@@ -72,7 +72,8 @@ object StreamAutoPlaySelector {
         preferredBingeGroup: String? = null,
         preferBingeGroupInSelection: Boolean = false,
         bingeGroupOnly: Boolean = false,
-        priorityList: List<StreamAutoPlayPriorityRule> = emptyList()
+        priorityList: List<StreamAutoPlayPriorityRule> = emptyList(),
+        carryPriorityAudioLanguage: Boolean = false
     ): Stream? {
         if (streams.isEmpty()) return null
 
@@ -81,26 +82,6 @@ object StreamAutoPlaySelector {
         } else {
             source
         }
-
-        val sourceScopedStreams = when (effectiveSource) {
-            StreamAutoPlaySource.ALL_SOURCES -> streams
-            StreamAutoPlaySource.INSTALLED_ADDONS_ONLY -> streams.filter { it.serverTarget != null || it.addonName in installedAddonNames }
-            StreamAutoPlaySource.ENABLED_PLUGINS_ONLY -> streams.filter { it.addonName !in installedAddonNames }
-        }
-        // In Priority mode the rules name the add-ons themselves, so the "allowed add-ons" filter would
-        // silently drop them. The source filter above still applies.
-        val priorityRulesDefineSources = mode == StreamAutoPlayMode.PRIORITY_LIST && priorityList.isNotEmpty()
-        val candidateStreams = sourceScopedStreams.filter { stream ->
-            val isAddonStream = stream.addonName in installedAddonNames
-            if (stream.serverTarget != null || priorityRulesDefineSources) {
-                true
-            } else if (isAddonStream) {
-                selectedAddons.isEmpty() || stream.addonName in selectedAddons
-            } else {
-                selectedPlugins.isEmpty() || stream.addonName in selectedPlugins
-            }
-        }
-        if (candidateStreams.isEmpty()) return null
 
         // Binge group matching takes priority over mode and source filters — even in MANUAL mode,
         // a persisted binge group should auto-play without showing the picker.
@@ -121,6 +102,26 @@ object StreamAutoPlaySelector {
         }
 
         if (bingeGroupOnly) return null
+
+        val sourceScopedStreams = when (effectiveSource) {
+            StreamAutoPlaySource.ALL_SOURCES -> streams
+            StreamAutoPlaySource.INSTALLED_ADDONS_ONLY -> streams.filter { it.serverTarget != null || it.addonName in installedAddonNames }
+            StreamAutoPlaySource.ENABLED_PLUGINS_ONLY -> streams.filter { it.addonName !in installedAddonNames }
+        }
+        // In Priority mode the rules name the add-ons themselves, so the "allowed add-ons" filter would
+        // silently drop them. The source filter above still applies.
+        val priorityRulesDefineSources = mode == StreamAutoPlayMode.PRIORITY_LIST && priorityList.isNotEmpty()
+        val candidateStreams = sourceScopedStreams.filter { stream ->
+            val isAddonStream = stream.addonName in installedAddonNames
+            if (stream.serverTarget != null || priorityRulesDefineSources) {
+                true
+            } else if (isAddonStream) {
+                selectedAddons.isEmpty() || stream.addonName in selectedAddons
+            } else {
+                selectedPlugins.isEmpty() || stream.addonName in selectedPlugins
+            }
+        }
+        if (candidateStreams.isEmpty()) return null
 
         if (mode == StreamAutoPlayMode.MANUAL) return null
 
@@ -144,7 +145,9 @@ object StreamAutoPlaySelector {
                     .toList()
 
                 val excludeRegex = if (exclusionWords.isNotEmpty()) {
-                    Regex("\\b(${exclusionWords.joinToString("|")})\\b", RegexOption.IGNORE_CASE)
+                    runCatching {
+                        Regex("\\b(${exclusionWords.joinToString("|")})\\b", RegexOption.IGNORE_CASE)
+                    }.getOrNull()
                 } else null
 
                 // 1. Build list of ALL regex‑matching streams
@@ -174,7 +177,9 @@ object StreamAutoPlaySelector {
                 if (matchingStreams.isEmpty()) return null
                 matchingStreams.firstOrNull { isPlayable(it) }
             }
-            StreamAutoPlayMode.PRIORITY_LIST -> selectPriorityListStream(candidateStreams, priorityList)
+            StreamAutoPlayMode.PRIORITY_LIST -> selectPriorityListStream(
+                candidateStreams, priorityList, includePlaybackLanguage = carryPriorityAudioLanguage
+            )
 
         }
     }
@@ -187,42 +192,75 @@ object StreamAutoPlaySelector {
      */
     internal fun selectPriorityListStream(
         streams: List<Stream>,
-        rules: List<StreamAutoPlayPriorityRule>
+        rules: List<StreamAutoPlayPriorityRule>,
+        includePlaybackLanguage: Boolean = false
     ): Stream? {
         if (streams.isEmpty() || rules.isEmpty()) return null
         val needCached = rules.any { it.cachedOnly }
+        val onlyCached = needCached && rules.all { it.cachedOnly }
         val needAudio = rules.any { it.audioLanguage != null }
-        val prepared = streams.map { stream ->
+        val allowInferredEnglish = rules.none { it.audioLanguage != null && it.audioLanguage != "en" }
+        val addonKeys = rules.mapNotNull { it.addonName?.takeIf(String::isNotBlank)?.let(::priorityAddonKey) }.toSet()
+        val anyAddon = rules.any { it.addonName.isNullOrBlank() }
+        val prepared = streams.asSequence().filter { stream ->
+            (anyAddon || priorityAddonKey(stream.addonName) in addonKeys) &&
+                isPlayable(stream)
+        }.mapNotNull { stream ->
+            val cached = needCached && isCachedForPriority(stream)
+            if (onlyCached && !cached) return@mapNotNull null
             PreparedPriorityStream(
                 stream = stream,
-                playable = isPlayable(stream),
+                addonKey = priorityAddonKey(stream.addonName),
                 quality = streamPriorityQuality(stream),
-                cached = needCached && isCachedForPriority(stream),
+                cached = cached,
                 audio = if (needAudio) classifyPriorityAudio(stream)
                     else PriorityAudioClassification(emptySet(), englishFallback = false)
             )
-        }
+        }.toList()
         for (rule in rules) {
-            val addon = rule.addonName?.trim().orEmpty()
+            val addon = rule.addonName?.let(::priorityAddonKey).orEmpty()
             val match = prepared.firstOrNull { candidate ->
-                candidate.playable &&
-                    (addon.isEmpty() || candidate.stream.addonName == addon) &&
+                (addon.isEmpty() || candidate.addonKey == addon) &&
                     candidate.quality == rule.quality &&
                     (!rule.cachedOnly || candidate.cached) &&
-                    candidate.audio.matches(rule.audioLanguage)
+                    candidate.audio.matches(rule.audioLanguage, allowInferredEnglish)
             }
-            if (match != null) return match.stream
+            if (match != null) {
+                return if (includePlaybackLanguage && rule.audioLanguage in match.audio.languages) {
+                    match.stream.copy(autoPlayAudioLanguage = rule.audioLanguage)
+                } else match.stream
+            }
         }
         return null
     }
 
     private data class PreparedPriorityStream(
         val stream: Stream,
-        val playable: Boolean,
+        val addonKey: String,
         val quality: StreamAutoPlayQuality,
         val cached: Boolean,
         val audio: PriorityAudioClassification
     )
+
+    // A partial search can only settle a rule once every earlier named source has
+    // returned. Any-source rules have to wait for the full search or its deadline.
+    internal fun settledPriorityRules(
+        rules: List<StreamAutoPlayPriorityRule>,
+        completedSources: Set<String>,
+        installedAddonNames: List<String>
+    ): List<StreamAutoPlayPriorityRule> {
+        if (completedSources.isEmpty()) return emptyList()
+        val installed = installedAddonNames.groupBy(::priorityAddonKey)
+        return rules.takeWhile { rule ->
+            val names = rule.addonName?.let { installed[priorityAddonKey(it)] }
+            rule.audioLanguage != "en" && !names.isNullOrEmpty() && names.all { it in completedSources }
+        }
+    }
+
+    private val ADDON_SEPARATOR = Regex("""[\s|]+""")
+
+    private fun priorityAddonKey(name: String): String =
+        name.trim().replace(ADDON_SEPARATOR, " ").trim().lowercase(java.util.Locale.ROOT)
 
     /**
      * Ready without a download: the debrid service already has it, or it is a direct link.
@@ -247,8 +285,7 @@ object StreamAutoPlaySelector {
 
     /**
      * Heuristic: the add-on names the audio language in the name, title or description. Empty
-     * [codes] accepts any stream. Spanish keeps exactly the previous patterns; the other languages
-     * use the shared [AUDIO_LANGUAGES] table. If English is selected, a stream with no audio-language
+     * [codes] accepts any stream. The selector uses the shared [AUDIO_LANGUAGES] table. If English is selected, a stream with no audio-language
      * mark at all counts as English, except when it says MULTI/Dual without naming a language.
      */
     internal fun matchesAudioLanguages(stream: Stream, codes: Set<String>): Boolean {
@@ -262,68 +299,76 @@ object StreamAutoPlaySelector {
         val languages: Set<String>,
         val englishFallback: Boolean
     ) {
-        fun matches(code: String?): Boolean {
+        fun matches(code: String?, allowInferredEnglish: Boolean = true): Boolean {
             if (code == null) return true
             val normalized = if (code == "iw") "he" else code
-            return normalized in languages || (normalized == "en" && englishFallback)
+            return normalized in languages || (allowInferredEnglish && normalized == "en" && englishFallback)
         }
     }
 
     internal fun classifyPriorityAudio(stream: Stream): PriorityAudioClassification {
-        val raw = audioSearchText(stream)
-        val text = AUDIO_SUBTITLE_SEGMENT.replace(raw, " ")
+        val raw = withoutStreamSites(
+            listOfNotNull(stream.name, stream.title, stream.description, stream.priorityFilename()).joinToString("\n")
+        )
+        val text = withoutSubtitleLabels(raw)
+        val shortCodes = shortStreamAudioCodes(
+            text, withoutSubtitleLabels(withoutStreamSites(stream.description.orEmpty()))
+        )
         val explicit = AUDIO_LANGUAGES.asSequence()
-            .filter { it.code != "es" && it.matches(text, raw) }
+            .filter { language ->
+                when (language.code) {
+                    "es" -> if (VOSE_PATTERN.containsMatchIn(raw)) SPANISH_DUB_PATTERN.containsMatchIn(text)
+                        else language.matches(text, raw, language.code in shortCodes)
+                    "pl" -> {
+                        val polishAudio = LEKTOR_AS_FILM_TITLE.replace(text, " ")
+                        language.code in shortCodes || language.matches(polishAudio, polishAudio) ||
+                            POLISH_AUDIO_MARK.containsMatchIn(polishAudio)
+                    }
+                    else -> language.matches(text, raw, language.code in shortCodes)
+                }
+            }
             .map { it.code }
             .toSet()
-        val spanish = isSpanishForPriority(stream)
         return PriorityAudioClassification(
-            languages = if (spanish) explicit + "es" else explicit,
-            englishFallback = !spanish && explicit.isEmpty() && !MULTI_DUAL_PATTERN.containsMatchIn(text)
+            languages = explicit,
+            englishFallback = explicit.isEmpty() && !MULTI_DUAL_PATTERN.containsMatchIn(text)
         )
     }
 
-    private fun audioSearchText(stream: Stream): String =
-        listOfNotNull(stream.name, stream.title, stream.description).joinToString("\n")
+    private fun Stream.priorityFilename(): String? =
+        behaviorHints?.filename?.takeIf { it.isNotBlank() }
+            ?: clientResolve?.filename?.takeIf { it.isNotBlank() }
+            ?: clientResolve?.stream?.raw?.filename
 
-    private val MULTI_DUAL_PATTERN = Regex("""(?i)(?<!\p{L})(multi|dual)(?!\p{L})""")
-    // Keep the Spanish heuristic below intact; the other languages also see Portuguese/French
-    // subtitle markers. Explicitly named dubs are recovered by the language table from raw text.
-    private val AUDIO_SUBTITLE_SEGMENT =
-        Regex("""(?i)((?<!\p{L})(subs?|subtitles?|subt[ií]tulos?|subtitulad[oa]s?|multi[\s.-]?subs?|legendad[oa]s?|vost(?:fr|f)?)(?!\p{L})|💬|📜|🔤)[^\n|]*""")
+    private val MULTI_DUAL_PATTERN =
+        Regex("""(?i)(?<!\p{L})(multi|dual|ᴍᴜʟᴛɪ|ᴅᴜᴀʟ)(?!\p{L})""")
 
-    /**
-     * Heuristic: the add-on names the language in the name, title or description. Streams that say
-     * nothing about language are not treated as Spanish.
-     */
-    internal fun isSpanishForPriority(stream: Stream): Boolean {
-        val raw = audioSearchText(stream)
-        // Spanish subtitles are not Spanish audio (promoter 09-11): whatever follows a subtitle marker
-        // on its line is ignored, and a VOSE release counts only when it also names a Spanish dub.
-        val text = SUBTITLE_SEGMENT.replace(raw, " ")
-        if (VOSE_PATTERN.containsMatchIn(raw)) return SPANISH_DUB_PATTERN.containsMatchIn(text)
-        return SPANISH_WORD_PATTERN.containsMatchIn(text) || SPANISH_FLAGS.any { text.contains(it) }
-    }
+    private val LEKTOR_AS_FILM_TITLE = Regex("""(?im)^\s*lektor(?=[ ._(-]+(?:19|20)[0-9]{2}\b)""")
+    private val POLISH_AUDIO_MARK = Regex(
+        """(?iu)(?<![\p{L}\p{N}])(?:pl|pldub(?:bing)?|lektor(?:ski|pl)?|dubb(?:ing)?pl)(?![\p{L}\p{N}])"""
+    )
+
+    internal fun isSpanishForPriority(stream: Stream): Boolean =
+        "es" in classifyPriorityAudio(stream).languages
 
     private val VOSE_PATTERN = Regex("""(?i)(?<!\p{L})(vose|v\.o\.s\.e\.?)(?!\p{L})""")
-    private val SUBTITLE_SEGMENT =
-        Regex("""(?i)((?<!\p{L})(subs?|subtitles?|subt[ií]tulos?|subtitulad[oa]s?|multi[\s.-]?subs?)(?!\p{L})|💬|📜|🔤)[^\n|]*""")
-
     private val SPANISH_DUB_PATTERN = Regex("""(?i)(?<!\p{L})(castellano|espa[nñ]ol|latino|spanish)(?!\p{L})""")
-    private val SPANISH_WORD_PATTERN =
-        Regex("""(?i)(?<!\p{L})(es|esp|spa|spanish|castellano|espa[nñ]ol|latino|lat)(?!\p{L})""")
-    private val SPANISH_FLAGS = listOf("🇪🇸", "🇲🇽", "🇦🇷", "🇨🇱", "🇨🇴", "🇵🇪", "🇻🇪", "🇺🇾")
 
     /** 2160p/4K/UHD, then 1080p/FHD/Full HD; anything else (or unstated) is OTHER. */
     internal fun streamPriorityQuality(stream: Stream): StreamAutoPlayQuality {
-        val text = "${stream.name.orEmpty()} ${stream.title.orEmpty()}"
-        return when {
+        fun quality(text: String): StreamAutoPlayQuality? = when {
             UHD_QUALITY_PATTERN.containsMatchIn(text) -> StreamAutoPlayQuality.UHD_2160
             FHD_QUALITY_PATTERN.containsMatchIn(text) -> StreamAutoPlayQuality.FHD_1080
-            else -> StreamAutoPlayQuality.OTHER
+            else -> null
         }
+        return quality("${stream.name.orEmpty()} ${stream.title.orEmpty()}")
+            ?: quality(listOfNotNull(
+                stream.quality, stream.clientResolve?.stream?.raw?.parsed?.resolution,
+                stream.priorityFilename(), stream.description
+            ).joinToString(" "))
+            ?: StreamAutoPlayQuality.OTHER
     }
 
-    private val UHD_QUALITY_PATTERN = Regex("""\b(2160p|4k|uhd|ultra\s*hd)\b""", RegexOption.IGNORE_CASE)
-    private val FHD_QUALITY_PATTERN = Regex("""\b(1080p|fhd|fullhd|full\s*hd)\b""", RegexOption.IGNORE_CASE)
+    private val UHD_QUALITY_PATTERN = Regex("""(?<![\p{L}\p{N}])(2160[pᴘ]|4k|uhd|ultra\s*hd)(?![\p{L}\p{N}])""", RegexOption.IGNORE_CASE)
+    private val FHD_QUALITY_PATTERN = Regex("""(?<![\p{L}\p{N}])(1080[pᴘ]|fhd|fullhd|full\s*hd)(?![\p{L}\p{N}])""", RegexOption.IGNORE_CASE)
 }

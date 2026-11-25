@@ -14,7 +14,8 @@ fun ageLevelOf(rating: String?): AgeLevel? {
     aliases[normalized]?.let { return it }
     val numeric = normalized.toIntOrNull() ?: return null
     return when {
-        numeric <= 0 -> AgeLevel.TP
+        numeric < 0 -> null // malformed: unknown, never «all ages» in a kids profile
+        numeric == 0 -> AgeLevel.TP
         numeric <= 7 -> AgeLevel.A7
         numeric <= 12 -> AgeLevel.A12
         numeric <= 16 -> AgeLevel.A16
@@ -70,5 +71,21 @@ private val aliases: Map<String, AgeLevel> = mapOf(
     "U" to AgeLevel.TP,
     "12A" to AgeLevel.A12,
     "15" to AgeLevel.A16,
-    "R18" to AgeLevel.A18
+    "R18" to AgeLevel.A18,
+    // España: TMDB's own Spanish movie certificates use A (apta) and Ai (apta para todos).
+    "AI" to AgeLevel.TP,
+    // Alemania (FSK), equivalencia prudente: ante la duda, el nivel más alto.
+    "FSK0" to AgeLevel.TP,
+    "FSK6" to AgeLevel.A7,
+    "FSK12" to AgeLevel.A12,
+    "FSK16" to AgeLevel.A16,
+    "FSK18" to AgeLevel.A18,
+    // Italia: T (tutti) y las dos calificaciones por edad vigentes.
+    "T" to AgeLevel.TP,
+    "VM14" to AgeLevel.A16,
+    "VM18" to AgeLevel.A18,
+    // Brasil: L (livre). El resto son números y ya pasan por la escala numérica.
+    "L" to AgeLevel.TP,
+    // Países Bajos: AL (alle leeftijden). El resto son números.
+    "AL" to AgeLevel.TP
 )

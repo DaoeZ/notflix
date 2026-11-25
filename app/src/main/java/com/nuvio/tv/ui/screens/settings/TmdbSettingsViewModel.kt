@@ -23,7 +23,12 @@ class TmdbSettingsViewModel @Inject constructor(
     private val trailerService: TrailerService,
     private val metaRepository: MetaRepository,
     private val cwEnrichmentCache: ContinueWatchingEnrichmentCache,
-    private val integrationStore: NotflixIntegrationStore
+    private val integrationStore: NotflixIntegrationStore,
+    // M68: the build's own key counts as configured, exactly like the rest of the app.
+    private val integrationConfig: com.nuvio.tv.data.local.NotflixIntegrationConfig =
+        com.nuvio.tv.data.local.NotflixIntegrationConfig {
+            com.nuvio.tv.data.local.NotflixIntegrationCredentials()
+        }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TmdbSettingsUiState())
@@ -36,12 +41,12 @@ class TmdbSettingsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            integrationStore.values.collectLatest { values ->
-                _uiState.update { it.copy(apiKeyConfigured = values.tmdbApiKey.isNotBlank()) }
+            integrationStore.values.collectLatest {
+                _uiState.update { state -> state.copy(apiKeyConfigured = integrationConfig.isTmdbEnabled()) }
             }
         }
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val configured = integrationStore.read().tmdbApiKey.isNotBlank()
+            val configured = integrationConfig.isTmdbEnabled()
             _uiState.update { it.copy(apiKeyConfigured = configured) }
         }
     }

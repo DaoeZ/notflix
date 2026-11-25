@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.nuvio.tv.core.sync.androidtv.AndroidTvChannelManager
 import com.nuvio.tv.core.profile.ProfileScopedCredentialStore
+import com.nuvio.tv.core.offline.NotflixOfflineVideos
 import com.nuvio.tv.data.local.ProfileDataStore
 import com.nuvio.tv.data.local.ProfileDataStoreFactory
 import com.nuvio.tv.data.local.ProfileLockStateDataStore
@@ -26,7 +27,8 @@ class AccountLocalDataResetService @Inject constructor(
     private val profileDataStore: ProfileDataStore,
     private val profileLockStateDataStore: ProfileLockStateDataStore,
     private val credentialStores: Set<@JvmSuppressWildcards ProfileScopedCredentialStore>,
-    private val androidTvChannelManager: AndroidTvChannelManager
+    private val androidTvChannelManager: AndroidTvChannelManager,
+    private val offlineVideos: NotflixOfflineVideos? = null,
 ) {
     suspend fun clearAfterSignOut() = withContext(Dispatchers.IO) {
         try {
@@ -35,6 +37,8 @@ class AccountLocalDataResetService @Inject constructor(
             currentCoroutineContext().ensureActive()
             runCatching { androidTvChannelManager.clearAll() }
                 .onFailure { Log.w(ACCOUNT_RESET_TAG, "Failed to clear Android TV channel data", it) }
+            runCatching { offlineVideos?.clearAccountFiles() }
+                .onFailure { Log.w(ACCOUNT_RESET_TAG, "Failed to clear offline videos", it) }
             runCatching { profileDataStoreFactory.clearProfileScopedData() }
                 .onFailure { Log.w(ACCOUNT_RESET_TAG, "Failed to clear profile-scoped data", it) }
             runCatching { profileDataStore.clearAll() }

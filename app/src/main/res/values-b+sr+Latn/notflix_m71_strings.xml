@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Zvuk i titlovi</string>
+    <string name="notflix_player_more">Još</string>
+    <string name="notflix_player_speed_value">Brzina (%1$s×)</string>
+    <string name="notflix_player_remaining">Preostalo %1$s</string>
+    <string name="notflix_player_buttons">Dugmad plejera</string>
+    <string name="notflix_player_buttons_help">Izaberite do %1$d radnji. Još je uvek na kraju i sadrži ostale.</string>
+    <string name="notflix_player_row_order">Redosled dugmadi</string>
+</resources>
+

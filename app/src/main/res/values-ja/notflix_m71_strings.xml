@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">音声と字幕</string>
+    <string name="notflix_player_more">その他</string>
+    <string name="notflix_player_speed_value">速度（%1$s倍）</string>
+    <string name="notflix_player_remaining">残り %1$s</string>
+    <string name="notflix_player_buttons">プレーヤーのボタン</string>
+    <string name="notflix_player_buttons_help">最大%1$d個の操作を選べます。その他は常に最後にあり、残りの操作を表示します。</string>
+    <string name="notflix_player_row_order">ボタンの順序</string>
+</resources>
+

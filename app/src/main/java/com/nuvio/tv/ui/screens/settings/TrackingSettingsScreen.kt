@@ -501,6 +501,11 @@ internal fun TrackingSettingsOverview(
     val mdbListPresentation = mdbListConnectionPresentation(mdbListState)
     val traktConnected = traktState.mode == TraktConnectionMode.CONNECTED
     val traktProgressActive = trackingState.watchProgressSource == WatchProgressSource.TRAKT
+    val showAccountRows = notflixSettingsGroupVisible("TrackingSettingsScreen.trakt_name", "TrackingSettingsScreen.simkl_name", "TrackingSettingsScreen.mdblist_name")
+    val showSourceRows = notflixSettingsGroupVisible("TrackingSettingsScreen.trakt_library_source_title", "TrackingSettingsScreen.trakt_watch_progress_title", "TrackingSettingsScreen.trakt_more_like_this_source_title")
+    val showTraktRows = notflixSettingsGroupVisible("TrackingSettingsScreen.trakt_continue_watching_window", "TrackingSettingsScreen.trakt_comments_title")
+    val showSimklRows = notflixSettingsGroupVisible("TrackingSettingsScreen.tracking_simkl_anime_id_title")
+    val showMdbListRows = notflixSettingsGroupVisible("TrackingSettingsScreen.mdblist_library_lists")
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -519,12 +524,13 @@ internal fun TrackingSettingsOverview(
                 contentPadding = PaddingValues(bottom = NuvioTheme.spacing.md),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                item(key = "tracking_accounts") {
+                if (showAccountRows) item(key = "tracking_accounts") {
                     SettingsGroupCard(
                         title = stringResource(R.string.tracking_accounts_title),
                         subtitle = stringResource(R.string.tracking_accounts_subtitle)
                     ) {
                         SettingsActionRow(
+                            settingId = "TrackingSettingsScreen.trakt_name",
                             title = stringResource(R.string.trakt_name),
                             subtitle = traktPresentation.subtitle,
                             value = traktPresentation.value,
@@ -537,6 +543,7 @@ internal fun TrackingSettingsOverview(
                                 .testTag(TrackingSettingsTestTags.TRAKT_PROVIDER)
                         )
                         SettingsActionRow(
+                            settingId = "TrackingSettingsScreen.simkl_name",
                             title = stringResource(R.string.simkl_name),
                             subtitle = simklPresentation.subtitle,
                             value = simklPresentation.value,
@@ -549,6 +556,7 @@ internal fun TrackingSettingsOverview(
                                 .testTag(TrackingSettingsTestTags.SIMKL_PROVIDER)
                         )
                         SettingsActionRow(
+                            settingId = "TrackingSettingsScreen.mdblist_name",
                             title = stringResource(R.string.mdblist_name),
                             subtitle = mdbListPresentation.subtitle,
                             value = mdbListPresentation.value,
@@ -562,12 +570,13 @@ internal fun TrackingSettingsOverview(
                         )
                     }
                 }
-                item(key = "tracking_sources") {
+                if (showSourceRows) item(key = "tracking_sources") {
                     SettingsGroupCard(
                         title = stringResource(R.string.tracking_sources_title),
                         subtitle = stringResource(R.string.tracking_sources_subtitle)
                     ) {
                         SettingsActionRow(
+                            settingId = "TrackingSettingsScreen.trakt_library_source_title",
                             title = stringResource(R.string.trakt_library_source_title),
                             subtitle = stringResource(R.string.trakt_library_source_subtitle),
                             value = librarySourceLabel(trackingState.librarySourceMode),
@@ -578,6 +587,7 @@ internal fun TrackingSettingsOverview(
                                 .testTag(TrackingSettingsTestTags.LIBRARY_SOURCE)
                         )
                         SettingsActionRow(
+                            settingId = "TrackingSettingsScreen.trakt_watch_progress_title",
                             title = stringResource(R.string.trakt_watch_progress_title),
                             subtitle = stringResource(R.string.trakt_watch_progress_subtitle),
                             value = watchProgressSourceLabel(trackingState.watchProgressSource),
@@ -589,6 +599,7 @@ internal fun TrackingSettingsOverview(
                         )
                         if (traktConnected || simklState.mode == SimklConnectionMode.CONNECTED) {
                             SettingsActionRow(
+                                settingId = "TrackingSettingsScreen.trakt_more_like_this_source_title",
                                 title = stringResource(R.string.trakt_more_like_this_source_title),
                                 subtitle = stringResource(R.string.trakt_more_like_this_source_subtitle),
                                 value = moreLikeThisSourceLabel(traktState.moreLikeThisSource),
@@ -601,13 +612,14 @@ internal fun TrackingSettingsOverview(
                         }
                     }
                 }
-                if (traktConnected) {
+                if (traktConnected && showTraktRows) {
                     item(key = "tracking_trakt_features") {
                         SettingsGroupCard(
                             title = stringResource(R.string.tracking_trakt_features_title),
                             subtitle = stringResource(R.string.tracking_trakt_features_subtitle)
                         ) {
                             SettingsActionRow(
+                                settingId = "TrackingSettingsScreen.trakt_continue_watching_window",
                                 title = stringResource(R.string.trakt_continue_watching_window),
                                 subtitle = if (!traktProgressActive) {
                                     stringResource(R.string.tracking_trakt_progress_required)
@@ -622,6 +634,7 @@ internal fun TrackingSettingsOverview(
                                     .testTag(TrackingSettingsTestTags.CONTINUE_WATCHING)
                             )
                             SettingsToggleRow(
+                                settingId = "TrackingSettingsScreen.trakt_comments_title",
                                 title = stringResource(R.string.trakt_comments_title),
                                 subtitle = stringResource(R.string.trakt_comments_subtitle),
                                 checked = traktState.showMetaComments,
@@ -634,13 +647,14 @@ internal fun TrackingSettingsOverview(
                         }
                     }
                 }
-                if (simklState.mode == SimklConnectionMode.CONNECTED) {
+                if (simklState.mode == SimklConnectionMode.CONNECTED && showSimklRows) {
                     item(key = "tracking_simkl_features") {
                         SettingsGroupCard(
                             title = stringResource(R.string.tracking_simkl_features_title),
                             subtitle = stringResource(R.string.tracking_simkl_features_subtitle)
                         ) {
                             SettingsActionRow(
+                                settingId = "TrackingSettingsScreen.tracking_simkl_anime_id_title",
                                 title = stringResource(R.string.tracking_simkl_anime_id_title),
                                 subtitle = stringResource(R.string.tracking_simkl_anime_id_subtitle),
                                 value = animeIdPreferenceLabel(trackingState.simklAnimeIdPreference),
@@ -650,13 +664,14 @@ internal fun TrackingSettingsOverview(
                         }
                     }
                 }
-                if (mdbListState.isConnected) {
+                if (mdbListState.isConnected && showMdbListRows) {
                     item(key = "tracking_mdblist_features") {
                         SettingsGroupCard(
                             title = stringResource(R.string.tracking_mdblist_features_title),
                             subtitle = stringResource(R.string.tracking_mdblist_features_subtitle)
                         ) {
                             SettingsActionRow(
+                                settingId = "TrackingSettingsScreen.mdblist_library_lists",
                                 title = stringResource(R.string.mdblist_library_lists),
                                 subtitle = stringResource(R.string.mdblist_library_lists_description),
                                 value = mdbListLibraryLists.lists.takeIf { it.isNotEmpty() }?.let { lists ->

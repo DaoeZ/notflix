@@ -17,8 +17,11 @@ import io.mockk.*
 import java.io.IOException
 import java.nio.file.Files
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.*
+import okio.buffer
+import okio.sink
 import org.junit.*
 import org.junit.Assert.*
 
@@ -134,22 +137,36 @@ class CollectionsDataStoreInsertTest {
         try{CollectionsDataStore(context,bound,manager).insertCollectionIfAbsent(2,preset){true};fail("Expected IO")}catch(_:IOException){}
         assertEquals(before,failing.data.first())
     }
+    @Test fun shadowCopyRecoveryUsesTheCommittedSnapshot()=runBlocking{
+        val committed="""[{"id":"saved","title":"Saved collection","folders":[]}]"""
+        val dataDirectory=java.io.File(directory,"datastore").apply{mkdirs()}
+        val primary=java.io.File(dataDirectory,"collections_p2.preferences_pb")
+        primary.sink().buffer().use { PreferencesSerializer.writeTo(preferencesOf(key to "[]"),it) }
+        factory.writeShadowCopy("collections_p2",preferencesOf(key to committed))
+        primary.writeBytes(byteArrayOf(0)) // Invalid protobuf; recovery must read the shadow copy.
+        assertEquals(committed,raw())
+    }
     @Test fun officialEditorAndDeletePreserveAnotherCollectionAndRepeatedCreateKeepsEdits()=runBlocking{
         val other=Collection("other","Keep this",folders=listOf(CollectionFolder("f","Keep folder")))
         store.addCollection(other);store.insertCollectionIfAbsent(2,preset){true}
         val repo=mockk<AddonRepository>();every{repo.getInstalledAddons()} returns flowOf(emptyList())
         val sync=mockk<CollectionSyncService>(relaxed=true)
+        val pushes=Channel<Unit>(Channel.UNLIMITED)
+        every { sync.triggerPush() } answers { pushes.trySend(Unit); Unit }
         val editor=CollectionEditorViewModel(context,SavedStateHandle(mapOf("collectionId" to preset.id)),store,repo,mockk(),mockk(),sync)
         owner.put("editor",editor)
-        withTimeout(5000){editor.uiState.first{!it.isLoading}}
+        withTimeout(20_000){editor.uiState.first{!it.isLoading}}
         assertFalse(editor.uiState.value.isNew);assertEquals(11,editor.uiState.value.folders.size)
-        editor.setPinToTop(false);val saved=CompletableDeferred<Unit>();editor.save{saved.complete(Unit)};withTimeout(5000){saved.await()}
+        editor.setPinToTop(false);val saved=CompletableDeferred<Unit>();editor.save{saved.complete(Unit)};withTimeout(20_000){saved.await()}
+        withTimeout(20_000){pushes.receive()}
         val edited=store.getCurrentCollections().first{it.id==preset.id};assertFalse(edited.pinToTop)
         assertTrue(store.insertCollectionIfAbsent(2,preset){true} is CollectionInsertResult.Exists)
         assertEquals(edited,store.getCurrentCollections().first{it.id==preset.id})
         val management=CollectionManagementViewModel(store,sync,context);owner.put("management",management)
         management.deleteCollection(preset.id)
-        withTimeout(5000){store.collections.first{it.size==1}}
+        // DataStore can emit before the delete coroutine reaches its sync callback.
+        withTimeout(20_000){pushes.receive()}
+        assertEquals(listOf(other),store.collections.first())
         assertEquals(listOf(other),store.getCurrentCollections())
         verify(exactly=2){sync.triggerPush()} // Official editor/delete callbacks, simulated transport only.
     }

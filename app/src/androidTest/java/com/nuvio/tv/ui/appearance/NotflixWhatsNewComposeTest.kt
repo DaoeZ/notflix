@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -65,6 +66,8 @@ class NotflixWhatsNewComposeTest {
         compose.onNodeWithText("Existing dialog").assertIsDisplayed()
         compose.onNodeWithTag("notflix-whats-new-ack").assertDoesNotExist()
         compose.runOnIdle { existing.value = false }
+        // The host waits 300 ms of real time for the closing window to give up focus.
+        compose.waitUntil(3_000) { compose.onAllNodesWithTag("notflix-whats-new-ack").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("notflix-whats-new-ack").assertIsDisplayed().assertIsFocused()
     }
 
@@ -76,7 +79,8 @@ class NotflixWhatsNewComposeTest {
         compose.onNodeWithTag("notflix-whats-new-ack").assertIsDisplayed()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithTag("notflix-whats-new-ack").assertIsDisplayed().assertIsFocused()
-        compose.onNodeWithTag("notflix-whats-new-ack").performKeyInput { pressKey(Key.Back) }
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+            .sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK) // Back must reach the Dialog window, as on the remote.
         compose.onNodeWithTag("notflix-whats-new-ack").assertDoesNotExist()
     }
 

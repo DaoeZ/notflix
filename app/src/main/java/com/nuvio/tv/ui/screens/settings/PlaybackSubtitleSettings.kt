@@ -54,6 +54,7 @@ internal fun PlaybackSubtitlesSection(
 
     SettingsSectionLabel(text = stringResource(R.string.sub_languages_label))
     SettingsActionRow(
+        settingId = "PlaybackSubtitleSettings.sub_preferred_lang",
         title = stringResource(R.string.sub_preferred_lang),
         subtitle = null,
         value = subtitleLanguageLabel(style),
@@ -61,6 +62,7 @@ internal fun PlaybackSubtitlesSection(
         onClick = { onOpenDialog(PlaybackDialog.SUBTITLE_LANGUAGE) }
     )
     SettingsActionRow(
+        settingId = "PlaybackSubtitleSettings.sub_secondary_lang",
         title = stringResource(R.string.sub_secondary_lang),
         subtitle = null,
         value = style.secondaryPreferredLanguage
@@ -69,9 +71,10 @@ internal fun PlaybackSubtitlesSection(
         enabled = languageSelectionEnabled,
         onClick = { onOpenDialog(PlaybackDialog.SECONDARY_SUBTITLE_LANGUAGE) }
     )
-    autoSyncSettingsItems(enabled = enabled) // AutoSync hook
+    if (notflixSettingsGroupVisible("AutoSyncSettingsItems.")) autoSyncSettingsItems(enabled = enabled)
 
     SettingsToggleRow(
+        settingId = "PlaybackSubtitleSettings.sub_use_forced_subtitles",
         title = stringResource(R.string.sub_use_forced_subtitles),
         subtitle = stringResource(R.string.sub_use_forced_subtitles_desc),
         checked = style.useForcedSubtitles,
@@ -79,6 +82,7 @@ internal fun PlaybackSubtitlesSection(
         enabled = enabled
     )
     SettingsToggleRow(
+        settingId = "PlaybackSubtitleSettings.sub_show_only_preferred_languages",
         title = stringResource(R.string.sub_show_only_preferred_languages),
         subtitle = stringResource(R.string.sub_show_only_preferred_languages_desc),
         checked = style.showOnlyPreferredLanguages,
@@ -86,6 +90,7 @@ internal fun PlaybackSubtitlesSection(
         enabled = enabled
     )
     SettingsToggleRow(
+        settingId = "PlaybackSubtitleSettings.sub_strip_sdh",
         title = stringResource(R.string.sub_strip_sdh),
         subtitle = stringResource(R.string.sub_strip_sdh_desc),
         checked = style.stripSdh,
@@ -95,6 +100,7 @@ internal fun PlaybackSubtitlesSection(
 
     SettingsSectionLabel(text = stringResource(R.string.sub_style_label))
     SliderSettingsItem(
+        settingId = "PlaybackSubtitleSettings.sub_size",
         title = stringResource(R.string.sub_size),
         value = style.size,
         valueText = "${style.size}%",
@@ -105,6 +111,7 @@ internal fun PlaybackSubtitlesSection(
         enabled = enabled
     )
     SliderSettingsItem(
+        settingId = "PlaybackSubtitleSettings.sub_vertical_offset",
         title = stringResource(R.string.sub_vertical_offset),
         value = style.verticalOffset,
         valueText = "${style.verticalOffset}%",
@@ -115,6 +122,7 @@ internal fun PlaybackSubtitlesSection(
         enabled = enabled
     )
     SettingsToggleRow(
+        settingId = "PlaybackSubtitleSettings.sub_bold",
         title = stringResource(R.string.sub_bold),
         subtitle = stringResource(R.string.sub_bold_sub),
         checked = style.bold,
@@ -122,12 +130,14 @@ internal fun PlaybackSubtitlesSection(
         enabled = enabled
     )
     ColorSettingsItem(
+        settingId = "PlaybackSubtitleSettings.sub_text_color",
         title = stringResource(R.string.sub_text_color),
         currentColor = Color(style.textColor),
         onClick = { onOpenDialog(PlaybackDialog.SUBTITLE_TEXT_COLOR) },
         enabled = enabled
     )
     ColorSettingsItem(
+        settingId = "PlaybackSubtitleSettings.sub_bg_color",
         title = stringResource(R.string.sub_bg_color),
         currentColor = Color(style.backgroundColor),
         showTransparent = style.backgroundColor == Color.Transparent.toArgb(),
@@ -135,6 +145,7 @@ internal fun PlaybackSubtitlesSection(
         enabled = enabled
     )
     SettingsToggleRow(
+        settingId = "PlaybackSubtitleSettings.sub_outline",
         title = stringResource(R.string.sub_outline),
         subtitle = stringResource(R.string.sub_outline_sub),
         checked = style.outlineEnabled,
@@ -143,6 +154,7 @@ internal fun PlaybackSubtitlesSection(
     )
     if (style.outlineEnabled) {
         ColorSettingsItem(
+            settingId = "PlaybackSubtitleSettings.sub_outline_color",
             title = stringResource(R.string.sub_outline_color),
             currentColor = Color(style.outlineColor),
             onClick = { onOpenDialog(PlaybackDialog.SUBTITLE_OUTLINE_COLOR) },
@@ -150,6 +162,7 @@ internal fun PlaybackSubtitlesSection(
         )
     }
     SettingsToggleRow(
+        settingId = "PlaybackSubtitleSettings.sub_hdr_style",
         title = stringResource(R.string.sub_hdr_style),
         subtitle = stringResource(R.string.sub_hdr_style_sub),
         checked = style.hdrStyleEnabled,
@@ -158,12 +171,14 @@ internal fun PlaybackSubtitlesSection(
     )
     if (style.hdrStyleEnabled) {
         ColorSettingsItem(
+            settingId = "PlaybackSubtitleSettings.sub_hdr_text_color",
             title = stringResource(R.string.sub_hdr_text_color),
             currentColor = Color(style.hdrTextColor),
             onClick = { onOpenDialog(PlaybackDialog.SUBTITLE_HDR_TEXT_COLOR) },
             enabled = enabled
         )
         SliderSettingsItem(
+            settingId = "PlaybackSubtitleSettings.sub_hdr_brightness",
             title = stringResource(R.string.sub_hdr_brightness),
             value = style.hdrBrightness,
             valueText = "${style.hdrBrightness}%",
@@ -177,6 +192,7 @@ internal fun PlaybackSubtitlesSection(
 
     SettingsSectionLabel(text = stringResource(R.string.sub_advanced_section))
     SettingsToggleRow(
+        settingId = "PlaybackSubtitleSettings.sub_libass",
         title = stringResource(R.string.sub_libass),
         subtitle = stringResource(R.string.sub_libass_sub),
         checked = settings.useLibass,
@@ -185,6 +201,7 @@ internal fun PlaybackSubtitlesSection(
     )
     if (settings.useLibass) {
         SettingsActionRow(
+            settingId = "PlaybackSubtitleSettings.sub_libass_render_scale",
             title = stringResource(R.string.sub_libass_render_scale),
             subtitle = stringResource(R.string.sub_libass_render_scale_sub),
             value = settings.libassRenderScale.label,

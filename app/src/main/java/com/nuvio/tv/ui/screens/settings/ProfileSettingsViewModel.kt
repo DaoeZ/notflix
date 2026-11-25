@@ -11,6 +11,10 @@ import com.nuvio.tv.data.remote.supabase.SupabaseProfilePinVerifyResult
 import com.nuvio.tv.domain.model.UserProfile
 import com.nuvio.tv.domain.repository.HiddenTitlesRepository
 import com.nuvio.tv.domain.repository.MetaRepository
+import com.nuvio.tv.domain.model.ContentType
+import com.nuvio.tv.core.tmdb.TmdbService
+import com.nuvio.tv.core.tmdb.TmdbMetadataService
+import com.nuvio.tv.data.local.TmdbSettingsDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,10 +24,27 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class HiddenTitleEntry(val key: String, val title: String)
+data class HiddenTitleEntry(val key: String, val title: String, val legacyTitle: String = title)
+
+internal fun hiddenTitleLabel(key: String, storedTitle: String?, cachedTitle: String?): String =
+    storedTitle?.takeIf { it.isNotBlank() } ?: cachedTitle?.takeIf { it.isNotBlank() } ?: key.substringAfter(':', key)
+
+/** Existing memory caches only: an old hidden key must never trigger metadata/network work. */
+internal fun cachedHiddenTmdbTitle(key: String, language: String, tmdb: TmdbService, metadata: TmdbMetadataService): String? {
+    val type = ContentType.fromString(key.substringBefore(':'))
+    if (type !in setOf(ContentType.MOVIE, ContentType.SERIES, ContentType.TV)) return null
+    val id = key.substringAfter(':', "")
+    val tmdbId = if (id.startsWith("tmdb:")) id.removePrefix("tmdb:").toIntOrNull() else tmdb.cachedTmdbId(id)
+    return tmdbId?.let {
+        metadata.cachedLocalizedTitle(it.toString(), type, language)?.takeIf(String::isNotBlank)
+            ?: metadata.cachedOriginalTitle(it.toString(), type)?.takeIf(String::isNotBlank)
+    }
+}
 
 @HiltViewModel
 class ProfileSettingsViewModel @Inject constructor(
@@ -32,10 +53,14 @@ class ProfileSettingsViewModel @Inject constructor(
     private val ageLimitStore: ProfileAgeLimitStore,
     profileLockStateDataStore: ProfileLockStateDataStore,
     private val hiddenTitlesRepository: HiddenTitlesRepository,
-    private val metaRepository: MetaRepository
+    private val metaRepository: MetaRepository,
+    private val tmdbService: TmdbService,
+    private val tmdbMetadataService: TmdbMetadataService,
+    tmdbSettings: TmdbSettingsDataStore
 ) : ViewModel() {
 
     val profiles: StateFlow<List<UserProfile>> = profileManager.profiles
+    val settingsProfileId: StateFlow<Int> = profileManager.activeProfileId
 
     val activeProfile: StateFlow<UserProfile?> = combine(profiles, profileManager.activeProfileId) { list, id ->
         list.firstOrNull { it.id == id }
@@ -53,14 +78,20 @@ class ProfileSettingsViewModel @Inject constructor(
 
     /** Títulos ocultos del perfil activo, con nombre cacheado cuando existe. */
     val hiddenTitles: StateFlow<List<HiddenTitleEntry>> = profileManager.activeProfileId
-        .flatMapLatest { hiddenTitlesRepository.observe(it) }
-        .map { keys ->
-            keys.sorted().map { key ->
+        .flatMapLatest { profile -> combine(hiddenTitlesRepository.observeMetadata(profile), tmdbSettings.settings,
+            tmdbMetadataService.enrichmentVersion) { metadata, settings, _ -> metadata to settings.language } }
+        .map { (metadata, language) ->
+            metadata.keys.sorted().map { key ->
                 val parts = key.split(":", limit = 2)
                 val cached = if (parts.size == 2) metaRepository.getCachedMeta(parts[0], parts[1]) else null
-                HiddenTitleEntry(key, cached?.name?.takeIf { it.isNotBlank() } ?: parts.getOrElse(1) { key })
+                val known = metadata[key]?.title?.takeIf(String::isNotBlank)
+                    ?: cached?.name?.takeIf(String::isNotBlank)
+                    ?: cachedHiddenTmdbTitle(key, language, tmdbService, tmdbMetadataService)
+                HiddenTitleEntry(key, hiddenTitleLabel(key, known, null),
+                    cached?.name?.takeIf { it.isNotBlank() } ?: parts.getOrElse(1) { key })
             }
         }
+        .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun unhideTitle(key: String) {

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Профил и акаунт</string>
+    <string name="notflix_settings_home">Начален екран</string>
+    <string name="notflix_settings_connected_accounts">Свързани акаунти</string>
+    <string name="notflix_settings_system">Система</string>
+    <string name="notflix_settings_advanced_options">Разширени опции</string>
+    <string name="notflix_settings_trailers">Трейлъри</string>
+    <string name="notflix_settings_updates">Актуализации</string>
+    <string name="notflix_settings_home_collection">Начална колекция Notflix</string>
+    <string name="notflix_settings_ratings">Оценки</string>
+    <string name="notflix_settings_metadata">Данни и каталози</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

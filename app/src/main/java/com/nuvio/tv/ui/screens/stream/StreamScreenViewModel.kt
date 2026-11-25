@@ -410,6 +410,7 @@ class StreamScreenViewModel @Inject constructor(
         streamLoadJob = newScope.launch {
             streamLoadCompleted = false
             val playerSettings = playerSettingsDataStore.playerSettings.first()
+            val strictPriority = playerSettings.streamAutoPlayMode == StreamAutoPlayMode.PRIORITY_LIST
             if (manualSelection) {
                 directAutoPlayModeInitializedForSession = true
                 directAutoPlayFlowEnabledForSession = false
@@ -472,7 +473,7 @@ class StreamScreenViewModel @Inject constructor(
                 }
             }
 
-            if (!autoPlayHandledForSession && playerSettings.streamReuseLastLinkEnabled) {
+            if (!strictPriority && !autoPlayHandledForSession && playerSettings.streamReuseLastLinkEnabled) {
                 val cached = streamLinkCacheDataStore.getValid(
                     contentKey = streamCacheKey,
                     maxAgeMs = playerSettings.streamReuseLastLinkCacheHours * 60L * 60L * 1000L
@@ -540,7 +541,7 @@ class StreamScreenViewModel @Inject constructor(
             val installedAddonOrder = installedAddons.map { it.displayName }
             val directDebridSourceNames = emptyList<String>()
             val directDebridAvailable = false
-            val persistedBingeGroup = if (playerSettings.streamAutoPlayPreferBingeGroupForNextEpisode &&
+            val persistedBingeGroup = if (!strictPriority && playerSettings.streamAutoPlayPreferBingeGroupForNextEpisode &&
                 playerSettings.streamAutoPlayReuseBingeGroup) {
                 contentId?.let { bingeGroupCacheDataStore.get(it) }
             } else null
@@ -552,7 +553,12 @@ class StreamScreenViewModel @Inject constructor(
             } else null
 
             val selectionMutex = Mutex()
-            suspend fun applySuccess(addonStreamGroups: List<AddonStreams>, isAllLoaded: Boolean) = selectionMutex.withLock {
+            var checkedPriorityRules = 0
+            suspend fun applySuccess(
+                addonStreamGroups: List<AddonStreams>,
+                isAllLoaded: Boolean,
+                completedSources: Set<String> = emptySet()
+            ) = selectionMutex.withLock {
                 val orderedAddonStreams = StreamAutoPlaySelector.orderAddonStreams(
                     addonStreamGroups,
                     installedAddonOrder,
@@ -638,11 +644,14 @@ class StreamScreenViewModel @Inject constructor(
                     )
                 } else null
 
-                // Auto-select only after all addons have responded or the
-                // configured timeout has elapsed. This gives slower addons a
-                // chance to return higher-quality streams before the selector
-                // picks from whatever is available.
-                val shouldAutoSelect = !autoPlayHandledForSession && !resolvedAutoPlayTarget && isAllLoaded
+                val rules = playerSettings.streamAutoPlayPriorityList
+                val eligibleRules = if (strictPriority && !isAllLoaded) {
+                    StreamAutoPlaySelector.settledPriorityRules(rules, completedSources, installedAddonOrder)
+                } else rules
+                val hasNewSettledRules = strictPriority && eligibleRules.size > checkedPriorityRules
+                if (hasNewSettledRules) checkedPriorityRules = eligibleRules.size
+                val shouldAutoSelect = !autoPlayHandledForSession && !resolvedAutoPlayTarget &&
+                    (isAllLoaded || hasNewSettledRules)
                 val selectedAutoPlayStream = if (earlyBingeGroupMatch != null) {
                     earlyBingeGroupMatch
                 } else if (!shouldAutoSelect) {
@@ -659,7 +668,8 @@ class StreamScreenViewModel @Inject constructor(
                             selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
                             preferredBingeGroup = persistedBingeGroup,
                             preferBingeGroupInSelection = persistedBingeGroup != null,
-                            priorityList = playerSettings.streamAutoPlayPriorityList
+                            priorityList = eligibleRules,
+                            carryPriorityAudioLanguage = true
                         )
                     }.takeUnless { autoPlayHandledForSession || resolvedAutoPlayTarget }
                 }
@@ -809,7 +819,7 @@ class StreamScreenViewModel @Inject constructor(
                     when (result) {
                         is NetworkResult.Success -> {
                             lastSuccessData = result.data
-                            applySuccess(result.data, isAllLoaded = false)
+                            applySuccess(result.data, isAllLoaded = false, completedSources = result.completedSources)
                             launchDirectDebridPreparationIfNeeded(result.data)
 
                             if (autoSelectTriggered || resolvedAutoPlayTarget || autoPlayHandledForSession) {
@@ -936,8 +946,11 @@ class StreamScreenViewModel @Inject constructor(
             // - unlimited: check each addon response as it arrives; if a match
             //   is found use it immediately; otherwise keep waiting until all
             //   addons finish or the hard timeout (60s) forces a fallback.
-            val timeoutMs = playerSettings.streamAutoPlayTimeoutSeconds * 1_000L
-            if (PlayerSettings.isBoundedTimeout(playerSettings.streamAutoPlayTimeoutSeconds)) {
+            val timeoutSeconds = playerSettings.streamAutoPlayTimeoutSeconds
+            val timeoutMs = if (strictPriority) {
+                StreamAutoPlayPolicy.priorityTimeoutMs(timeoutSeconds)
+            } else timeoutSeconds * 1_000L
+            if (strictPriority || PlayerSettings.isBoundedTimeout(timeoutSeconds)) {
                 delay(timeoutMs)
             }
             timeoutElapsed = true
@@ -1594,7 +1607,8 @@ class StreamScreenViewModel @Inject constructor(
             fileIdx = stream.getEffectiveFileIdx(),
             sources = stream.sources,
             contentLanguage = contentLanguage,
-            audioDelayMs = stream.behaviorHints?.audioDelayMs
+            audioDelayMs = stream.behaviorHints?.audioDelayMs,
+            autoPlayAudioLanguage = stream.autoPlayAudioLanguage
         )
         StreamSidecarSubtitles.set(playbackUrlFor(playbackInfo), stream.subtitles)
 
@@ -2129,6 +2143,7 @@ data class StreamPlaybackInfo(
     val sources: List<String>? = null,
     val contentLanguage: String? = null,
     val audioDelayMs: Int? = null,
+    val autoPlayAudioLanguage: String? = null,
     val isServerStream: Boolean = false
 )
 

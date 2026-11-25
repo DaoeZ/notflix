@@ -4,6 +4,14 @@ import com.nuvio.tv.data.local.PlayerSettings
 import com.nuvio.tv.data.local.StreamAutoPlayMode
 
 object StreamAutoPlayPolicy {
+    // All add-ons can finish early. Priority mode never uses an instant timeout on a partial batch.
+    internal fun priorityTimeoutMs(timeoutSeconds: Int): Long =
+        if (timeoutSeconds == com.nuvio.tv.data.local.PlayerSettings.STREAM_AUTOPLAY_TIMEOUT_UNLIMITED) {
+            60_000L
+        } else {
+            timeoutSeconds.coerceAtLeast(12) * 1_000L
+        }
+
     fun isEffectivelyEnabled(playerSettings: PlayerSettings): Boolean {
         if (playerSettings.streamReuseLastLinkEnabled) return true
         if (playerSettings.streamAutoPlayReuseBingeGroup &&

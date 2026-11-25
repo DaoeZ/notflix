@@ -5,6 +5,12 @@ import com.nuvio.tv.ui.navigation.Screen
 
 internal enum class BillboardAction { PLAY, INFO }
 
+internal fun PreviewEnvironment.billboardRotationReady(): Boolean =
+    binding != null && valid && resumed && windowFocused && !introActive && !(rotationBlocked ?: blocked)
+
+internal fun notflixBillboardRotates(ready: Boolean, focused: Boolean, ambient: Boolean, count: Int): Boolean =
+    ready && !focused && !ambient && count > 1
+
 /** Only project the official hero selection; never fill from another catalog or fetch. */
 internal fun notflixBillboardItems(items: List<MetaPreview>): List<MetaPreview> =
     items.distinctBy(::notflixMetaKey).take(6)

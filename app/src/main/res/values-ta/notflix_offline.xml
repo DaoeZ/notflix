@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">பதிவிறக்கங்கள்</string>
+    <string name="notflix_offline_receive">தொலைபேசியிலிருந்து பெறு</string>
+    <string name="notflix_offline_pairing">கைமுறை உள்ளீடு: %1$s · %2$s. குறியீடு 5 நிமிடங்களுக்குச் செல்லுபடியாகும்.</string>
+    <string name="notflix_offline_scan">Notflix பதிவிறக்கங்களைத் திறக்க உங்கள் தொலைபேசி கேமராவால் ஸ்கேன் செய்யவும்.</string>
+    <string name="notflix_offline_expired">அமர்வு காலாவதியானது. மீண்டும் இணைக்க “தொலைபேசியிலிருந்து பெறு” என்பதைத் தேர்ந்தெடுக்கவும்.</string>
+    <string name="notflix_offline_empty">மூலங்களிலிருந்து ஒரு வீடியோவைப் பதிவிறக்கவும் அல்லது தொலைபேசியிலிருந்து அனுப்பவும்.</string>
+    <string name="notflix_offline_profile">இந்த சுயவிவரத்தில் பதிவிறக்கங்கள் கிடைக்காது.</string>
+    <string name="notflix_offline_unavailable">கோப்பு கிடைக்கவில்லை</string>
+    <string name="notflix_offline_confirm_remove">அகற்றுவதை உறுதிசெய்</string>
+    <string name="notflix_offline_choose_source">பதிவிறக்க ஒரு மூலத்தைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="notflix_offline_started">பதிவிறக்கம் வரிசையில் சேர்க்கப்பட்டது</string>
+    <string name="notflix_offline_failed">இந்தக் கோப்பைத் திறக்கவோ பதிவிறக்கவோ முடியவில்லை. நேரடி வீடியோ கோப்பை முயற்சிக்கவும்.</string>
+</resources>

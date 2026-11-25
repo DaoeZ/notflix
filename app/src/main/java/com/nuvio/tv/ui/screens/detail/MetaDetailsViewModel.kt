@@ -83,6 +83,7 @@ private const val TAG = "MetaDetailsViewModel"
 class MetaDetailsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val metaRepository: MetaRepository,
+    private val streamRepository: com.nuvio.tv.domain.repository.StreamRepository,
     private val tmdbSettingsDataStore: TmdbSettingsDataStore,
     private val tmdbService: TmdbService,
     private val tmdbMetadataService: TmdbMetadataService,
@@ -134,6 +135,8 @@ class MetaDetailsViewModel @Inject constructor(
 
     private var idleTimerJob: Job? = null
     private var trailerFetchJob: Job? = null
+    private var streamPrewarmJob: Job? = null
+    private var lastPrewarmedKey: String? = null
     private var moreLikeThisJob: Job? = null
     private var collectionJob: Job? = null
 
@@ -363,6 +366,7 @@ class MetaDetailsViewModel @Inject constructor(
             MetaDetailsEvent.OnUserInteraction -> handleUserInteraction()
             MetaDetailsEvent.OnPlayButtonFocused -> handlePlayButtonFocused()
             MetaDetailsEvent.OnTrailerButtonClick -> handleTrailerButtonClick()
+            is MetaDetailsEvent.OnPlaySeasonRecap -> handlePlaySeasonRecap(event.seasonNumber)
             MetaDetailsEvent.OnTrailerEnded -> handleTrailerEnded()
             is MetaDetailsEvent.OnSharedTrailerSelected -> handleSharedTrailerSelected(event.trailer)
             MetaDetailsEvent.OnDismissSharedTrailer -> dismissSharedTrailerOverlay()
@@ -1008,6 +1012,7 @@ class MetaDetailsViewModel @Inject constructor(
 
         // Start fetching trailer after meta is loaded
         fetchTrailerUrl()
+        scheduleSpeculativeStreamPrewarm()
 
         if (traktCommentsEnabled && traktAuthenticated && supportsComments(meta)) {
             loadComments(meta)
@@ -1866,6 +1871,25 @@ class MetaDetailsViewModel @Inject constructor(
         }
     }
 
+    private var shownLocaleTag = com.nuvio.tv.LocaleCache.localeTag
+    private var trailerAppLanguage: String? = null
+
+    /** The play button keeps its resolved text; rebuild it when the app language changed with this page open. */
+    fun notifyLocaleChanged(appLanguage: String? = null) {
+        val tag = com.nuvio.tv.LocaleCache.localeTag
+        if (tag != shownLocaleTag) {
+            shownLocaleTag = tag
+            calculateNextToWatch()
+        }
+        if (trailerAppLanguage != appLanguage) {
+            trailerAppLanguage = appLanguage
+            idleTimerJob?.cancel()
+            trailerHasPlayed = false
+            _uiState.update { it.copy(trailerUrl = null, trailerAudioUrl = null) }
+            fetchTrailerUrl()
+        }
+    }
+
     private fun calculateNextToWatch() {
         val meta = _uiState.value.meta ?: return
         val progressMap = _uiState.value.episodeProgressMap
@@ -2492,19 +2516,28 @@ class MetaDetailsViewModel @Inject constructor(
 
             val isWatched = _uiState.value.episodeProgressMap[season to episode]?.isCompleted() == true
                 || _uiState.value.watchedEpisodes.contains(season to episode)
-            runCatching {
+            val key = season to episode
+            val wasOptimisticMark = key in _optimisticMarks
+            val wasOptimisticUnmark = key in _optimisticUnmarks
+            try {
                 if (isWatched) {
-                    _optimisticMarks -= season to episode
-                    _optimisticUnmarks += season to episode
+                    _optimisticMarks -= key
+                    _optimisticUnmarks += key
                     watchProgressRepository.removeFromHistory(_effectiveContentId.value, videoId = video.id, season = season, episode = episode)
                     showMessage(localizedContext.getString(R.string.detail_episode_marked_unwatched))
                 } else {
-                    _optimisticUnmarks -= season to episode
-                    _optimisticMarks += season to episode
+                    _optimisticUnmarks -= key
+                    _optimisticMarks += key
                     watchProgressRepository.markAsCompleted(buildCompletedEpisodeProgress(meta, video))
                     showMessage(localizedContext.getString(R.string.detail_episode_marked_watched))
                 }
-            }.onFailure { error ->
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                if (wasOptimisticMark) _optimisticMarks += key else _optimisticMarks -= key
+                if (wasOptimisticUnmark) _optimisticUnmarks += key else _optimisticUnmarks -= key
+                throw e
+            } catch (error: Exception) {
+                if (wasOptimisticMark) _optimisticMarks += key else _optimisticMarks -= key
+                if (wasOptimisticUnmark) _optimisticUnmarks += key else _optimisticUnmarks -= key
                 showMessage(
                     message = error.message ?: context.getString(com.nuvio.tv.R.string.detail_error_update_episode_watched_failed),
                     isError = true
@@ -2558,6 +2591,8 @@ class MetaDetailsViewModel @Inject constructor(
             }
 
             val optimisticKeys = unwatched.map { it.season!! to it.episode!! }.toSet()
+            val previousMarks = optimisticKeys.filter { it in _optimisticMarks }.toSet()
+            val previousUnmarks = optimisticKeys.filter { it in _optimisticUnmarks }.toSet()
             _optimisticUnmarks -= optimisticKeys
             _optimisticMarks += optimisticKeys
 
@@ -2566,18 +2601,40 @@ class MetaDetailsViewModel @Inject constructor(
                 it.copy(episodeWatchedPendingKeys = it.episodeWatchedPendingKeys + pendingKeys)
             }
 
-            runCatching {
+            var succeeded = false
+            var failureMessage: String? = null
+            try {
                 val progressList = unwatched.map { buildCompletedEpisodeProgress(meta, it) }
                 watchProgressRepository.markAsCompletedBatch(progressList)
-            }.onFailure { error ->
+                succeeded = true
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                _optimisticMarks -= optimisticKeys
+                _optimisticMarks += previousMarks
+                _optimisticUnmarks -= optimisticKeys
+                _optimisticUnmarks += previousUnmarks
+                throw e
+            } catch (error: Exception) {
                 Log.w(TAG, "Failed to batch mark season $season as watched: ${error.message}")
+                _optimisticMarks -= optimisticKeys
+                _optimisticMarks += previousMarks
+                _optimisticUnmarks -= optimisticKeys
+                _optimisticUnmarks += previousUnmarks
+                failureMessage = error.message
+            } finally {
+                _uiState.update {
+                    it.copy(episodeWatchedPendingKeys = it.episodeWatchedPendingKeys - pendingKeys)
+                }
             }
 
-            _uiState.update {
-                it.copy(episodeWatchedPendingKeys = it.episodeWatchedPendingKeys - pendingKeys)
-            }
             reevaluateSeriesWatchedBadge()
-            showMessage(localizedContext.getString(R.string.detail_marked_episodes_watched, unwatched.size))
+            if (succeeded) {
+                showMessage(localizedContext.getString(R.string.detail_marked_episodes_watched, unwatched.size))
+            } else {
+                showMessage(
+                    message = failureMessage ?: context.getString(com.nuvio.tv.R.string.detail_error_update_episode_watched_failed),
+                    isError = true
+                )
+            }
         }
     }
 
@@ -2842,6 +2899,13 @@ class MetaDetailsViewModel @Inject constructor(
     private fun fetchTrailerUrl() {
         if (isServerItem) return
         val meta = _uiState.value.meta ?: return
+        val appLanguage = trailerAppLanguage
+        val fallbackYtId = if (appLanguage == null) meta.trailerYtIds.firstOrNull() else {
+            meta.trailers.firstNotNullOfOrNull {
+                it.ytId?.takeIf { id -> id.isNotBlank() &&
+                    com.nuvio.tv.data.trailer.matchesNotflixTrailerLanguage(it.lang, appLanguage) }
+            }
+        }
 
         trailerFetchJob?.cancel()
         trailerFetchJob = viewModelScope.launch {
@@ -2856,6 +2920,8 @@ class MetaDetailsViewModel @Inject constructor(
 
             val tmdbId = try {
                 tmdbService.ensureTmdbId(meta.id, meta.apiType, fallbackImdbId = meta.imdbId)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (_: Exception) {
                 null
             }
@@ -2865,8 +2931,9 @@ class MetaDetailsViewModel @Inject constructor(
                     title = meta.name,
                     year = year,
                     tmdbId = tmdbId,
-                    type = meta.apiType
-                ) ?: meta.trailerYtIds.firstOrNull()?.let { ytId ->
+                    type = meta.apiType,
+                    appLanguage = appLanguage
+                ) ?: fallbackYtId?.let { ytId ->
                     trailerService.getTrailerPlaybackSourceFromYouTubeUrl(
                         youtubeUrl = "https://www.youtube.com/watch?v=$ytId",
                         title = meta.name,
@@ -2877,8 +2944,9 @@ class MetaDetailsViewModel @Inject constructor(
                 val externalUrl = if (AppFeaturePolicy.externalTrailerPlaybackEnabled) {
                     trailerService.getExternalTrailerUrl(
                         tmdbId = tmdbId,
-                        type = meta.apiType
-                    ) ?: meta.trailerYtIds.firstOrNull()?.let { ytId ->
+                        type = meta.apiType,
+                        appLanguage = appLanguage
+                    ) ?: fallbackYtId?.let { ytId ->
                         "https://www.youtube.com/watch?v=$ytId"
                     }
                 } else {
@@ -2888,6 +2956,7 @@ class MetaDetailsViewModel @Inject constructor(
             }
             val url = source?.videoUrl
             val audioUrl = source?.audioUrl
+            if (trailerAppLanguage != appLanguage) return@launch
 
             _uiState.update { state ->
                 if (state.trailerUrl == url &&
@@ -2995,6 +3064,95 @@ class MetaDetailsViewModel @Inject constructor(
         )
     }
 
+    private fun scheduleSpeculativeStreamPrewarm() {
+        val state = _uiState.value
+        val meta = state.meta ?: return
+        val isSeries = meta.apiType.equals("series", ignoreCase = true) ||
+            meta.apiType.equals("tv", ignoreCase = true)
+        val next = state.nextToWatch
+        val targetVideoId: String
+        val targetSeason: Int?
+        val targetEpisode: Int?
+        if (isSeries) {
+            targetVideoId = next?.nextVideoId?.takeIf { it.isNotBlank() }
+                ?: state.episodesForSeason.firstOrNull()?.id
+                ?: return
+            targetSeason = next?.nextSeason ?: state.selectedSeason
+            targetEpisode = next?.nextEpisode ?: state.episodesForSeason.firstOrNull()?.episode
+        } else {
+            targetVideoId = meta.id
+            targetSeason = null
+            targetEpisode = null
+        }
+        val key = "${meta.apiType}|$targetVideoId|$targetSeason|$targetEpisode"
+        if (lastPrewarmedKey == key) return
+        lastPrewarmedKey = key
+        streamPrewarmJob?.cancel()
+        streamPrewarmJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            delay(450L)
+            streamRepository.prewarmStreams(
+                type = meta.apiType,
+                videoId = targetVideoId,
+                season = targetSeason,
+                episode = targetEpisode
+            )
+        }
+    }
+
+    private fun handlePlaySeasonRecap(seasonNumber: Int) {
+        val meta = _uiState.value.meta ?: return
+        if (seasonNumber <= 0) return
+        val title = localizedContext.getString(R.string.recap_season_button, seasonNumber)
+        val recapTrailer = MetaTrailer(
+            name = title,
+            ytId = "recap:$seasonNumber",
+            source = "recap",
+            type = "Recap"
+        )
+        idleTimerJob?.cancel()
+        isPlayButtonFocused = false
+        if (_uiState.value.isTrailerPlaying || _uiState.value.isBackgroundTrailerPlaying) {
+            setTrailerPlaybackState(isPlaying = false, showControls = false, hideLogo = false)
+        }
+        _uiState.update { state ->
+            state.copy(
+                isSharedTrailerOverlayVisible = true,
+                isSharedTrailerLoading = true,
+                sharedTrailerUrl = null,
+                sharedTrailerAudioUrl = null,
+                sharedTrailerErrorMessage = null,
+                selectedSharedTrailer = recapTrailer
+            )
+        }
+        viewModelScope.launch {
+            val lang = localizedContext.resources.configuration.locales[0]?.language
+                ?.takeIf { it.isNotBlank() }
+                ?: java.util.Locale.getDefault().language
+            val source = trailerService.getSeasonRecapPlaybackSource(
+                showTitle = meta.name,
+                seasonNumber = seasonNumber,
+                language = lang
+            )
+            _uiState.update { state ->
+                if (state.selectedSharedTrailer?.ytId != recapTrailer.ytId) {
+                    state
+                } else {
+                    state.copy(
+                        isSharedTrailerOverlayVisible = true,
+                        isSharedTrailerLoading = false,
+                        sharedTrailerUrl = source?.videoUrl,
+                        sharedTrailerAudioUrl = source?.audioUrl,
+                        sharedTrailerErrorMessage = if (source == null) {
+                            localizedContext.getString(R.string.recap_not_found, seasonNumber)
+                        } else {
+                            null
+                        }
+                    )
+                }
+            }
+        }
+    }
+
     private fun handleSharedTrailerSelected(trailer: MetaTrailer) {
         val ytId = trailer.ytId?.trim().orEmpty()
         if (ytId.isBlank()) {
@@ -3077,7 +3235,15 @@ class MetaDetailsViewModel @Inject constructor(
     }
 
     private fun retrySharedTrailer() {
-        _uiState.value.selectedSharedTrailer?.let(::handleSharedTrailerSelected)
+        val selected = _uiState.value.selectedSharedTrailer ?: return
+        if (selected.source == "recap" || selected.ytId?.startsWith("recap:") == true) {
+            val season = selected.ytId?.removePrefix("recap:")?.toIntOrNull()
+            if (season != null && season > 0) {
+                handlePlaySeasonRecap(season)
+                return
+            }
+        }
+        handleSharedTrailerSelected(selected)
     }
 
     private fun dismissSharedTrailerOverlay() {
@@ -3107,7 +3273,13 @@ class MetaDetailsViewModel @Inject constructor(
         }
 
         existing.forEach { trailer -> merged.putIfAbsent(keyOf(trailer), trailer) }
-        incoming.forEach { trailer -> merged.putIfAbsent(keyOf(trailer), trailer) }
+        incoming.forEach { trailer ->
+            val key = keyOf(trailer)
+            val old = merged[key]
+            if (old == null || (old.lang.isNullOrBlank() && !trailer.lang.isNullOrBlank())) {
+                merged[key] = trailer
+            }
+        }
         return merged.values.toList()
     }
 

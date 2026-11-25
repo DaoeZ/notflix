@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Audio en ondertitels</string>
+    <string name="notflix_player_more">Meer</string>
+    <string name="notflix_player_speed_value">Snelheid (%1$s×)</string>
+    <string name="notflix_player_remaining">Nog %1$s</string>
+    <string name="notflix_player_buttons">Spelerknoppen</string>
+    <string name="notflix_player_buttons_help">Kies maximaal %1$d acties. Meer blijft achteraan en bevat de rest.</string>
+    <string name="notflix_player_row_order">Volgorde van knoppen</string>
+</resources>
+

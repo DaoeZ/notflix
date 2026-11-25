@@ -85,6 +85,7 @@ internal fun SettingsSectionLabel(
     modifier: Modifier = Modifier,
     description: String? = null
 ) {
+    if (LocalNotflixSettingsRows.current?.hideLabels == true) return
     if (notflixSettingsActive()) {
         Column(
             modifier = modifier
@@ -150,6 +151,7 @@ internal fun SettingsNote(
     modifier: Modifier = Modifier,
     tone: SettingsNoteTone = SettingsNoteTone.Info
 ) {
+    if (LocalNotflixSettingsRows.current?.hideLabels == true) return
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,

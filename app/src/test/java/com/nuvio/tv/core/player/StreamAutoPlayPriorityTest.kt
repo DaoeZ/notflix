@@ -8,9 +8,13 @@ import com.nuvio.tv.data.local.StreamAutoPlayPriorityConfig
 import com.nuvio.tv.data.local.StreamAutoPlayQuality
 import com.nuvio.tv.data.local.StreamAutoPlaySource
 import com.nuvio.tv.domain.model.Stream
+import com.nuvio.tv.domain.model.StreamBehaviorHints
+import com.nuvio.tv.domain.model.StreamClientResolve
 import com.nuvio.tv.domain.model.StreamDebridCacheState
 import com.nuvio.tv.domain.model.StreamDebridCacheStatus
 import io.mockk.mockkObject
+import io.mockk.every
+import io.mockk.mockk
 import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.Assert.assertEquals
@@ -20,6 +24,108 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StreamAutoPlayPriorityTest {
+    @Test
+    fun `cached 4k Spanish respects provider order even for a bilingual release`() {
+        val peerflix = stream(
+            "Peerflix | RD", "[RD+] Peerflix 4K", "Obsession (2025) [4k 2160p][Esp]\n🇪🇸 🇬🇧"
+        )
+        val torrentio = stream(
+            "Torrentio | RD", "[RD+] Torrentio 4k DV | HDR", "Obsession.2025.2160p.UHD.BluRay\n🇬🇧 / 🇪🇸"
+        )
+        val pelis = stream("PeLis", "RD ⚡ 4K", "Obsession\nEspañol")
+        val rules = listOf("Peerflix RD", "Torrentio | RD", "PeLis").map {
+            StreamAutoPlayPriorityRule(it, cachedOnly = true, audioLanguage = "es")
+        }
+
+        val installed = listOf(peerflix.addonName, torrentio.addonName, pelis.addonName)
+        assertTrue(StreamAutoPlaySelector.settledPriorityRules(rules, setOf("PeLis"), installed).isEmpty())
+        val readyRules = StreamAutoPlaySelector.settledPriorityRules(rules, setOf("PeLis", "Peerflix | RD"), installed)
+        assertEquals(listOf(rules[0]), readyRules)
+        assertEquals(peerflix, select(listOf(pelis, torrentio, peerflix), readyRules))
+        assertEquals(peerflix.copy(autoPlayAudioLanguage = "es"), select(
+            listOf(pelis, torrentio, peerflix), rules, carryAudio = true
+        ))
+
+        val afterEmptyPeerflix = StreamAutoPlaySelector.settledPriorityRules(
+            rules, setOf("Peerflix | RD", "Torrentio | RD"), installed
+        )
+        assertEquals(torrentio, select(listOf(pelis, torrentio), afterEmptyPeerflix))
+    }
+
+    @Test
+    fun `unknown audio does not take an English fallback ahead of confirmed Spanish`() {
+        val unknown = stream("Peerflix", "4K", "Movie 2160p")
+        val spanish = stream("Peerflix", "1080p", "Movie 1080p [Esp]")
+        val rules = listOf(
+            StreamAutoPlayPriorityRule("Peerflix", audioLanguage = "es"),
+            StreamAutoPlayPriorityRule("Peerflix", audioLanguage = "en"),
+            StreamAutoPlayPriorityRule("Peerflix", StreamAutoPlayQuality.FHD_1080, audioLanguage = "es")
+        )
+
+        assertEquals(spanish, select(listOf(unknown, spanish), rules))
+        assertNull(select(listOf(unknown), rules))
+    }
+
+    @Test
+    fun `Polish release tags count as audio`() {
+        val releases = listOf(
+            "Film.2024.PL.1080p", "Film.2024.PLDUB.1080p", "Film.2024.LEKTOR.1080p",
+            "Film.2024.LektorPL.1080p", "Film.2024.DubbPL.1080p",
+            "Film.2024.MULTi ᴘʟ ᴇɴ", "Audio: ᴘʟ ꜱᴜʙ: ᴇɴ", "Film 1080p | Polski dubbing"
+        )
+        releases.forEach { title ->
+            assertTrue(title, matches(stream("Torz", title = title), setOf("pl")))
+        }
+    }
+
+    @Test
+    fun `Polish subtitles or generic multi audio do not satisfy a Polish audio rule`() {
+        val releases = listOf(
+            "Film.2024.PL.SUB.1080p", "Film.2024.PLSUB.1080p", "Film.2024.NapisyPL.1080p",
+            "Audio: ENG | Napisy: PL", "Audio: ᴇɴ ꜱᴜʙ: ᴘʟ", "Film 1080p Polish subtitles",
+            "Film.2024.MULTi.1080p", "Film 1080p | 🌐 tracker.pl", "Lektor.2008.1080p.ENG",
+            "Film 1080p | PL NAPISY"
+        )
+        releases.forEach { title ->
+            assertFalse(title, matches(stream("Torz", title = title), setOf("pl")))
+        }
+    }
+
+    @Test
+    fun `Polish filename or compact addon labels win over English with language priority`() {
+        val english = stream("Torrentio", "[TB+] 2160p", "Film ENG")
+        val withFilename = stream("Torz", "[TB+] Torz", "Film").copy(
+            behaviorHints = StreamBehaviorHints(null, null, null, null, filename = "Film.2024.PL.1080p.mkv")
+        )
+        val compact = stream("AIOStreams", "[TorBox] 1080ᴘ").copy(description = "ᴘʟ | ꜱᴜʙ: ᴇɴ")
+        val rules = StreamAutoPlayPriorityConfig(
+            qualities = listOf(StreamAutoPlayQuality.UHD_2160, StreamAutoPlayQuality.FHD_1080),
+            audioLanguages = listOf("pl", "en"),
+            priority = StreamAutoPlayPriority.IDIOMA,
+            cachedOnly = true
+        ).toRules()
+        assertEquals(withFilename, select(listOf(english, withFilename), rules))
+        assertEquals(compact, select(listOf(english, compact), rules))
+        assertNull(select(listOf(english), rules.filter { it.audioLanguage == "pl" }))
+    }
+
+    @Test
+    fun `file metadata from a debrid resolver is used when the formatter hides it`() {
+        val metadata = mockk<StreamClientResolve> {
+            every { filename } returns "Film.2024.LektorPL.2160p.mkv"
+            every { stream } returns null
+        }
+        val candidate = stream("AIOStreams", "[TorBox]", "Film").copy(clientResolve = metadata)
+        assertTrue(matches(candidate, setOf("pl")))
+        assertEquals(StreamAutoPlayQuality.UHD_2160, StreamAutoPlaySelector.streamPriorityQuality(candidate))
+    }
+
+    @Test
+    fun `priority waits for slow addons even with an instant preference`() {
+        assertEquals(12_000L, StreamAutoPlayPolicy.priorityTimeoutMs(0))
+        assertEquals(20_000L, StreamAutoPlayPolicy.priorityTimeoutMs(20))
+        assertEquals(60_000L, StreamAutoPlayPolicy.priorityTimeoutMs(Int.MAX_VALUE))
+    }
 
     @Test
     fun `rules are evaluated in order`() {
@@ -235,6 +341,52 @@ class StreamAutoPlayPriorityTest {
                 tokens.none { it.lowercase() in ambiguous }
             )
         }
+    }
+
+    @Test
+    fun `every language recognizes audio codes and rejects the same subtitle codes`() {
+        val compactAlphabet = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ"
+        AUDIO_LANGUAGES.forEach { language ->
+            val iso = language.code.uppercase()
+            val compact = iso.map { compactAlphabet[it - 'A'] }.joinToString("")
+            val audio = listOf("Audio: $iso", "Film.2024.$iso.1080p.mkv", "✓ $compact")
+            audio.forEach { title ->
+                val detected = StreamAutoPlaySelector.classifyPriorityAudio(stream("AIOStreams", title = title))
+                assertEquals(title, setOf(language.code), detected.languages)
+            }
+            val subtitles = listOf("SUB: $iso", "Film.2024.$iso.SUB.1080p", "ꜱᴜʙ: $compact", "SUB [$iso]")
+            subtitles.forEach { title ->
+                val detected = StreamAutoPlaySelector.classifyPriorityAudio(stream("AIOStreams", title = title))
+                assertTrue(title, detected.languages.isEmpty())
+            }
+        }
+    }
+
+    @Test
+    fun `compact and plain codes in audio fields respect the rule order`() {
+        val english = stream("Torz", "1080p", "Film ENG")
+        val german = stream("AIOStreams", "1080ᴘ").copy(description = "Subs: IT Audio: ᴅᴇ / FR")
+        val rules = listOf(
+            StreamAutoPlayPriorityRule(null, StreamAutoPlayQuality.FHD_1080, audioLanguage = "de"),
+            StreamAutoPlayPriorityRule(null, StreamAutoPlayQuality.FHD_1080, audioLanguage = "en")
+        )
+        assertEquals(german, select(listOf(english, german), rules))
+        assertEquals(setOf("de", "fr"), StreamAutoPlaySelector.classifyPriorityAudio(german).languages)
+        assertTrue(StreamAutoPlaySelector.classifyPriorityAudio(stream("AIOStreams", title = "Film [IT/DE]"))
+            .languages.containsAll(setOf("it", "de")))
+        assertEquals(setOf("de", "en"),
+            StreamAutoPlaySelector.classifyPriorityAudio(stream("AIOStreams", title = "Film MULTi DE, EN")).languages)
+        assertEquals(setOf("no", "he", "id"),
+            StreamAutoPlaySelector.classifyPriorityAudio(stream("AIOStreams", title = "Audio: NB IW IN")).languages)
+    }
+
+    @Test
+    fun `prose web domains and unlabelled multi do not masquerade as audio codes`() {
+        val title = "It (2017) 1080p NO HDR | www.example.de | » tracker.fr"
+        assertTrue(StreamAutoPlaySelector.classifyPriorityAudio(stream("AIOStreams", title = title)).languages.isEmpty())
+        assertFalse(matches(stream("AIOStreams", title = "1080ᴘ ᴍᴜʟᴛɪ"), setOf("en")))
+        assertFalse(matches(stream("AIOStreams", title = "Film 1080p French subtitles"), setOf("fr")))
+        assertFalse(matches(stream("AIOStreams", title = "Film 1080p VOSTFR [FR]"), setOf("fr")))
     }
 
     @Test
@@ -481,7 +633,8 @@ class StreamAutoPlayPriorityTest {
 
     private fun select(
         streams: List<Stream>,
-        rules: List<StreamAutoPlayPriorityRule>
+        rules: List<StreamAutoPlayPriorityRule>,
+        carryAudio: Boolean = false
     ): Stream? = StreamAutoPlaySelector.selectAutoPlayStream(
         streams = streams,
         mode = StreamAutoPlayMode.PRIORITY_LIST,
@@ -490,7 +643,8 @@ class StreamAutoPlayPriorityTest {
         installedAddonNames = streams.map { it.addonName }.toSet(),
         selectedAddons = emptySet(),
         selectedPlugins = emptySet(),
-        priorityList = rules
+        priorityList = rules,
+        carryPriorityAudioLanguage = carryAudio
     )
 
     private fun quality(name: String? = null, title: String? = null): StreamAutoPlayQuality =

@@ -27,15 +27,16 @@ class NotflixCollectionLoaderTest {
         assertEquals(1,calls);assertEquals(1,loader.snapshot().count{it.catalog!=null})
         repeat(20){loader.request(specs[0].key)};advanceUntilIdle();assertEquals(1,calls)
     }
-    @Test fun twoParallelRequestsAndQueuedCancellationAreBounded()=runTest {
+    @Test fun fourParallelRequestsAndQueuedCancellationAreBoundedWithoutDroppingDemand()=runTest {
         var active=0;var max=0;var calls=0;val gate=CompletableDeferred<Unit>()
         val loader=NotflixCollectionRows(this,{flow{calls++;active++;max=maxOf(max,active);try{gate.await();emit(NetworkResult.Success(row()))}finally{active--}}},{true},{})
         val specs=(1..11).map{spec("$it")};loader.configure(scopeId,specs)
         specs.forEach{loader.request(it.key)};runCurrent()
-        assertEquals(2,calls);assertEquals(2,max)
-        loader.release(specs[3].key);gate.complete(Unit);advanceUntilIdle()
-        assertEquals(3,calls);assertTrue(max<=2)
-        assertNull(loader.snapshot()[3].catalog)
+        assertEquals(4,calls);assertEquals(4,max)
+        loader.release(specs[6].key);gate.complete(Unit);advanceUntilIdle()
+        assertEquals(10,calls);assertTrue(max<=4)
+        assertNull(loader.snapshot()[6].catalog)
+        assertEquals(10,loader.snapshot().count { it.catalog != null })
     }
     @Test fun retiredAppearanceNonCooperativeResponseCannotPublishIntoANewRequest()=runTest {
         val gates=listOf(CompletableDeferred<Unit>(),CompletableDeferred<Unit>());var calls=0
@@ -149,5 +150,24 @@ class NotflixCollectionLoaderTest {
         } finally {
             gate.complete(Unit)
         }
+    }
+
+    @Test fun prefetchDoesNotPublishAnUnclassifiedTitleWhileTheAgeGateIsPending() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val limit = com.nuvio.tv.core.profile.AgeLevel.TP
+        val loader = NotflixCollectionRows(this, { flowOf(NetworkResult.Success(row(listOf(
+            item("allowed").copy(ageRating = "G"), item("unknown"), item("adult").copy(ageRating = "18")
+        )))) }, { true }, {}, filterRow = { row ->
+            gate.await()
+            row.copy(items = row.items.filter {
+                com.nuvio.tv.core.profile.isAllowed(limit, com.nuvio.tv.core.profile.ageLevelOf(it.ageRating))
+            })
+        })
+        val s = spec()
+        loader.configure(scopeId.copy(ageLimit = limit), listOf(s))
+        loader.request(s.key); runCurrent()
+        assertNull(loader.snapshot().single().catalog)
+        gate.complete(Unit); advanceUntilIdle()
+        assertEquals(listOf("allowed"), loader.snapshot().single().catalog!!.items.map { it.id })
     }
 }

@@ -182,15 +182,19 @@ class WatchStateMutationStore @Inject constructor(
             !preferences[watchedDeletesKey].isNullOrEmpty()
     }
 
+    @Suppress("SENSELESS_COMPARISON")
     private fun parseProgressUpserts(raw: Set<String>?): Map<String, WatchProgress> {
         return raw.orEmpty().mapNotNull { json ->
             runCatching { gson.fromJson(json, PendingProgressUpsert::class.java) }.getOrNull()
+                ?.takeIf { it.key != null && it.progress != null }
         }.associate { it.key to it.progress }
     }
 
+    @Suppress("SENSELESS_COMPARISON")
     private fun parseWatchedUpserts(raw: Set<String>?): Map<WatchedMutationKey, WatchedItem> {
         return raw.orEmpty().mapNotNull { json ->
             runCatching { gson.fromJson(json, PendingWatchedUpsert::class.java) }.getOrNull()
+                ?.takeIf { it.key != null && it.item != null }
         }.associate { it.key to it.item }
     }
 

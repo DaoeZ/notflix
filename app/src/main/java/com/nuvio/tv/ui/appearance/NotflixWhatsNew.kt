@@ -181,8 +181,10 @@ internal fun NotflixWhatsNewHost(
         if (lastSeenVersionCode == null) return@LaunchedEffect
         when (notflixWhatsNewAction(lastSeenVersionCode, currentVersionCode, items, enabled, ready, handled, updatedInstall)) {
             NotflixWhatsNewAction.SHOW -> {
-                // Let existing dialogs claim their window before opening another one.
-                repeat(2) { withFrameNanos { } }
+                // A dialog opened with this screen takes window focus a few frames later (more than two
+                // on a TV), which cancels this effect; wait in real time so it can claim it first.
+                val start = android.os.SystemClock.uptimeMillis()
+                while (android.os.SystemClock.uptimeMillis() - start < 300) withFrameNanos { }
                 visibleVersion = currentVersionCode
                 handledVersion = currentVersionCode
             }

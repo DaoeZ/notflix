@@ -7,6 +7,7 @@ import com.nuvio.tv.core.profile.ageLevelOf
 import com.nuvio.tv.data.local.NotflixIntegrationConfig
 import com.nuvio.tv.data.remote.api.TmdbApi
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,21 +25,28 @@ class TmdbAgeRatingSourceImpl @Inject constructor(
         if (!integrationConfig.isTmdbEnabled()) return AgeRatingLookup(null, cacheable = false)
         val numericId = runCatching {
             tmdbService.ensureTmdbId(id, apiType, fallbackImdbId = fallbackImdbId)
-        }.getOrNull()?.toIntOrNull() ?: return AgeRatingLookup(null, cacheable = false)
+        }.getOrElse { if (it is CancellationException) throw it else null }?.toIntOrNull() ?: return AgeRatingLookup(null, cacheable = false)
 
         val language = Locale.getDefault().toLanguageTag()
         return runCatching {
             val raw = if (isSeriesType(apiType)) {
-                val ratings = tmdbApi.getTvContentRatings(numericId, integrationConfig.tmdbApiKey())
-                    .body()?.results.orEmpty()
+                val response = tmdbApi.getTvContentRatings(numericId, integrationConfig.tmdbApiKey())
+                val body = response.body()
+                if (!response.isSuccessful || body == null) return@runCatching AgeRatingLookup(null, cacheable = false)
+                val ratings = body.results.orEmpty()
                 selectTvAgeRating(ratings, language)
             } else {
-                val releases = tmdbApi.getMovieReleaseDates(numericId, integrationConfig.tmdbApiKey())
-                    .body()?.results.orEmpty()
+                val response = tmdbApi.getMovieReleaseDates(numericId, integrationConfig.tmdbApiKey())
+                val body = response.body()
+                if (!response.isSuccessful || body == null) return@runCatching AgeRatingLookup(null, cacheable = false)
+                val releases = body.results.orEmpty()
                 selectMovieAgeRating(releases, language)
             }
             AgeRatingLookup(ageLevelOf(raw), cacheable = true)
-        }.getOrElse { AgeRatingLookup(null, cacheable = false) }
+        }.getOrElse {
+            if (it is CancellationException) throw it
+            AgeRatingLookup(null, cacheable = false)
+        }
     }
 
     private fun isSeriesType(type: String): Boolean =

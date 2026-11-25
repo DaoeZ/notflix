@@ -99,8 +99,14 @@ class AppearanceViewModel @Inject constructor(
         saveSelection(requireNotflix = true) { context, authorized -> store.selectPreviewEnabled(context, enabled, authorized) }
     }
 
-    fun selectPreviewSoundEnabled(enabled: Boolean) {
-        saveSelection(requireNotflix = true) { context, authorized -> store.selectPreviewSoundEnabled(context, enabled, authorized) }
+    fun selectPreviewSoundEnabled(
+        enabled: Boolean,
+        synchronize: (suspend (() -> Boolean) -> Result<Unit>)? = null
+    ) {
+        saveSelection(requireNotflix = true) { context, authorized ->
+            val saved = store.selectPreviewSoundEnabled(context, enabled, authorized)
+            if (saved.isFailure || !authorized()) saved else synchronize?.invoke(authorized) ?: saved
+        }
     }
 
     fun selectUiSoundsEnabled(enabled: Boolean) {

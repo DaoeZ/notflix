@@ -101,6 +101,7 @@ internal fun NotflixFolderDetailScreen(
     onNavigateToPlay: ((String, String, String) -> Unit)? = null
 ) {
     val posterOptionsState by viewModel.posterOptions.state.collectAsStateWithLifecycle()
+    val profileId by viewModel.activeProfileId.collectAsStateWithLifecycle()
     val folder = uiState.folder
     // M63: misma sesión/coordinador que Inicio; el resolvedor usa el pedido oficial de la carpeta.
     val trailerPreview = rememberNotflixPreviewSession(
@@ -134,6 +135,7 @@ internal fun NotflixFolderDetailScreen(
         )
     }
 
+    com.nuvio.tv.ui.screens.home.HiddenTitleUndoScope {
     Box(Modifier.fillMaxSize()) {
         when {
             uiState.isLoading -> NotflixCategorySkeleton()
@@ -151,12 +153,14 @@ internal fun NotflixFolderDetailScreen(
             )
         }
 
-        uiState.hiddenTitleUndo?.let { undo ->
+        uiState.hiddenTitleUndo?.takeIf { it.profileId == profileId }?.let { undo ->
             HiddenTitleUndoNotice(undo, viewModel::undoHideTitle,
-                Modifier.align(Alignment.BottomCenter).padding(bottom = NuvioTheme.spacing.xl), autoFocus = false)
+                Modifier.align(Alignment.BottomCenter).padding(bottom = NuvioTheme.spacing.xl), autoFocus = false,
+                onFocusChange = { viewModel.setHiddenUndoFocused(undo, it) })
         }
     }
 
+    }
     PosterOptionsHost(
         state = posterOptionsState,
         controller = viewModel.posterOptions,
@@ -178,7 +182,10 @@ private fun NotflixFolderCategoryPage(
 ) {
     val tabsData = remember(uiState.tabs, uiState.movieWatchedStatus, uiState.hiddenTitleKeys) {
         uiState.tabs.mapIndexed { index, tab ->
-            notflixFolderTabData(index, tab, uiState.movieWatchedStatus, uiState.hiddenTitleKeys)
+            val data = notflixFolderTabData(index, tab, uiState.movieWatchedStatus, uiState.hiddenTitleKeys)
+            if (viewModel.derivedKidsFolder) data.copy(tab = data.tab.copy(
+                key = data.tab.key + ":" + tab.source?.javaClass?.simpleName
+            )) else data
         }
     }
     val tabs = remember(tabsData) { tabsData.map { it.tab } }

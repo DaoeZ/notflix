@@ -36,6 +36,11 @@ class NotflixPersonalRowsTest {
         assertNull(notflixAnchor(listOf(progress("c1", 5, "channel"))))
     }
 
+    @Test fun `for you uses movies across the full history and excludes episodes`() {
+        val history = (1..11).map { progress("tt$it", it.toLong()) } + progress("series", 100, "series")
+        assertEquals(listOf("tt11", "tt9", "tt7", "tt5", "tt3", "tt1"), notflixForYouAnchors(history).map { it.contentId })
+    }
+
     @Test fun `candidates drop the anchor, watched, unreleased when hidden and duplicates`() {
         val today = LocalDate.of(2026, 11, 6)
         val candidates = listOf(meta("tt-anchor"), meta("tt-seen"), meta("tt-show", ContentType.SERIES), meta("tt-future", released = "2027-05-01"),

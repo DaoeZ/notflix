@@ -209,4 +209,6 @@
         <item>يمكن الآن ربط Simkl.</item>
         <item>Trakt: اتصل برمز فقط، دون أي إعداد.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">مفتاح Notflix</string>
+    <string name="notflix_tmdb_attribution">يستخدم هذا المنتج واجهة برمجة تطبيقات TMDB ولكنه غير معتمد أو مصادق عليه من TMDB.</string>
 </resources>

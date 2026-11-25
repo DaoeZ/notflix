@@ -51,6 +51,7 @@ internal fun UpdateChannelSettings(
     }
 
     SettingsActionRow(
+        settingId = "UpdateChannelSettings.about_update_channel_title",
         title = stringResource(R.string.about_update_channel_title),
         subtitle = stringResource(R.string.about_update_channel_subtitle),
         value = channelName,
@@ -62,6 +63,7 @@ internal fun UpdateChannelSettings(
     )
 
     SettingsToggleRow(
+        settingId = "UpdateChannelSettings.about_update_banner_title",
         title = stringResource(R.string.about_update_banner_title),
         subtitle = stringResource(R.string.about_update_banner_subtitle),
         checked = state.updateBannerEnabled,
@@ -72,6 +74,7 @@ internal fun UpdateChannelSettings(
 
     if (state.autoInstallSupported) {
         SettingsToggleRow(
+            settingId = "UpdateChannelSettings.about_update_auto_install_title",
             title = stringResource(R.string.about_update_auto_install_title),
             subtitle = stringResource(R.string.about_update_auto_install_subtitle),
             checked = state.autoInstallEnabled,
@@ -81,6 +84,7 @@ internal fun UpdateChannelSettings(
         )
         if (state.autoInstallEnabled) {
             SettingsToggleRow(
+                settingId = "UpdateChannelSettings.about_update_auto_install_notice_title",
                 title = stringResource(R.string.about_update_auto_install_notice_title),
                 subtitle = stringResource(R.string.about_update_auto_install_notice_subtitle),
                 checked = state.autoInstallNoticeEnabled,
@@ -92,6 +96,7 @@ internal fun UpdateChannelSettings(
     }
 
     SettingsActionRow(
+        settingId = "UpdateChannelSettings.about_check_updates",
         title = stringResource(R.string.about_check_updates),
         subtitle = stringResource(R.string.about_check_updates_subtitle),
         trailingIcon = Icons.AutoMirrored.Filled.OpenInNew,

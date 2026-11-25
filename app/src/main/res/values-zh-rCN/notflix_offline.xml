@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">下载</string>
+    <string name="notflix_offline_receive">从手机接收</string>
+    <string name="notflix_offline_pairing">手动输入：%1$s · %2$s。代码有效期为 5 分钟。</string>
+    <string name="notflix_offline_scan">用手机相机扫描即可打开 Notflix 下载。</string>
+    <string name="notflix_offline_expired">会话已过期。请选择“从手机接收”重新连接。</string>
+    <string name="notflix_offline_empty">从“来源”下载视频，或从手机发送。</string>
+    <string name="notflix_offline_profile">此个人资料无法使用下载功能。</string>
+    <string name="notflix_offline_unavailable">文件不可用</string>
+    <string name="notflix_offline_confirm_remove">确认移除</string>
+    <string name="notflix_offline_choose_source">选择要下载的来源</string>
+    <string name="notflix_offline_started">已加入下载队列</string>
+    <string name="notflix_offline_failed">无法打开或下载此文件。请尝试直接的视频文件。</string>
+</resources>

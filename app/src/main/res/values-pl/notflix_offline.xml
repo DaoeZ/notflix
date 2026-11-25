@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Pobrane</string>
+    <string name="notflix_offline_receive">Odbierz z telefonu</string>
+    <string name="notflix_offline_pairing">Wpisywanie ręczne: %1$s · %2$s. Kod jest ważny przez 5 minut.</string>
+    <string name="notflix_offline_scan">Zeskanuj aparatem telefonu, aby otworzyć Pobrane w Notflix.</string>
+    <string name="notflix_offline_expired">Sesja wygasła. Wybierz Odbierz z telefonu, aby połączyć się ponownie.</string>
+    <string name="notflix_offline_empty">Pobierz wideo ze Źródeł lub wyślij je z telefonu.</string>
+    <string name="notflix_offline_profile">Pobieranie jest niedostępne w tym profilu.</string>
+    <string name="notflix_offline_unavailable">Plik niedostępny</string>
+    <string name="notflix_offline_confirm_remove">Potwierdź usunięcie</string>
+    <string name="notflix_offline_choose_source">Wybierz źródło do pobrania</string>
+    <string name="notflix_offline_started">Pobieranie dodane do kolejki</string>
+    <string name="notflix_offline_failed">Nie udało się otworzyć ani pobrać tego pliku. Spróbuj bezpośredniego pliku wideo.</string>
+</resources>

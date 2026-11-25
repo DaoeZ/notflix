@@ -26,15 +26,16 @@ class UpdateRepository @Inject constructor(
             val owner = source.owner
             val repo = source.repo
 
-            val releases = when (channel) {
-                UpdateChannel.STABLE -> {
+            val sharedNotflixFeed = source == NotflixUpdateSource.notflixRepository()
+            val releases = when {
+                channel == UpdateChannel.STABLE && !sharedNotflixFeed -> {
                     val response = gitHubReleaseApi.getLatestRelease(owner = owner, repo = repo)
                     if (!response.isSuccessful) {
                         error("GitHub API error: ${response.code()}")
                     }
                     listOf(response.body() ?: error("Empty GitHub release response"))
                 }
-                UpdateChannel.BETA -> {
+                else -> {
                     val response = gitHubReleaseApi.getReleases(owner = owner, repo = repo)
                     if (!response.isSuccessful) {
                         error("GitHub API error: ${response.code()}")
@@ -43,9 +44,14 @@ class UpdateRepository @Inject constructor(
                 }
             }
             val releaseWithAsset = ReleaseSelector
-                .eligibleReleases(releases, channel)
+                .eligibleReleases(releases, channel, sharedNotflixFeed)
                 .firstNotNullOfOrNull { release ->
-                    AbiSelector.chooseBestApkAsset(release.assets)?.let { asset ->
+                    val apk = if (sharedNotflixFeed) {
+                        AbiSelector.chooseNotflixTvApk(release.assets)
+                    } else {
+                        AbiSelector.chooseBestApkAsset(release.assets)
+                    }
+                    apk?.let { asset ->
                         release to asset
                     }
                 }

@@ -13,6 +13,7 @@ import com.nuvio.tv.domain.model.DiscoverLocation
 import com.nuvio.tv.domain.model.AppearanceContext
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -31,6 +32,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import java.io.File
 import java.io.IOException
+import okio.buffer
+import okio.sink
 
 private class ScopedDataStore(
     val store: DataStore<Preferences>,
@@ -79,6 +82,8 @@ class ProfileDataStoreFactory @Inject constructor(
     private var nextAppearanceGeneration = 0L
     private val _appearanceRevision = MutableStateFlow(0L)
     internal val appearanceRevision = _appearanceRevision.asStateFlow()
+    private val _profileDataRevision = MutableStateFlow(0L)
+    internal val profileDataRevision = _profileDataRevision.asStateFlow()
 
     private fun appearanceMarker(id: Int) =
         File(context.filesDir, "datastore/${appearanceFileName(id)}.retired")
@@ -213,6 +218,7 @@ class ProfileDataStoreFactory @Inject constructor(
             scoped.job.cancel()
             scoped.job.join()
         }
+        synchronized(lock) { _profileDataRevision.value++ }
     }
 
     suspend fun clearProfileScopedData() = withContext(Dispatchers.IO) {
@@ -222,6 +228,7 @@ class ProfileDataStoreFactory @Inject constructor(
         }
         deletedProfileIds.clear()
         corruptedFileNames.clear()
+        synchronized(lock) { _profileDataRevision.value++ }
 
         val cachedFileNames = cachedStores.keys.mapTo(mutableSetOf()) { "$it.preferences_pb" }
         val dataStoreDir = File(context.filesDir, "datastore")
@@ -295,13 +302,15 @@ class ProfileDataStoreFactory @Inject constructor(
         return scoped
     }
 
-    internal fun writeShadowCopy(fileName: String, preferences: Preferences) {
-        val sourceFile = File(File(context.filesDir, "datastore"), "$fileName.preferences_pb")
+    internal suspend fun writeShadowCopy(fileName: String, preferences: Preferences) {
         val backupFile = File(File(context.filesDir, "datastore"), "$fileName.preferences_pb.bak")
         try {
-            if (sourceFile.exists() && sourceFile.length() > 0) {
-                sourceFile.copyTo(backupFile, overwrite = true)
+            // Opening DataStore's file for a copy can block its atomic replacement on Windows.
+            backupFile.sink().buffer().use { sink ->
+                androidx.datastore.preferences.core.PreferencesSerializer.writeTo(preferences, sink)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w("ProfileDataStoreFactory", "Failed to write shadow copy for $fileName: ${e.message}")
         }
@@ -339,6 +348,8 @@ private class ShadowCopyDataStore(
     private val factory: ProfileDataStoreFactory
 ) : DataStore<Preferences> {
 
+    private val shadowMutex = Mutex()
+
     @Volatile
     private var shadowWritten = false
 
@@ -349,8 +360,7 @@ private class ShadowCopyDataStore(
                     try {
                         val prefs = delegate.data.first()
                         if (prefs != emptyPreferences()) {
-                            factory.writeShadowCopy(fileName, prefs)
-                            shadowWritten = true
+                            persistShadowCopy()
                         }
                     } catch (_: Exception) { }
                 }
@@ -361,10 +371,15 @@ private class ShadowCopyDataStore(
         val result = delegate.updateData(transform)
         scope.launch(Dispatchers.IO) {
             try {
-                factory.writeShadowCopy(fileName, result)
-                shadowWritten = true
+                persistShadowCopy()
             } catch (_: Exception) { }
         }
         return result
+    }
+
+    private suspend fun persistShadowCopy() = shadowMutex.withLock {
+        // Read after taking the lock so a late backup job cannot restore an older snapshot.
+        factory.writeShadowCopy(fileName, delegate.data.first())
+        shadowWritten = true
     }
 }

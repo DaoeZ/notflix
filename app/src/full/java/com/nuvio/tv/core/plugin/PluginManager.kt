@@ -731,6 +731,8 @@ class PluginManager @Inject constructor(
                     if (results.isNotEmpty()) {
                         send(scraper to results)
                     }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Scraper ${scraper.name} failed in streaming: ${e.message}")
                 }
@@ -750,33 +752,35 @@ class PluginManager @Inject constructor(
     ): List<LocalScraperResult> {
         val cacheKey = "${scraper.id}:$tmdbId:$mediaType:$season:$episode"
         
-        // Check if already in flight
-        val existing = inFlightScrapers[cacheKey]
-        if (existing != null) {
-            return try {
-                existing.await()
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
-        
-        // Create new deferred
+        // Atomic single-flight deduplication
         return coroutineScope {
-            val deferred = async {
+            val newDeferred = async(start = kotlinx.coroutines.CoroutineStart.LAZY) {
                 scraperSemaphore.withPermit {
                     executeScraper(scraper, tmdbId, mediaType, season, episode)
                 }
             }
-            
-            inFlightScrapers[cacheKey] = deferred
-            
+            val existing = inFlightScrapers.putIfAbsent(cacheKey, newDeferred)
+            if (existing != null) {
+                newDeferred.cancel()
+                return@coroutineScope try {
+                    existing.await()
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            }
+
+            newDeferred.start()
             try {
-                deferred.await()
+                newDeferred.await()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Scraper ${scraper.name} failed: ${e.message}")
                 emptyList()
             } finally {
-                inFlightScrapers.remove(cacheKey)
+                inFlightScrapers.remove(cacheKey, newDeferred)
             }
         }
     }

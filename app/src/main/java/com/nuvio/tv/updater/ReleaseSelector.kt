@@ -10,10 +10,12 @@ internal object ReleaseSelector {
 
     fun eligibleReleases(
         releases: List<GitHubReleaseDto>,
-        channel: UpdateChannel
+        channel: UpdateChannel,
+        sharedNotflixFeed: Boolean = false
     ): List<GitHubReleaseDto> = releases
         .asSequence()
         .filterNot(GitHubReleaseDto::draft)
+        .filterNot { sharedNotflixFeed && it.tagName.orEmpty().startsWith("mobile-", ignoreCase = true) }
         .mapNotNull { release ->
             val version = releaseVersion(release) ?: return@mapNotNull null
             ReleaseCandidate(

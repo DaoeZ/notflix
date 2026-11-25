@@ -90,6 +90,7 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
         val tag = getSharedPreferences("app_locale", Context.MODE_PRIVATE)
             .getString("locale_tag", null)
         LocaleCache.localeTag = tag ?: ""
+        com.nuvio.tv.ui.screens.home.NotflixCountryPreference.initialize(this)
     }
 
     override fun newImageLoader(context: android.content.Context): ImageLoader {
@@ -121,6 +122,11 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
 
         val imageLoaderRef: () -> ImageLoader = { SingletonImageLoader.get(this) }
 
+        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val memoryInfo = ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+        val totalRamMb = memoryInfo.totalMem / (1024 * 1024)
+
         return ImageLoader.Builder(this)
             .components {
                 add(CustomPosterFallbackInterceptor())
@@ -143,15 +149,10 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
                 )
             }
             .memoryCache {
-                val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-                val memoryInfo = ActivityManager.MemoryInfo()
-                activityManager.getMemoryInfo(memoryInfo)
-                val totalRamMb = memoryInfo.totalMem / (1024 * 1024)
                 // Low-RAM devices (≤2GB): use 0.15 — larger cache reduces GC pressure
                 // from rapid bitmap eviction during scrolling.
                 // Mid-range devices (≤3GB): use 0.20 for decent image caching.
                 // Normal devices (>3GB): use 0.25 for snappy image loading.
-                // - allowHardware(false) keeps bitmaps on heap instead of GPU memory
                 val cachePercent = when {
                     totalRamMb <= 2048 -> 0.15
                     totalRamMb <= 3072 -> 0.20
@@ -169,9 +170,11 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
             }
             .crossfade(false)
             .precision(coil3.size.Precision.INEXACT)
-            .allowHardware(false)
+            // Hardware bitmaps avoid duplicating decoded posters on Dalvik heap + GPU texture
+            // on 2GB TV boxes. Call sites that read pixels explicitly set allowHardware(false).
+            .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             .allowRgb565(imagePerformancePreferences.rgb565Enabled)
-            .bitmapFactoryMaxParallelism(4)
+            .bitmapFactoryMaxParallelism(if (totalRamMb <= 2048) 2 else 4)
             .build()
     }
 }

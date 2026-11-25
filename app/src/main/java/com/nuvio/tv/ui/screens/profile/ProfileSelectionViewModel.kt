@@ -77,6 +77,7 @@ class ProfileSelectionViewModel @Inject constructor(
     private val profileManager: ProfileManager,
     private val profileSyncService: ProfileSyncService,
     private val profileSettingsSyncService: ProfileSettingsSyncService,
+    private val notflixSettingsSyncService: com.nuvio.tv.core.sync.NotflixSettingsSyncService,
     private val avatarRepository: AvatarRepository,
     private val profileBackgroundRepository: ProfileBackgroundRepository,
     memberAccessRepository: MemberAccessRepository,
@@ -210,11 +211,14 @@ class ProfileSelectionViewModel @Inject constructor(
     var isSelectingProfile = false
         private set
 
-    fun selectProfile(id: Int, onComplete: () -> Unit, onFailure: () -> Unit) {
+    suspend fun loadSelectorAgeLimit(id: Int) = notflixSettingsSyncService.pullSelectorAgeLimit(id)
+
+    fun selectProfile(id: Int, onComplete: () -> Unit, onFailure: () -> Unit, notflix: Boolean = false) {
         if (isSelectingProfile) return
         isSelectingProfile = true
         viewModelScope.launch {
             try {
+                if (notflix) loadSelectorAgeLimit(id)
                 profileManager.setActiveProfile(id)
                 onComplete()
             } catch (error: CancellationException) {

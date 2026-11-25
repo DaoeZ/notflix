@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Unduhan</string>
+    <string name="notflix_offline_receive">Terima dari ponsel</string>
+    <string name="notflix_offline_pairing">Entri manual: %1$s · %2$s. Kode berlaku selama 5 menit.</string>
+    <string name="notflix_offline_scan">Pindai dengan kamera ponsel untuk membuka Unduhan Notflix.</string>
+    <string name="notflix_offline_expired">Sesi telah berakhir. Pilih Terima dari ponsel untuk menyambung kembali.</string>
+    <string name="notflix_offline_empty">Unduh video dari Sumber atau kirim dari ponsel Anda.</string>
+    <string name="notflix_offline_profile">Unduhan tidak tersedia di profil ini.</string>
+    <string name="notflix_offline_unavailable">File tidak tersedia</string>
+    <string name="notflix_offline_confirm_remove">Konfirmasi penghapusan</string>
+    <string name="notflix_offline_choose_source">Pilih sumber untuk diunduh</string>
+    <string name="notflix_offline_started">Unduhan masuk antrean</string>
+    <string name="notflix_offline_failed">File ini tidak dapat dibuka atau diunduh. Coba file video langsung.</string>
+</resources>

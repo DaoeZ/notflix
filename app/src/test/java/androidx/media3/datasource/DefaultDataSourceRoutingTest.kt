@@ -57,6 +57,10 @@ class DefaultDataSourceRoutingTest {
             try {
                 val client = serverSocket.accept()
                 connectionAccepted = true
+                // Drain the request before closing so Windows does not reset the connection.
+                client.soTimeout = 3000
+                val reader = client.getInputStream().bufferedReader()
+                while (!reader.readLine().isNullOrEmpty()) { }
                 val out = client.getOutputStream()
                 out.write(responseHeaders.toByteArray())
                 out.flush()

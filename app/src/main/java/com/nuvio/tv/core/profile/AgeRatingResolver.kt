@@ -6,6 +6,8 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,7 +58,7 @@ class AgeRatingResolver @Inject constructor(
     private val _ratings = MutableStateFlow<Map<String, AgeLevel?>>(emptyMap())
     val ratings: StateFlow<Map<String, AgeLevel?>> = _ratings.asStateFlow()
 
-    private val semaphore = Semaphore(4)
+    private val semaphore = Semaphore(10)
     private val loadMutex = Mutex()
     private val inFlight = ConcurrentHashMap<String, CompletableDeferred<AgeLevel?>>()
 
@@ -97,10 +99,16 @@ class AgeRatingResolver @Inject constructor(
     private suspend fun resolve(key: String, fetch: suspend () -> AgeRatingLookup): AgeLevel? {
         ensureCacheLoaded()
         _ratings.value.let { if (it.containsKey(key)) return it[key] }
-        inFlight[key]?.let { return it.await() }
         val deferred = CompletableDeferred<AgeLevel?>()
         val prior = inFlight.putIfAbsent(key, deferred)
-        if (prior != null) return prior.await()
+        if (prior != null) {
+            return try {
+                prior.await()
+            } catch (_: CancellationException) {
+                currentCoroutineContext().ensureActive()
+                resolve(key, fetch)
+            }
+        }
 
         return try {
             val result = withContext(Dispatchers.IO) {
@@ -110,8 +118,14 @@ class AgeRatingResolver @Inject constructor(
                     val lookup = fetch()
                     if (lookup.cacheable) {
                         val now = System.currentTimeMillis()
-                        runCatching { cache.put(key, lookup.level, now) }
                         _ratings.update { it + (key to lookup.level) }
+                        try {
+                            cache.put(key, lookup.level, now)
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            // The in-memory result remains usable.
+                        }
                     }
                     lookup.level
                 }
@@ -119,7 +133,10 @@ class AgeRatingResolver @Inject constructor(
             deferred.complete(result)
             result
         } catch (cancelled: CancellationException) {
-            deferred.complete(null)
+            inFlight.remove(key, deferred)
+            // An obsolete search must not turn a lookup shared by another screen into a
+            // false "unrated" result. Active waiters can retry under their own lifetime.
+            deferred.completeExceptionally(cancelled)
             throw cancelled
         } catch (failed: Exception) {
             // Sin rastro, un fallo de red parecería un perfil vacío. Los fallos no se cachean: el
@@ -132,12 +149,19 @@ class AgeRatingResolver @Inject constructor(
         }
     }
 
-    private suspend fun ensureCacheLoaded() {
+    internal suspend fun ensureCacheLoaded() {
         if (cacheLoaded) return
         loadMutex.withLock {
             if (cacheLoaded) return
             val now = System.currentTimeMillis()
-            val fresh = runCatching { cache.all(now) }.getOrDefault(emptyMap())
+            val stored = try {
+                cache.all(now)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                emptyMap()
+            }
+            val fresh = stored
                 .filterValues { cached ->
                     cached.storedAtMs <= now && now - cached.storedAtMs <= CACHE_TTL_MS
                 }

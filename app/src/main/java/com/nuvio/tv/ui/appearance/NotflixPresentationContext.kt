@@ -34,6 +34,8 @@ class NotflixNavigationState {
     var homeEntry: (() -> Unit)? = null
     var homeCancelFocus: (() -> Unit)? = null
     var homeNeedsFocusRepair: (() -> Boolean)? = null
+    var homeQuickPick by mutableStateOf<(() -> Unit)?>(null)
+    var homeQuickPickLabel by mutableStateOf<String?>(null)
 
     fun focusTop() {
         topFocused = true

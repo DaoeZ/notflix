@@ -12,10 +12,10 @@ import com.nuvio.tv.domain.model.DiscoverLocation
 import com.nuvio.tv.domain.model.MetaPreview
 import com.nuvio.tv.domain.model.PosterShape
 import com.nuvio.tv.domain.model.TmdbSettings
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,14 +33,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+/**
+ * Notflix search asks TMDB for the translated title and poster of the results it shows
+ * ([TmdbService.searchArtwork]) and falls back to the enrichment title already in memory.
+ * Translations follow the app language passed by the screen, not the TMDB setting.
+ */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class SearchLocalizedTitlesTest {
     private val preferences = MutableStateFlow(TmdbSettings(enabled = true, language = "es"))
-    private val version = MutableStateFlow(0L)
     private val titles = ConcurrentHashMap<String, String>()
-    private val tmdb = mockk<TmdbService>(relaxed = true)
+    private val tmdb = mockk<TmdbService>(relaxed = true) {
+        coEvery { searchArtwork(any(), any(), any()) } returns null
+    }
     private val metadata = mockk<TmdbMetadataService>(relaxed = true) {
-        every { enrichmentVersion } returns version
+        every { enrichmentVersion } returns MutableStateFlow(0L)
         every { cachedLocalizedTitle(any(), any(), any()) } answers { titles["${firstArg<String>()}:${thirdArg<String>()}"] }
     }
     private lateinit var vm: SearchViewModel
@@ -91,50 +97,50 @@ class SearchLocalizedTitlesTest {
     private suspend fun awaitTitles(predicate: (Map<String, String>) -> Boolean) =
         withTimeout(5_000) { vm.localizedTitles.first(predicate) }
 
-    @Test fun cachedTitlesArrivingLaterAndLanguageChangesUpdateWithoutRequests() = runBlocking {
+    @Test fun tmdbArtworkTranslatesTitleAndPosterInTheAppLanguage() = runBlocking {
+        coEvery { tmdb.searchArtwork("tmdb:1", "movie", "es-ES") } returns
+            TmdbService.SearchArtwork("Espanol", "https://image.unit/es.jpg")
+        vm.setNotflixSearchActive(true, "es-ES")
         vm.requestLocalizedTitles(listOf(item(1)))
-        titles["1:es"] = "Español"
-        version.value++
-        assertEquals("Español", awaitTitles { it.isNotEmpty() }["movie:tmdb:1"])
-        preferences.value = preferences.value.copy(language = "fr")
-        awaitTitles { it.isEmpty() }
-        titles["1:fr"] = "Français"
-        version.value++
-        assertEquals("Français", awaitTitles { it.isNotEmpty() }["movie:tmdb:1"])
-        coVerify(exactly = 0) { metadata.fetchEnrichment(any(), any(), any()) }
-        coVerify(exactly = 0) { tmdb.ensureTmdbId(any(), any(), any()) }
+        assertEquals("Espanol", awaitTitles { it.isNotEmpty() }["movie:tmdb:1"])
+        assertEquals("https://image.unit/es.jpg", vm.localizedPosters.value["movie:tmdb:1"])
     }
 
-    @Test fun disablingBasicInfoAndStoppingTheScreenRemoveTranslatedTitles() = runBlocking {
-        titles["1:es"] = "Español"
-        vm.requestLocalizedTitles(listOf(item(1)))
-        awaitTitles { it.isNotEmpty() }
-        preferences.value = preferences.value.copy(useBasicInfo = false)
-        awaitTitles { it.isEmpty() }
-        preferences.value = preferences.value.copy(useBasicInfo = true)
-        awaitTitles { it.isNotEmpty() }
-        preferences.value = preferences.value.copy(enabled = false)
-        awaitTitles { it.isEmpty() }
-        preferences.value = preferences.value.copy(enabled = true)
-        awaitTitles { it.isNotEmpty() }
-        vm.requestLocalizedTitles(emptyList())
-        assertTrue(vm.localizedTitles.value.isEmpty())
-    }
-
-    @Test fun lookupAndRetentionAreBoundedToTheCurrentWindow() = runBlocking {
-        (0..149).forEach { titles["$it:es"] = "Title $it" }
-        vm.requestLocalizedTitles((0..149).map(::item))
-        assertEquals(96, awaitTitles { it.isNotEmpty() }.size)
-        verify(exactly = 96) { metadata.cachedLocalizedTitle(any(), ContentType.MOVIE, "es") }
-        vm.requestLocalizedTitles(listOf(item(120)))
-        assertEquals(setOf("movie:tmdb:120"), awaitTitles { it.isNotEmpty() }.keys)
-    }
-
-    @Test fun anUnknownOrUntranslatedTitleDoesNotCreateWorkOrARow() = runBlocking {
-        titles["1:es"] = "Español"
+    @Test fun withoutTmdbArtworkOnlyAnEnrichmentTitleAlreadyInMemoryIsUsed() = runBlocking {
+        titles["1:en-US"] = "Cached"
         vm.requestLocalizedTitles(listOf(item(1), item(2)))
-        assertEquals(setOf("movie:tmdb:1"), awaitTitles { it.isNotEmpty() }.keys)
+        assertEquals(mapOf("movie:tmdb:1" to "Cached"), awaitTitles { it.isNotEmpty() })
+        assertTrue(vm.localizedPosters.value.isEmpty())
         coVerify(exactly = 0) { metadata.fetchEnrichment(any(), any(), any()) }
-        coVerify(exactly = 0) { tmdb.ensureTmdbId(any(), any(), any()) }
+    }
+
+    @Test fun changingTheAppLanguageDropsOldTranslationsAndAsksInTheNewOne() = runBlocking {
+        coEvery { tmdb.searchArtwork("tmdb:1", "movie", "es-ES") } returns TmdbService.SearchArtwork("Espanol", null)
+        coEvery { tmdb.searchArtwork("tmdb:1", "movie", "fr-FR") } returns TmdbService.SearchArtwork("Francais", null)
+        vm.setNotflixSearchActive(true, "es-ES")
+        vm.requestLocalizedTitles(listOf(item(1)))
+        awaitTitles { it["movie:tmdb:1"] == "Espanol" }
+        vm.setNotflixSearchActive(true, "fr-FR")
+        assertTrue(vm.localizedTitles.value.isEmpty())
+        vm.requestLocalizedTitles(listOf(item(1)))
+        assertEquals("Francais", awaitTitles { it.isNotEmpty() }["movie:tmdb:1"])
+    }
+
+    @Test fun disabledTmdbMakesNoRequestsAndShowsNoTranslation() = runBlocking {
+        preferences.value = preferences.value.copy(enabled = false)
+        titles["1:en-US"] = "Cached"
+        vm.requestLocalizedTitles(listOf(item(1)))
+        assertTrue(vm.localizedTitles.value.isEmpty())
+        coVerify(exactly = 0) { tmdb.searchArtwork(any(), any(), any()) }
+    }
+
+    @Test fun retentionIsBoundedToTheMostRecentEntries() = runBlocking {
+        coEvery { tmdb.searchArtwork(any(), "movie", any()) } answers {
+            TmdbService.SearchArtwork("T ${firstArg<String>()}", null)
+        }
+        vm.requestLocalizedTitles((0 until 200).map(::item))
+        val kept = awaitTitles { it.containsKey("movie:tmdb:199") }
+        assertEquals(160, kept.size)
+        assertTrue("movie:tmdb:0" !in kept)
     }
 }

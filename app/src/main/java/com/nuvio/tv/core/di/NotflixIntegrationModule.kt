@@ -6,6 +6,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.IntoSet
+import com.nuvio.tv.core.profile.ProfileScopedCredentialStore
 import javax.inject.Singleton
 
 /** Reads the user-provided provider keys from the device store on every call. */
@@ -17,4 +19,8 @@ object NotflixIntegrationModule {
     @Singleton
     fun provideNotflixIntegrationConfig(store: NotflixIntegrationStore): NotflixIntegrationConfig =
         NotflixIntegrationConfig(source = store)
+
+    @Provides
+    @IntoSet
+    fun credentialStore(store: NotflixIntegrationStore): ProfileScopedCredentialStore = store
 }

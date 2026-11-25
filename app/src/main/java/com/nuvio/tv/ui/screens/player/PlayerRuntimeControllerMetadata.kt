@@ -187,7 +187,8 @@ private suspend fun PlayerRuntimeController.enrichDescriptionFromTmdb(id: String
             val hasUserAudioSelection = persistedTrackPreference?.audio != null
             if (!hasUserAudioSelection) {
                 val playerSettings = playerSettingsDataStore.playerSettings.first()
-                if (playerSettings.preferredAudioLanguage == AudioLanguageOption.ORIGINAL) {
+                if (autoPlayAudioLanguage == null &&
+                    playerSettings.preferredAudioLanguage == AudioLanguageOption.ORIGINAL) {
                     val resolved = resolvePreferredAudioLanguages(
                         preferredAudioLanguage = playerSettings.preferredAudioLanguage,
                         secondaryPreferredAudioLanguage = playerSettings.secondaryPreferredAudioLanguage,
@@ -432,7 +433,7 @@ internal fun PlayerRuntimeController.evaluatePostPlayOverlayVisibility(positionM
         val ne = state.nextEpisode
         val isUnplayable = !ne.hasAired ||
             (ne.released.isNullOrBlank() && ne.available == false)
-        if (isUnplayable) return
+        if (isUnplayable || state.sleepTimerEndOfEpisode) return
 
         _uiState.update {
             it.copy(postPlayMode = PostPlayMode.AutoPlay(nextEpisode = state.nextEpisode))

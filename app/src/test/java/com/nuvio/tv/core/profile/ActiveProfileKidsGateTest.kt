@@ -19,6 +19,45 @@ class ActiveProfileKidsGateTest {
         (field.get(gate) as CoroutineScope).coroutineContext[Job]?.cancelAndJoin()
     }
 
+    @Test fun kidsPagePublishesSafeCachedTitlesBeforeWaitingOnNetwork() = runBlocking {
+        val allowNetwork = CompletableDeferred<Unit>()
+        val cache = mockk<AgeRatingCache>(relaxed = true) {
+            coEvery { all(any()) } returns mapOf(
+                ageRatingKey("movie", "cached") to CachedAgeRating(AgeLevel.TP, System.currentTimeMillis())
+            )
+        }
+        val source = object : TmdbAgeRatingSource {
+            override suspend fun lookup(apiType: String, id: String, fallbackImdbId: String?): AgeRatingLookup {
+                allowNetwork.await()
+                return AgeRatingLookup(if (id == "family") AgeLevel.TP else null, cacheable = true)
+            }
+        }
+        val profiles = mockk<ProfileManager> { every { activeProfileId } returns MutableStateFlow(2) }
+        val limits = mockk<ProfileAgeLimitStore> { every { observe(any()) } returns flowOf(AgeLevel.TP) }
+        val gate = ActiveProfileAgeGate(profiles, limits, AgeRatingResolver(source, cache) { true })
+        try {
+            val first = CompletableDeferred<Pair<List<String>, Boolean>>()
+            val last = CompletableDeferred<List<String>>()
+            val loading = launch {
+                gate.filterKidsProgressively(
+                    listOf(item("family"), item("adult", "16"), item("cached"), item("unrated"), item("own", "TP")),
+                    AgeLevel.TP
+                ) { items, complete ->
+                    val ids = items.map { it.id }
+                    first.complete(ids to complete)
+                    if (complete) last.complete(ids)
+                }
+            }
+            assertEquals(listOf("cached", "own") to false, withTimeout(5_000) { first.await() })
+            assertTrue(loading.isActive)
+            allowNetwork.complete(Unit)
+            assertEquals(listOf("family", "cached", "own"), withTimeout(5_000) { last.await() })
+        } finally {
+            allowNetwork.complete(Unit)
+            close(gate)
+        }
+    }
+
     @Test fun explicitKidsCeilingNeverFallsBackToUnrestrictedWhileTheProfileIsLoading() = runBlocking {
         val profiles = mockk<ProfileManager> { every { activeProfileId } returns MutableStateFlow(2) }
         val limits = mockk<ProfileAgeLimitStore> { every { observe(any()) } returns MutableSharedFlow() }

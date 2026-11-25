@@ -16,6 +16,7 @@ internal fun autoSyncSettingsItems(enabled: Boolean) {
     val checked by AutoSyncPreferences.enabled.collectAsStateWithLifecycle()
 
     SettingsToggleRow(
+        settingId = "AutoSyncSettingsItems.autosync_setting_title",
         title = stringResource(R.string.autosync_setting_title),
         subtitle = stringResource(R.string.autosync_setting_description),
         checked = checked,
@@ -29,6 +30,7 @@ internal fun autoSyncSettingsItems(enabled: Boolean) {
         val thorough by AutoSyncPreferences.aggressiveMode.collectAsStateWithLifecycle()
 
         SliderSettingsItem(
+            settingId = "AutoSyncSettingsItems.autosync_tolerance_title",
             title = stringResource(R.string.autosync_tolerance_title),
             subtitle = stringResource(R.string.autosync_tolerance_description),
             values = AutoSyncPreferences.syncToleranceOptionsMs,
@@ -43,6 +45,7 @@ internal fun autoSyncSettingsItems(enabled: Boolean) {
         )
 
         SettingsToggleRow(
+            settingId = "AutoSyncSettingsItems.autosync_thorough_title",
             title = stringResource(R.string.autosync_thorough_title),
             subtitle = stringResource(R.string.autosync_thorough_description),
             checked = thorough,

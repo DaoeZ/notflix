@@ -138,6 +138,8 @@ class NotflixCategoryCardActionsTest {
         val poster = compose.onNodeWithTag("notflix-poster-movie:1", useUnmergedTree = true)
         keys.forEach { key ->
             poster.performKeyInput { pressKey(key) }
+            // The clock is paused: one frame lets the new card state recompose before the next key.
+            compose.mainClock.advanceTimeByFrame()
             compose.waitForIdle()
         }
     }
@@ -207,6 +209,7 @@ class NotflixCategoryCardActionsTest {
         listOf(Key.DirectionDown, Key.DirectionRight, Key.DirectionRight,
             Key.DirectionRight, Key.DirectionRight, Key.DirectionCenter).forEach { key ->
             last.performKeyInput { pressKey(key) }
+            compose.mainClock.advanceTimeByFrame()
             compose.waitForIdle()
         }
         compose.mainClock.advanceTimeBy(300)
@@ -236,6 +239,7 @@ class NotflixCategoryCardActionsTest {
             Key.DirectionRight, Key.DirectionCenter, Key.DirectionCenter))
         assertEquals(listOf("watched:1"), calls)
         compose.runOnIdle { watchedIds.value = setOf("1"); watchedPending.value = false }
+        compose.mainClock.advanceTimeByFrame()
         compose.waitForIdle()
         press(listOf(Key.DirectionCenter))
         assertEquals(listOf("watched:1", "watched:1"), calls)

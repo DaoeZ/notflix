@@ -1,5 +1,8 @@
 package com.nuvio.tv.ui.screens.collection
 
+import com.nuvio.tv.core.util.withAppLocale
+import com.nuvio.tv.data.trailer.matchesNotflixTrailerLanguage
+
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -119,6 +122,9 @@ data class FolderDetailGridFocusState(
 
 private const val TRAILER_PREVIEW_DEBOUNCE_MS = 180L
 
+/** Pages in a row that may come back empty after filtering before paging stops (2 GB TV: bounded requests). */
+internal const val EMPTY_PAGE_SKIPS = 3
+
 @HiltViewModel
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class FolderDetailViewModel @Inject constructor(
@@ -143,6 +149,9 @@ class FolderDetailViewModel @Inject constructor(
     playerSettingsDataStore: com.nuvio.tv.data.local.PlayerSettingsDataStore,
     private val hiddenTitlesRepository: com.nuvio.tv.domain.repository.HiddenTitlesRepository,
     private val profileManager: com.nuvio.tv.core.profile.ProfileManager,
+    // M68: the KIDS folder follows the same TMDB variant as the Home rows when a key is available.
+    private val integrationConfig: com.nuvio.tv.data.local.NotflixIntegrationConfig =
+        com.nuvio.tv.data.local.NotflixIntegrationConfig { com.nuvio.tv.data.local.NotflixIntegrationCredentials() },
     val posterOptions: com.nuvio.tv.ui.components.posteroptions.PosterOptionsController
 ) : ViewModel() {
 
@@ -156,6 +165,7 @@ class FolderDetailViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(FolderDetailUiState())
     val uiState: StateFlow<FolderDetailUiState> = _uiState.asStateFlow()
+    val activeProfileId = profileManager.activeProfileId
 
     private var movieWatchedJob: Job? = null
     private var enrichFocusJob: Job? = null
@@ -171,6 +181,7 @@ class FolderDetailViewModel @Inject constructor(
     val trailerPreviewAudioUrls: StateFlow<Map<String, String>> = _trailerPreviewAudioUrls.asStateFlow()
     private val trailerPreviewLoadingIds = mutableSetOf<String>()
     private val trailerPreviewNegativeCache = mutableSetOf<String>()
+    private var trailerPreviewAppLanguage: String? = null
     private val modernCarouselRowBuildCache = ModernCarouselRowBuildCache()
     private var activeTrailerPreviewItemId: String? = null
     private var trailerPreviewRequestVersion: Long = 0L
@@ -220,9 +231,14 @@ class FolderDetailViewModel @Inject constructor(
     private val _tabFocusStates = MutableStateFlow<Map<Int, FolderDetailGridFocusState>>(emptyMap())
     val tabFocusStates: StateFlow<Map<Int, FolderDetailGridFocusState>> = _tabFocusStates.asStateFlow()
 
-    private var hiddenUndoJob: Job? = null
+    private val hiddenUndoTimeout = com.nuvio.tv.ui.screens.home.HiddenTitleUndoTimeout(viewModelScope) { undo ->
+        _uiState.update { if (it.hiddenTitleUndo == undo) it.copy(hiddenTitleUndo = null) else it }
+    }
+    fun setHiddenUndoFocused(undo: com.nuvio.tv.ui.screens.home.HiddenTitleUndo, focused: Boolean) =
+        hiddenUndoTimeout.focus(undo, focused)
     private var hiddenWriteJob: Job? = null
-    private var derivedKidsFolder = false
+    internal var derivedKidsFolder = false
+        private set
 
     init {
         posterOptions.bind(viewModelScope)
@@ -260,22 +276,19 @@ class FolderDetailViewModel @Inject constructor(
     fun hideTitle(item: MetaPreview) {
         val profileId = profileManager.activeProfileId.value
         val key = com.nuvio.tv.data.local.hiddenTitleKey(item.apiType, item.id)
-        hiddenWriteJob = viewModelScope.launch { hiddenTitlesRepository.hide(profileId, key) }
-        _uiState.update { it.copy(hiddenTitleUndo = com.nuvio.tv.ui.screens.home.HiddenTitleUndo(profileId, key, item.name)) }
-        hiddenUndoJob?.cancel()
-        hiddenUndoJob = viewModelScope.launch {
-            delay(5_000)
-            _uiState.update { state ->
-                if (state.hiddenTitleUndo?.key == key) state.copy(hiddenTitleUndo = null) else state
-            }
-        }
+        hiddenWriteJob = viewModelScope.launch { hiddenTitlesRepository.hide(profileId, key, item.name, item.poster) }
+        val undo = com.nuvio.tv.ui.screens.home.HiddenTitleUndo(profileId, key, item.name)
+        _uiState.update { it.copy(hiddenTitleUndo = undo) }
+        hiddenUndoTimeout.start(undo)
     }
 
     fun undoHideTitle() {
         val undo = _uiState.value.hiddenTitleUndo ?: return
         val write = hiddenWriteJob
-        hiddenUndoJob?.cancel()
-        hiddenUndoJob = null
+        hiddenUndoTimeout.cancel()
+        if (undo.profileId != profileManager.activeProfileId.value) {
+            _uiState.update { it.copy(hiddenTitleUndo = null) }; return
+        }
         _uiState.update { it.copy(hiddenTitleUndo = null) }
         viewModelScope.launch {
             write?.join()
@@ -325,13 +338,24 @@ class FolderDetailViewModel @Inject constructor(
     private suspend fun filterFolderRow(row: CatalogRow): CatalogRow =
         if (derivedKidsFolder) row.copy(items = filterFolderItems(row.items)) else ageGate.filterRow(row)
 
+    private suspend fun publishAgeFilteredPage(row: CatalogRow, publish: (CatalogRow, Boolean) -> Unit) {
+        if (derivedKidsFolder) {
+            ageGate.filterKidsProgressively(row.items, com.nuvio.tv.core.profile.AgeLevel.TP) { items, complete ->
+                publish(row.copy(items = items), complete)
+            }
+        } else {
+            publish(filterFolderRow(row), true)
+        }
+    }
+
     private fun loadFolder() {
         viewModelScope.launch {
             val collections = collectionsDataStore.collections.first()
             val builtInKids = if (collectionId == com.nuvio.tv.ui.appearance.NotflixKidsHomePreset.ID) {
                 com.nuvio.tv.ui.appearance.notflixKidsHomeCollection(
                     collectionId, ageGate.currentLimitFromStore(),
-                    com.nuvio.tv.ui.appearance.notflixKidsHomeTexts(appContext)
+                    com.nuvio.tv.ui.appearance.notflixKidsHomeTexts(appContext),
+                    discover = integrationConfig.isTmdbEnabled()
                 )
             } else null
             derivedKidsFolder = builtInKids != null
@@ -851,6 +875,7 @@ class FolderDetailViewModel @Inject constructor(
     }
 
     private fun loadAddonCatalogForTab(tabIndex: Int, source: AddonCatalogCollectionSource) {
+        val requestProfile = activeProfileId.value
         viewModelScope.launch {
             val addons = addonRepository.getInstalledAddons().first().enabledAddons()
             val addon = addons.find { it.id == source.addonId }
@@ -897,19 +922,17 @@ class FolderDetailViewModel @Inject constructor(
                 when (result) {
                     is NetworkResult.Success -> {
                         val hideUnreleased = _uiState.value.hideUnreleasedContent
-                        val filteredRow = filterFolderRow(result.data.filteredForRelease(hideUnreleased))
-                        _uiState.update { state ->
-                            val tabs = state.tabs.toMutableList()
-                            if (tabIndex < tabs.size) {
-                                tabs[tabIndex] = tabs[tabIndex].copy(
-                                    catalogRow = filteredRow,
-                                    isLoading = false
-                                )
+                        publishAgeFilteredPage(result.data.filteredForRelease(hideUnreleased)) { row, complete ->
+                            val current = _uiState.value.tabs.getOrNull(tabIndex)
+                            if (activeProfileId.value != requestProfile || current?.source != source) return@publishAgeFilteredPage
+                            _uiState.update { state ->
+                                val tabs = state.tabs.toMutableList()
+                                tabs[tabIndex] = current.copy(catalogRow = row.copy(isLoading = !complete), isLoading = false)
+                                state.copy(tabs = tabs)
                             }
-                            state.copy(tabs = tabs)
+                            rebuildAllTab()
+                            rebuildFollowLayoutState()
                         }
-                        rebuildAllTab()
-                        rebuildFollowLayoutState()
                     }
                     is NetworkResult.Error -> {
                         _uiState.update { state ->
@@ -1140,7 +1163,9 @@ class FolderDetailViewModel @Inject constructor(
         }
     }
 
-    private fun loadTmdbSourceForTab(tabIndex: Int, source: TmdbCollectionSource, page: Int, append: Boolean) {
+    private fun loadTmdbSourceForTab(tabIndex: Int, source: TmdbCollectionSource, page: Int, append: Boolean, emptyPages: Int = 0) {
+        val requestProfile = activeProfileId.value
+        val previousItems = if (append) _uiState.value.tabs.getOrNull(tabIndex)?.catalogRow?.items.orEmpty() else emptyList()
         if (append) {
             _uiState.update { s ->
                 val tabs = s.tabs.toMutableList()
@@ -1152,38 +1177,58 @@ class FolderDetailViewModel @Inject constructor(
             rebuildFollowLayoutState()
         }
         viewModelScope.launch {
+            var chained = false
             tmdbCollectionSourceResolver.resolve(source, page).collect { result ->
+                if (_uiState.value.tabs.getOrNull(tabIndex)?.source != source) return@collect
                 when (result) {
                     is NetworkResult.Success -> {
                         val posterPattern = layoutPreferenceDataStore.customPosterUrlPattern.first()
                         val enabledScreens = layoutPreferenceDataStore.customPosterEnabledScreens.first()
-                        val filteredData = filterFolderRow(
-                            result.data.filteredForRelease(
+                        val released = result.data.filteredForRelease(
                                 hideUnreleased = _uiState.value.hideUnreleasedContent,
                                 treatMissingDateAsUnreleased = true
                             )
-                        )
-                        _uiState.update { s ->
-                            val tabs = s.tabs.toMutableList()
-                            val currentRow = tabs.getOrNull(tabIndex)?.catalogRow
-                            val row = if (append && currentRow != null) {
-                                val existingIds = currentRow.items.map { "${it.apiType}:${it.id}" }.toHashSet()
-                                val newItems = filteredData.items.filter { "${it.apiType}:${it.id}" !in existingIds }
-                                filteredData.copy(
-                                    items = currentRow.items + newItems,
-                                    hasMore = filteredData.hasMore && newItems.isNotEmpty(),
-                                    isLoading = false
-                                )
-                            } else {
-                                filteredData
+                        var skipEmpty = false
+                        publishAgeFilteredPage(released) { filteredData, complete ->
+                            val current = _uiState.value.tabs.getOrNull(tabIndex)
+                            if (activeProfileId.value != requestProfile || current?.source != source) return@publishAgeFilteredPage
+                            val existingIds = previousItems.mapTo(hashSetOf()) { "${it.apiType}:${it.id}" }
+                            val newItems = filteredData.items.filter { "${it.apiType}:${it.id}" !in existingIds }
+                            if (!complete && newItems.isEmpty()) return@publishAgeFilteredPage
+                            skipEmpty = complete && newItems.isEmpty() && filteredData.hasMore && emptyPages < EMPTY_PAGE_SKIPS
+                            val row = filteredData.copy(
+                                items = (previousItems + newItems).withCustomPosterUrls(
+                                    com.nuvio.tv.core.poster.patternForScreen(posterPattern, com.nuvio.tv.core.poster.CustomPosterScreen.COLLECTIONS, enabledScreens)
+                                ),
+                                hasMore = filteredData.hasMore && (newItems.isNotEmpty() || emptyPages < EMPTY_PAGE_SKIPS),
+                                isLoading = !complete
+                            )
+                            _uiState.update { state ->
+                                val tabs = state.tabs.toMutableList()
+                                tabs[tabIndex] = current.copy(catalogRow = row, isLoading = false)
+                                state.copy(tabs = tabs)
                             }
-                            if (tabIndex < tabs.size) tabs[tabIndex] = tabs[tabIndex].copy(catalogRow = row.copy(items = row.items.withCustomPosterUrls(com.nuvio.tv.core.poster.patternForScreen(posterPattern, com.nuvio.tv.core.poster.CustomPosterScreen.COLLECTIONS, enabledScreens))), isLoading = false)
-                            s.copy(tabs = tabs)
+                            rebuildAllTab()
+                            rebuildFollowLayoutState()
                         }
-                        rebuildAllTab()
-                        rebuildFollowLayoutState()
+                        // A page left empty by the age/hidden filter or duplicates must not end paging.
+                        if (skipEmpty && !chained) { chained = true; loadTmdbSourceForTab(tabIndex, source, page + 1, append = true, emptyPages = emptyPages + 1) }
                     }
                     is NetworkResult.Error -> {
+                        val fallback = if (derivedKidsFolder)
+                            com.nuvio.tv.ui.appearance.NotflixKidsHomePreset.fallbackSource(folderId) else null
+                        if (fallback != null) {
+                            _uiState.update { state ->
+                                val tabs = state.tabs.toMutableList()
+                                tabs.getOrNull(tabIndex)?.let { current ->
+                                    tabs[tabIndex] = current.copy(source = fallback, catalogRow = null,
+                                        isLoading = true, error = null)
+                                }
+                                state.copy(tabs = tabs)
+                            }
+                            loadAddonCatalogForTab(tabIndex, fallback)
+                            return@collect
+                        }
                         _uiState.update { s ->
                             val tabs = s.tabs.toMutableList()
                             val current = tabs.getOrNull(tabIndex)
@@ -1205,7 +1250,7 @@ class FolderDetailViewModel @Inject constructor(
         }
     }
 
-    private fun loadTraktSourceForTab(tabIndex: Int, source: TraktCollectionSource, page: Int, append: Boolean) {
+    private fun loadTraktSourceForTab(tabIndex: Int, source: TraktCollectionSource, page: Int, append: Boolean, emptyPages: Int = 0) {
         if (append) {
             _uiState.update { s ->
                 val tabs = s.tabs.toMutableList()
@@ -1217,6 +1262,7 @@ class FolderDetailViewModel @Inject constructor(
             rebuildFollowLayoutState()
         }
         viewModelScope.launch {
+            var chained = false
             traktPublicListSourceResolver.resolve(source, page).collect { result ->
                 when (result) {
                     is NetworkResult.Success -> {
@@ -1228,18 +1274,21 @@ class FolderDetailViewModel @Inject constructor(
                                 treatMissingDateAsUnreleased = true
                             )
                         )
+                        var skipEmpty = false
                         _uiState.update { s ->
                             val tabs = s.tabs.toMutableList()
                             val currentRow = tabs.getOrNull(tabIndex)?.catalogRow
                             val row = if (append && currentRow != null) {
                                 val existingIds = currentRow.items.map { "${it.apiType}:${it.id}" }.toHashSet()
                                 val newItems = filteredData.items.filter { "${it.apiType}:${it.id}" !in existingIds }
+                                skipEmpty = newItems.isEmpty() && filteredData.hasMore && emptyPages < EMPTY_PAGE_SKIPS
                                 filteredData.copy(
                                     items = currentRow.items + newItems,
-                                    hasMore = filteredData.hasMore && newItems.isNotEmpty(),
+                                    hasMore = filteredData.hasMore && (newItems.isNotEmpty() || emptyPages < EMPTY_PAGE_SKIPS),
                                     isLoading = false
                                 )
                             } else {
+                                skipEmpty = filteredData.items.isEmpty() && filteredData.hasMore
                                 filteredData
                             }
                             if (tabIndex < tabs.size) tabs[tabIndex] = tabs[tabIndex].copy(catalogRow = row.copy(items = row.items.withCustomPosterUrls(com.nuvio.tv.core.poster.patternForScreen(posterPattern, com.nuvio.tv.core.poster.CustomPosterScreen.COLLECTIONS, enabledScreens))), isLoading = false)
@@ -1247,6 +1296,8 @@ class FolderDetailViewModel @Inject constructor(
                         }
                         rebuildAllTab()
                         rebuildFollowLayoutState()
+                        // A page left empty by the age/hidden filter or duplicates must not end paging.
+                        if (skipEmpty && !chained) { chained = true; loadTraktSourceForTab(tabIndex, source, page + 1, append = true, emptyPages = emptyPages + 1) }
                     }
                     is NetworkResult.Error -> {
                         _uiState.update { s ->
@@ -1559,6 +1610,18 @@ class FolderDetailViewModel @Inject constructor(
         newVisit: Boolean = false
     ) {
         if (!AppFeaturePolicy.inAppTrailerPlaybackEnabled) return
+        val appLanguage = if (newVisit ||
+            (activeTrailerPreviewItemId == itemId && trailerPreviewAppLanguage != null)) {
+            appContext.withAppLocale().resources.configuration.locales[0].toLanguageTag()
+        } else null
+        if (trailerPreviewAppLanguage != appLanguage) {
+            trailerPreviewJob?.cancel()
+            trailerPreviewLoadingIds.clear()
+            trailerPreviewNegativeCache.clear()
+            _trailerPreviewUrls.value = emptyMap()
+            _trailerPreviewAudioUrls.value = emptyMap()
+            trailerPreviewAppLanguage = appLanguage
+        }
         if (newVisit) {
             trailerPreviewJob?.cancel()
             trailerPreviewLoadingIds.remove(activeTrailerPreviewItemId)
@@ -1587,26 +1650,31 @@ class FolderDetailViewModel @Inject constructor(
                     title = title,
                     year = extractYear(releaseInfo),
                     tmdbId = tmdbId,
-                    type = apiType
+                    type = apiType,
+                    appLanguage = appLanguage
                 )
 
                 val isLatestFocusedItem =
                     activeTrailerPreviewItemId == itemId && trailerPreviewRequestVersion == requestVersion
                 if (!isLatestFocusedItem) return@launch
 
-                // Prefer the localized YT id provided by the caller (typically TMDB
-                // enrichment trailers in the user locale) when the direct TMDB videos
-                // lookup didn't find anything for this language and we'd otherwise
-                // fall through to TMDB's en-US fallback.
-                val resolvedSource = if (trailerSource?.videoUrl.isNullOrBlank() && !fallbackYtId.isNullOrBlank()) {
+                val resolvedYtId = if (appLanguage == null) fallbackYtId else {
+                    _uiState.value.tabs.asSequence().mapNotNull { tab ->
+                        tab.catalogRow?.items?.firstOrNull { it.id == itemId }
+                    }.firstOrNull()?.trailers?.firstNotNullOfOrNull {
+                        it.ytId?.takeIf { id -> id.isNotBlank() && matchesNotflixTrailerLanguage(it.lang, appLanguage) }
+                    }
+                }
+                val resolvedSource = if (trailerSource?.videoUrl.isNullOrBlank() && !resolvedYtId.isNullOrBlank()) {
                     trailerService.getTrailerPlaybackSourceFromYouTubeUrl(
-                        youtubeUrl = "https://www.youtube.com/watch?v=$fallbackYtId",
+                        youtubeUrl = "https://www.youtube.com/watch?v=$resolvedYtId",
                         title = title,
                         year = extractYear(releaseInfo)
                     )
                 } else {
                     trailerSource
                 }
+                if (trailerPreviewRequestVersion != requestVersion) return@launch
 
                 if (resolvedSource?.videoUrl.isNullOrBlank()) {
                     // While YouTube is rate limiting, a miss isn't remembered, so the

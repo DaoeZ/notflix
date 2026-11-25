@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -46,9 +47,11 @@ fun PlaybackSettingsScreen(
 }
 
 @Composable
-fun PlaybackSettingsContent(
+internal fun PlaybackSettingsContent(
     viewModel: PlaybackSettingsViewModel = hiltViewModel(),
-    initialFocusRequester: FocusRequester? = null
+    initialFocusRequester: FocusRequester? = null,
+    notflixPage: NotflixSettingsPage? = null,
+    openNotflixPage: (NotflixSettingsPage) -> Unit = {}
 ) {
     val playerSettings by viewModel.playerSettings.collectAsStateWithLifecycle(initialValue = PlayerSettings())
     val transparentLetterbox by viewModel.transparentLetterbox.collectAsStateWithLifecycle(initialValue = false)
@@ -99,12 +102,26 @@ fun PlaybackSettingsContent(
             subtitle = stringResource(R.string.playback_subtitle)
         )
 
+        if (notflixPage == null) NotflixPlayerButtonsSetting(playerSettings, viewModel::playerButtonsProfileId) { ids, profile ->
+            onUpdate { setNotflixPlayerButtons(ids, profile) }
+        }
+
         SettingsGroupCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            PlaybackSettingsSections(
+            if (notflixPage != null) {
+                NotflixPlaybackSettings(notflixPage, playerSettings, p2p, transparentLetterbox, onUpdate,
+                    onOpenDialog = { openDialog = it }, onMemorySettingChanged = { memoryUsageTrigger++ },
+                    onClearTorrentCache = {
+                        torrentCacheClearResult = null; torrentCacheClearFailed = false
+                        coroutineScope.launch {
+                            runCatching { viewModel.clearTorrentCache() }
+                                .onSuccess { torrentCacheClearResult = it }.onFailure { torrentCacheClearFailed = true }
+                        }
+                    }, playerButtonsProfileId = viewModel::playerButtonsProfileId, open = openNotflixPage)
+            } else PlaybackSettingsSections(
                 playerSettings = playerSettings,
                 p2p = p2p,
                 transparentLetterbox = transparentLetterbox,
@@ -137,6 +154,9 @@ fun PlaybackSettingsContent(
         }
     }
 
+    // Dialog editors keep their original contents and do not overwrite the page's remembered row.
+    CompositionLocalProvider(LocalNotflixSettingsRows provides null, LocalNotflixSettingsFocus provides null,
+        LocalNotflixSettingsFrame provides false) {
     PlaybackSettingsDialogs(
         dialog = openDialog,
         settings = playerSettings,
@@ -146,4 +166,5 @@ fun PlaybackSettingsContent(
         onUpdate = onUpdate,
         onDismiss = { openDialog = null }
     )
+    }
 }

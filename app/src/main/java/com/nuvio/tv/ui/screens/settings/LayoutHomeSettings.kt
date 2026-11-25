@@ -72,6 +72,7 @@ internal fun LayoutHomeLayoutSection(
 
     if (uiState.selectedLayout == HomeLayout.MODERN) {
         SettingsToggleRow(
+            settingId = "LayoutHomeSettings.layout_fullscreen_hero_backdrop",
             title = stringResource(R.string.layout_fullscreen_hero_backdrop),
             subtitle = stringResource(R.string.layout_fullscreen_hero_backdrop_sub),
             checked = uiState.modernHeroFullScreenBackdropEnabled,
@@ -83,6 +84,7 @@ internal fun LayoutHomeLayoutSection(
 
     if (uiState.selectedLayout == HomeLayout.CLASSIC) {
         SettingsToggleRow(
+            settingId = "LayoutHomeSettings.layout_classic_focus_gradient",
             title = stringResource(R.string.layout_classic_focus_gradient),
             subtitle = stringResource(R.string.layout_classic_focus_gradient_sub),
             checked = uiState.classicFocusGradientEnabled,
@@ -94,6 +96,7 @@ internal fun LayoutHomeLayoutSection(
 
     if (uiState.selectedLayout != HomeLayout.MODERN) {
         SettingsToggleRow(
+            settingId = "LayoutHomeSettings.layout_show_hero",
             title = stringResource(R.string.layout_show_hero),
             subtitle = stringResource(R.string.layout_show_hero_sub),
             checked = uiState.heroSectionEnabled,
@@ -143,12 +146,14 @@ internal fun LayoutHomeContentSection(
 ) {
     if (uiState.selectedLayout != HomeLayout.MODERN) {
         SettingsToggleRow(
+            settingId = "LayoutHomeSettings.layout_poster_labels",
             title = stringResource(R.string.layout_poster_labels),
             subtitle = stringResource(R.string.layout_poster_labels_sub),
             checked = uiState.posterLabelsEnabled,
             onToggle = { onEvent(LayoutSettingsEvent.SetPosterLabelsEnabled(!uiState.posterLabelsEnabled)) }
         )
         SettingsToggleRow(
+            settingId = "LayoutHomeSettings.layout_addon_name",
             title = stringResource(R.string.layout_addon_name),
             subtitle = stringResource(R.string.layout_addon_name_sub),
             checked = uiState.catalogAddonNameEnabled,
@@ -156,18 +161,21 @@ internal fun LayoutHomeContentSection(
         )
     }
     SettingsToggleRow(
+        settingId = "LayoutHomeSettings.layout_catalog_type",
         title = stringResource(R.string.layout_catalog_type),
         subtitle = stringResource(R.string.layout_catalog_type_sub),
         checked = uiState.catalogTypeSuffixEnabled,
         onToggle = { onEvent(LayoutSettingsEvent.SetCatalogTypeSuffixEnabled(!uiState.catalogTypeSuffixEnabled)) }
     )
     SettingsToggleRow(
+        settingId = "LayoutHomeSettings.layout_hide_unreleased",
         title = stringResource(R.string.layout_hide_unreleased),
         subtitle = stringResource(R.string.layout_hide_unreleased_sub),
         checked = uiState.hideUnreleasedContent,
         onToggle = { onEvent(LayoutSettingsEvent.SetHideUnreleasedContent(!uiState.hideUnreleasedContent)) }
     )
     SettingsToggleRow(
+        settingId = "LayoutHomeSettings.layout_overall_ratings",
         title = stringResource(R.string.layout_overall_ratings),
         subtitle = stringResource(
             if (uiState.homeImdbRatingsVisibility.showRatings) {
@@ -194,6 +202,7 @@ internal fun LayoutSidebarSection(
     onEvent: (LayoutSettingsEvent) -> Unit
 ) {
     SettingsToggleRow(
+        settingId = "LayoutHomeSettings.layout_modern_sidebar",
         title = stringResource(R.string.layout_modern_sidebar),
         subtitle = stringResource(R.string.layout_modern_sidebar_sub),
         checked = uiState.modernSidebarEnabled,
@@ -202,6 +211,7 @@ internal fun LayoutSidebarSection(
     if (uiState.modernSidebarEnabled) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             SettingsToggleRow(
+                settingId = "LayoutHomeSettings.layout_modern_sidebar_blur",
                 title = stringResource(R.string.layout_modern_sidebar_blur),
                 subtitle = stringResource(R.string.layout_modern_sidebar_blur_sub),
                 checked = uiState.modernSidebarBlurEnabled,
@@ -209,6 +219,7 @@ internal fun LayoutSidebarSection(
             )
         }
         SettingsToggleRow(
+            settingId = "LayoutHomeSettings.layout_hide_floating_pill",
             title = stringResource(R.string.layout_hide_floating_pill),
             subtitle = stringResource(R.string.layout_hide_floating_pill_sub),
             checked = uiState.sidebarCollapsedByDefault,
@@ -216,6 +227,7 @@ internal fun LayoutSidebarSection(
         )
     } else {
         SettingsToggleRow(
+            settingId = "LayoutHomeSettings.layout_collapse_sidebar",
             title = stringResource(R.string.layout_collapse_sidebar),
             subtitle = stringResource(R.string.layout_collapse_sidebar_sub),
             checked = uiState.sidebarCollapsedByDefault,
@@ -346,6 +358,7 @@ private fun DiscoverLocationRow(
     var dialogOpen by remember { mutableStateOf(false) }
 
     SettingsToggleRow(
+        settingId = "LayoutHomeSettings.layout_show_discover",
         title = stringResource(R.string.layout_show_discover),
         subtitle = stringResource(R.string.layout_show_discover_sub),
         checked = sectionEnabled,
@@ -366,6 +379,7 @@ private fun DiscoverLocationRow(
             DiscoverLocation.OFF -> ""
         }
         SettingsActionRow(
+            settingId = "LayoutHomeSettings.layout_discover_location_action",
             title = stringResource(R.string.layout_discover_location_action),
             subtitle = null,
             value = currentLabel,

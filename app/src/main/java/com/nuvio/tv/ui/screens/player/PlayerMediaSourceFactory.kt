@@ -220,7 +220,8 @@ internal class PlayerMediaSourceFactory(private val context: Context) {
                 "safeNativeMb=${NuvioExoPlayerPerformanceHelper.getSafeNativeMemoryLimitMb(context)} " +
                 "parallel=${if (useParallelConnections) parallelConnectionCount else 0} chunkKb=$parallelChunkSizeKb"
         )
-        val useChunkSessionSource = useParallelConnections && !isHls && !isDash
+        val useChunkSessionSource = useParallelConnections && !isHls && !isDash &&
+            (url.startsWith("http://", ignoreCase = true) || url.startsWith("https://", ignoreCase = true))
         parallelStartupPrefetchUnlocked.set(!useChunkSessionSource)
         val networkProgressiveFactory: DataSource.Factory = if (useChunkSessionSource) {
             val sessionConnections = parallelConnectionCount

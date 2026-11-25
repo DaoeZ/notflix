@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Προφίλ και λογαριασμός</string>
+    <string name="notflix_settings_home">Αρχική οθόνη</string>
+    <string name="notflix_settings_connected_accounts">Συνδεδεμένοι λογαριασμοί</string>
+    <string name="notflix_settings_system">Σύστημα</string>
+    <string name="notflix_settings_advanced_options">Σύνθετες επιλογές</string>
+    <string name="notflix_settings_trailers">Τρέιλερ</string>
+    <string name="notflix_settings_updates">Ενημερώσεις</string>
+    <string name="notflix_settings_home_collection">Αρχική συλλογή Notflix</string>
+    <string name="notflix_settings_ratings">Βαθμολογίες</string>
+    <string name="notflix_settings_metadata">Στοιχεία και κατάλογοι</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

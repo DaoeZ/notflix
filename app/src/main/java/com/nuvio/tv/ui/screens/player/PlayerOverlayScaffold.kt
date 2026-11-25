@@ -38,6 +38,7 @@ internal fun PlayerOverlayScaffold(
     topEndContent: (@Composable () -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
+    val notflix = com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = tween(250)),
@@ -122,8 +123,8 @@ internal fun PlayerOverlayScaffold(
                         )
                         onDrawBehind {
                             drawRect(brush = horizontalGradient)
-                            if (overlayTint.alpha > 0f) {
-                                drawRect(color = overlayTint)
+                            if (notflix || overlayTint.alpha > 0f) {
+                                drawRect(color = if (notflix) Color.Black.copy(alpha = .72f) else overlayTint)
                             }
                             drawRect(brush = verticalGradient)
                         }

@@ -81,6 +81,9 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -212,6 +215,8 @@ fun PlayerScreen(
     onOpenPartyMedia: (PartyMedia) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val notflixControls = com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active
+    val notflixActionsFocus = remember(uiState.currentVideoId) { NotflixPlayerFocus() }
     val playerBadges = rememberPlayerBadges(viewModel, uiState)
     val partyState by viewModel.party.state.collectAsState()
     val partyPlayback by viewModel.party.playback.collectAsState()
@@ -560,18 +565,26 @@ fun PlayerScreen(
         uiState.showAudioOverlay,
         uiState.showSubtitleOverlay,
         uiState.showSpeedDialog,
+        uiState.showSleepTimerDialog,
+        if (notflixControls) uiState.showMoreDialog else false,
+        if (notflixControls) uiState.showStreamInfoOverlay else false,
         shouldConfirmNextEpisodeOnEnd,
         postPlayRecommendationState.isVisible,
     ) {
         if (shouldConfirmNextEpisodeOnEnd || postPlayRecommendationState.isVisible) return@LaunchedEffect
         if (uiState.error != null) return@LaunchedEffect
         if (uiState.showPartyPanel) return@LaunchedEffect
+        if (notflixControls && !uiState.showControls) notflixActionsFocus.reset()
+        if (notflixControls && uiState.notflixActionPanelOpen()) return@LaunchedEffect
         if (uiState.showControls && !uiState.showEpisodesPanel && !uiState.showSourcesPanel && !uiState.showChaptersPanel &&
             !uiState.showAudioOverlay && !uiState.showSubtitleOverlay &&
             !uiState.showSubtitleStylePanel && !uiState.showSubtitleDelayOverlay &&
             !uiState.showSubtitleTimingDialog &&
-            !uiState.showSpeedDialog
+            !uiState.showSpeedDialog &&
+            !uiState.showSleepTimerDialog
         ) {
+            // Notflix requests focus once its controls are actually mounted, including after loading.
+            if (notflixControls) return@LaunchedEffect
             // Wait for AnimatedVisibility animation to complete before focusing play/pause button
             kotlinx.coroutines.delay(250)
             try {
@@ -620,10 +633,15 @@ fun PlayerScreen(
     val playerHasError by rememberUpdatedState(uiState.error != null)
     LaunchedEffect(focusPlayAfterMoreBack) {
         if (!focusPlayAfterMoreBack) return@LaunchedEffect
-        runCatching { playPauseFocusRequester.requestFocus() }
+        if (notflixControls) {
+            focusPlayAfterMoreBack = false
+            return@LaunchedEffect
+        }
+        val target = playPauseFocusRequester
+        runCatching { target.requestFocus() }
         delay(200)
         if (!moreDialogOpen && controlsVisibleForMoreBack && !playerHasError) {
-            playPauseFocusRequester.requestFocusAfterFrames(frames = 0)
+            target.requestFocusAfterFrames(frames = 0)
         }
         focusPlayAfterMoreBack = false
     }
@@ -638,6 +656,7 @@ fun PlayerScreen(
         onDispose { PlayerWindowBackdrop.releaseTransparent() }
     }
 
+    NotflixPlayerTypography {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -814,7 +833,7 @@ fun PlayerScreen(
                 val panelOrDialogOpen = uiState.showEpisodesPanel || uiState.showSourcesPanel || uiState.showPartyPanel ||
                         uiState.showChaptersPanel ||
                         uiState.showAudioOverlay || uiState.showSubtitleOverlay ||
-                        uiState.showSubtitleStylePanel || uiState.showSpeedDialog ||
+                        uiState.showSubtitleStylePanel || uiState.showSpeedDialog || uiState.showSleepTimerDialog ||
                         uiState.showSubtitleDelayOverlay || uiState.showSubtitleTimingDialog ||
                         uiState.showMoreDialog ||
                         shouldConfirmNextEpisodeOnEnd ||
@@ -1594,6 +1613,10 @@ fun PlayerScreen(
                     viewModel.onEvent(PlayerEvent.OnToggleAspectRatio)
                 },
                 onToggleNotflixSharpen = { viewModel.onEvent(PlayerEvent.OnToggleNotflixSharpen) },
+                onToggleNightMode = { viewModel.onEvent(PlayerEvent.OnToggleNightMode) },
+                onShowSleepTimerDialog = { viewModel.onEvent(PlayerEvent.OnShowSleepTimerDialog) },
+                onSkipIntro = { viewModel.onEvent(PlayerEvent.OnSkipIntro) },
+                actionFocus = notflixActionsFocus,
                 onSwitchPlayerEngine = { viewModel.onEvent(PlayerEvent.OnSwitchInternalPlayerEngine) },
                 onReportPlaybackIssue = { viewModel.onEvent(PlayerEvent.OnReportPlaybackIssue) },
                 onToggleMoreActions = {
@@ -2018,6 +2041,7 @@ fun PlayerScreen(
                 viewModel.onEvent(PlayerEvent.OnSetCenterMixLevelDb(it))
             },
             onDismiss = { viewModel.onEvent(PlayerEvent.OnDismissTransientOverlay) },
+            onSwitchToSubtitles = if (notflixControls) ({ viewModel.onEvent(PlayerEvent.OnShowSubtitleOverlay) }) else null,
             modifier = Modifier
                 .fillMaxSize()
                 .zIndex(2.6f)
@@ -2045,6 +2069,7 @@ fun PlayerScreen(
             onDisableSubtitles = { viewModel.onEvent(PlayerEvent.OnDisableSubtitles) },
             onEvent = { viewModel.onEvent(it) },
             onDismiss = { viewModel.onEvent(PlayerEvent.OnDismissTransientOverlay) },
+            onSwitchToAudio = if (notflixControls) ({ viewModel.onEvent(PlayerEvent.OnShowAudioOverlay) }) else null,
             modifier = Modifier
                 .fillMaxSize()
                 .zIndex(2.6f)
@@ -2095,6 +2120,50 @@ fun PlayerScreen(
                 onDismiss = { viewModel.onEvent(PlayerEvent.OnDismissTransientOverlay) }
             )
         }
+
+        if (uiState.showSleepTimerDialog) {
+            val isSeries = uiState.currentSeason != null && uiState.currentEpisode != null
+            val sleepChoices = buildList {
+                add(com.nuvio.tv.ui.appearance.notflix.NotflixPanelChoice(
+                    key = "off",
+                    label = stringResource(R.string.sleep_timer_off),
+                    selected = uiState.sleepTimerMinutes == null && !uiState.sleepTimerEndOfEpisode
+                ))
+                for (mins in listOf(15, 30, 45, 60)) {
+                    add(com.nuvio.tv.ui.appearance.notflix.NotflixPanelChoice(
+                        key = "min_$mins",
+                        label = stringResource(R.string.sleep_timer_minutes, mins),
+                        selected = uiState.sleepTimerMinutes == mins && !uiState.sleepTimerEndOfEpisode
+                    ))
+                }
+                if (isSeries) {
+                    add(com.nuvio.tv.ui.appearance.notflix.NotflixPanelChoice(
+                        key = "end_ep",
+                        label = stringResource(R.string.sleep_timer_end_episode),
+                        selected = uiState.sleepTimerEndOfEpisode
+                    ))
+                }
+            }
+            com.nuvio.tv.ui.appearance.notflix.NotflixSidePanel(
+                title = stringResource(R.string.sleep_timer_label),
+                onDismiss = { viewModel.onEvent(PlayerEvent.OnDismissSleepTimerDialog) },
+                width = 420.dp
+            ) {
+                com.nuvio.tv.ui.appearance.notflix.NotflixPanelChoices(
+                    choices = sleepChoices,
+                    onSelect = { choice ->
+                        when (choice.key) {
+                            "off" -> viewModel.onEvent(PlayerEvent.OnSetSleepTimer(null, false))
+                            "end_ep" -> viewModel.onEvent(PlayerEvent.OnSetSleepTimer(null, true))
+                            else -> choice.key.removePrefix("min_").toIntOrNull()?.let { mins ->
+                                viewModel.onEvent(PlayerEvent.OnSetSleepTimer(mins, false))
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
     }
 }
 
@@ -2637,6 +2706,8 @@ private fun PlayerControlsOverlay(
     onShowSpeedDialog: () -> Unit,
     onToggleAspectRatio: () -> Unit,
     onToggleNotflixSharpen: () -> Unit,
+    onToggleNightMode: () -> Unit = {},
+    onShowSleepTimerDialog: () -> Unit = {},
     onSwitchPlayerEngine: () -> Unit,
     onReportPlaybackIssue: () -> Unit,
     onToggleMoreActions: () -> Unit,
@@ -2649,7 +2720,9 @@ private fun PlayerControlsOverlay(
     skipButtonVisible: Boolean = false,
     subtitleReportingActive: Boolean = true,
     onSubtitleClearanceChanged: (Float) -> Unit = {},
-    onSubtitleTitleBoundsChanged: (Float, Float) -> Unit = { _, _ -> }
+    onSubtitleTitleBoundsChanged: (Float, Float) -> Unit = { _, _ -> },
+    onSkipIntro: () -> Unit = {},
+    actionFocus: NotflixPlayerFocus? = null
 ) {
     val playbackTimeline by viewModel.playbackTimeline.collectAsState()
     PlayerControlsContent(
@@ -2679,6 +2752,8 @@ private fun PlayerControlsOverlay(
         onShowSpeedDialog = onShowSpeedDialog,
         onToggleAspectRatio = onToggleAspectRatio,
         onToggleNotflixSharpen = onToggleNotflixSharpen,
+        onToggleNightMode = onToggleNightMode,
+        onShowSleepTimerDialog = onShowSleepTimerDialog,
         onSwitchPlayerEngine = onSwitchPlayerEngine,
         onReportPlaybackIssue = onReportPlaybackIssue,
         onToggleMoreActions = onToggleMoreActions,
@@ -2692,6 +2767,8 @@ private fun PlayerControlsOverlay(
         subtitleReportingActive = subtitleReportingActive,
         onSubtitleClearanceChanged = onSubtitleClearanceChanged,
         onSubtitleTitleBoundsChanged = onSubtitleTitleBoundsChanged,
+        onSkipIntro = onSkipIntro,
+        actionFocus = actionFocus,
     )
 }
 
@@ -2722,6 +2799,8 @@ internal fun PlayerControlsContent(
     onShowSpeedDialog: () -> Unit,
     onToggleAspectRatio: () -> Unit,
     onToggleNotflixSharpen: () -> Unit = {},
+    onToggleNightMode: () -> Unit = {},
+    onShowSleepTimerDialog: () -> Unit = {},
     onSwitchPlayerEngine: () -> Unit,
     onReportPlaybackIssue: () -> Unit,
     onToggleMoreActions: () -> Unit,
@@ -2734,10 +2813,16 @@ internal fun PlayerControlsContent(
     skipButtonVisible: Boolean = false,
     subtitleReportingActive: Boolean = true,
     onSubtitleClearanceChanged: (Float) -> Unit = {},
-    onSubtitleTitleBoundsChanged: (Float, Float) -> Unit = { _, _ -> }
+    onSubtitleTitleBoundsChanged: (Float, Float) -> Unit = { _, _ -> },
+    onSkipIntro: () -> Unit = {},
+    actionFocus: NotflixPlayerFocus? = null
 ) {
     val notflix = com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active
     val sourceFocusRequester = remember { FocusRequester() }
+    val actionBridge = actionFocus ?: remember { NotflixPlayerFocus() }
+    if (notflix) com.nuvio.tv.ui.screens.home.LocalNotflixCompositionObserver.current?.let { observer ->
+        SideEffect { observer("player_controls") }
+    }
     val density = LocalDensity.current
     val clearanceOffsetPx = with(density) { (NuvioTheme.spacing.xl - SUBTITLE_CONTROLS_GAP).toPx() }
     val subtitleGapPx = with(density) { SUBTITLE_CONTROLS_GAP.toPx() }
@@ -2762,6 +2847,14 @@ internal fun PlayerControlsContent(
     val customEpisodesPainter = rememberRawSvgPainter(R.raw.ic_player_episodes)
     val customSharpenPainter = rememberRawSvgPainter(R.raw.ic_player_sharpen)
     var showEngineSwitchConfirm by remember { mutableStateOf(false) }
+    LaunchedEffect(notflix, uiState.currentVideoId, uiState.showControls, uiState.notflixActionPanelOpen()) {
+        if (notflix && uiState.showControls && !uiState.notflixActionPanelOpen()) {
+            val target = if (actionBridge.returnAction != null) actionBridge.returnRequester else playPauseFocusRequester
+            target.requestFocusAfterFrames(2)
+        }
+    }
+    BackHandler(notflix && uiState.showControls && !uiState.notflixActionPanelOpen() && !showEngineSwitchConfirm &&
+        uiState.postPlayMode == null && !uiState.showPauseOverlay && uiState.error == null && !uiState.playbackEnded) { onHideControls() }
     val isLivePlayback = playbackTimeline.isLive
     val progressUpTarget = if (isLivePlayback) {
         progressBarUpFocusRequester ?: playPauseFocusRequester
@@ -2836,7 +2929,7 @@ internal fun PlayerControlsContent(
                             ?.takeIf { it.isNotBlank() }
                             ?.localizeEpisodeTitle(appContext)
                         val episodeInfo = if (localizedEpisodeTitle != null) {
-                            "$seasonEpisodeCode • $localizedEpisodeTitle"
+                            if (notflix) "$seasonEpisodeCode \"$localizedEpisodeTitle\"" else "$seasonEpisodeCode • $localizedEpisodeTitle"
                         } else {
                             seasonEpisodeCode
                         }
@@ -2916,7 +3009,7 @@ internal fun PlayerControlsContent(
                         progressContent(
                             if (notflix) playPauseFocusRequester else progressBarUpFocusRequester,
                             if (notflix) sourceFocusRequester else playPauseFocusRequester,
-                            onHideControls, onResetHideTimer, onPlayPause
+                            onHideControls, { actionBridge.rowOwnsFocus = false; onResetHideTimer() }, onPlayPause
                         )
                     }
                 }
@@ -3171,7 +3264,40 @@ internal fun PlayerControlsContent(
             }
         }
         if (notflix) {
-            NotflixPlayerStage(title = titleContent, progress = progressBarContent, secondary = secondaryContent,
+            NotflixPlayerStage(title = titleContent, progress = {
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    if (!isLivePlayback) Box(Modifier.weight(1f)) { progressBarContent() }
+                    timeTextContent()
+                }
+                }
+            }, secondary = {
+                NotflixPlayerActionRow(uiState, isLivePlayback, onShowPartyPanel != null, onOpenInExternalPlayer != null, partyActive,
+                    actionBridge, sourceFocusRequester, progressUpTarget, onResetHideTimer, onHideControls,
+                    onToggleMoreActions, onAction = { action ->
+                        when (action) {
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.AUDIO_SUBTITLES ->
+                                if (uiState.audioTracks.isNotEmpty() || uiState.serverAudioTracks.isNotEmpty()) onShowAudioDialog() else onShowSubtitleDialog()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.EPISODES -> onShowEpisodesPanel()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.NEXT_EPISODE -> onPlayNextEpisode()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.SPEED -> onShowSpeedDialog()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.NIGHT_MODE -> onToggleNightMode()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.SLEEP_TIMER -> onShowSleepTimerDialog()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.SOURCES -> onShowSourcesPanel()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.ASPECT -> onToggleAspectRatio()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.STREAM_INFO -> onShowStreamInfo()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.CHAPTERS -> onShowChaptersPanel()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.SKIP_SEGMENT -> onSkipIntro()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.SHARPEN -> onToggleNotflixSharpen()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.PARTY -> onShowPartyPanel?.invoke()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.ENGINE -> showEngineSwitchConfirm = true
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.EXTERNAL -> onOpenInExternalPlayer?.invoke()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.REPORT -> onReportPlaybackIssue()
+                            com.nuvio.tv.domain.model.NotflixPlayerAction.MORE -> onToggleMoreActions()
+                        }
+                    }, reportCodeVisible = reportCodeVisible)
+            },
                 bottomModifier = Modifier.onGloballyPositioned { coordinates ->
                     val rootHeight = coordinates.findRootCoordinates().size.height
                     if (rootHeight > 0) controlsClearancePx = (rootHeight - coordinates.boundsInRoot().top + subtitleGapPx).coerceAtLeast(0f)
@@ -3180,20 +3306,20 @@ internal fun PlayerControlsContent(
                     val transportDown = if (isLivePlayback) sourceFocusRequester else progressBarFocusRequester
                     ControlButton(icon = Icons.Default.Replay10,
                         contentDescription = stringResource(R.string.notflix_player_seek_backward, (PlayerScrubRates.STEP_SHORT_MS / 1000).toInt()),
-                        onClick = onSeekBackward, enabled = seekEnabled, buttonSize = 40.dp, iconSize = 26.dp,
+                        onClick = onSeekBackward, enabled = seekEnabled, buttonSize = 48.dp, iconSize = 28.dp,
                         upFocusRequester = progressBarUpFocusRequester ?: FocusRequester.Cancel,
-                        downFocusRequester = transportDown, onFocused = onResetHideTimer)
+                        downFocusRequester = transportDown, onFocused = { actionBridge.rowOwnsFocus = false; onResetHideTimer() })
                     ControlButton(icon = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         iconPainter = if (uiState.isPlaying) customPausePainter else customPlayPainter,
                         contentDescription = if (uiState.isPlaying) stringResource(R.string.cd_pause) else stringResource(R.string.cd_play),
-                        onClick = onPlayPause, focusRequester = playPauseFocusRequester, buttonSize = 48.dp, iconSize = 28.dp,
+                        onClick = onPlayPause, focusRequester = playPauseFocusRequester, buttonSize = 64.dp, iconSize = 36.dp,
                         upFocusRequester = progressBarUpFocusRequester ?: FocusRequester.Cancel,
-                        downFocusRequester = transportDown, onFocused = onResetHideTimer)
+                        downFocusRequester = transportDown, onFocused = { actionBridge.rowOwnsFocus = false; onResetHideTimer() })
                     ControlButton(icon = Icons.Default.Forward10,
                         contentDescription = stringResource(R.string.notflix_player_seek_forward, (PlayerScrubRates.STEP_SHORT_MS / 1000).toInt()),
-                        onClick = onSeekForward, enabled = seekEnabled, buttonSize = 40.dp, iconSize = 26.dp,
+                        onClick = onSeekForward, enabled = seekEnabled, buttonSize = 48.dp, iconSize = 28.dp,
                         upFocusRequester = progressBarUpFocusRequester ?: FocusRequester.Cancel,
-                        downFocusRequester = transportDown, onFocused = onResetHideTimer)
+                        downFocusRequester = transportDown, onFocused = { actionBridge.rowOwnsFocus = false; onResetHideTimer() })
                 })
         } else {
         Column(
@@ -3287,8 +3413,12 @@ private fun PlayerControlsTimeTextHost(viewModel: PlayerViewModel) {
 
 @Composable
 internal fun PlayerControlsTimeTextContent(playbackTimeline: PlaybackTimelineState) {
+    val chrome = LocalNotflixPlayerChrome.current
     val timeText = if (playbackTimeline.isLive) {
         stringResource(R.string.player_live_watched, formatTime(playbackTimeline.watchedDurationMs))
+    } else if (chrome) {
+        if (playbackTimeline.duration <= 0) "—" else stringResource(R.string.notflix_player_remaining,
+            formatTime((playbackTimeline.duration - playbackTimeline.currentPosition.coerceAtLeast(0)).coerceAtLeast(0)))
     } else {
         "${formatTime(playbackTimeline.currentPosition)} / ${formatTime(playbackTimeline.duration)}"
     }
@@ -3365,6 +3495,12 @@ internal fun ControlButton(
         enabled = enabled,
         modifier = Modifier
             .size(buttonSize ?: if (chrome) 28.dp else NuvioTheme.spacing.xxxl)
+            .then(if (chrome) Modifier.graphicsLayer { scaleX = if (isFocused) 1.08f else 1f; scaleY = scaleX }
+                .drawWithContent {
+                drawContent()
+                if (isFocused) drawLine(Color.White, Offset(size.width * .25f, size.height - 1.dp.toPx()),
+                    Offset(size.width * .75f, size.height - 1.dp.toPx()), 2.dp.toPx())
+            } else Modifier)
             .then(
                 if (focusRequester != null) Modifier.focusRequester(focusRequester)
                 else Modifier
@@ -3406,9 +3542,9 @@ internal fun ControlButton(
             },
         colors = IconButtonDefaults.colors(
             containerColor = Color.Transparent,
-            focusedContainerColor = if (LocalNotflixControlColors.current && !chrome) NuvioTheme.colors.Secondary else Color.White,
+            focusedContainerColor = if (chrome) Color.Transparent else if (LocalNotflixControlColors.current) NuvioTheme.colors.Secondary else Color.White,
             contentColor = contentColor,
-            focusedContentColor = if (LocalNotflixControlColors.current && !chrome) NuvioTheme.colors.OnSecondary else Color.Black
+            focusedContentColor = if (chrome) Color.White else if (LocalNotflixControlColors.current) NuvioTheme.colors.OnSecondary else Color.Black
         ),
         shape = IconButtonDefaults.shape(shape = CircleShape)
     ) {
@@ -3446,7 +3582,7 @@ private fun ProgressBar(
     chapters: List<PlayerChapter> = emptyList()
 ) {
     val chrome = LocalNotflixPlayerChrome.current
-    val accentBrush = if (chrome) Brush.linearGradient(listOf(Color.White, Color.White)) else NuvioTheme.palette.accentBrush()
+    val accentBrush = if (chrome) Brush.linearGradient(listOf(NotflixVisualSpec.Accent, NotflixVisualSpec.Accent)) else NuvioTheme.palette.accentBrush()
     val progress = if (duration > 0) {
         (currentPosition.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
     } else 0f
@@ -3471,6 +3607,11 @@ private fun ProgressBar(
         modifier = Modifier
             .fillMaxWidth().testTag("player_controls_progress")
             .height(if (chrome) 20.dp else NuvioTheme.spacing.md)
+            .then(if (chrome) Modifier.drawWithContent {
+                drawContent()
+                if (isFocused) drawCircle(NotflixVisualSpec.Accent, 5.dp.toPx(),
+                    Offset((size.width * animatedProgress).coerceIn(5.dp.toPx(), (size.width - 5.dp.toPx()).coerceAtLeast(5.dp.toPx())), size.height / 2))
+            } else Modifier)
             .then(
                 if (focusRequester != null) Modifier.focusRequester(focusRequester)
                 else Modifier
@@ -4309,11 +4450,19 @@ internal fun PlayerOverlayButton(
 }
 
 @Composable
-private fun SpeedSelectionDialog(
+internal fun SpeedSelectionDialog(
     currentSpeed: Float,
     onSpeedSelected: (Float) -> Unit,
     onDismiss: () -> Unit
 ) {
+    if (com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active) {
+        com.nuvio.tv.ui.appearance.notflix.NotflixSidePanel(stringResource(R.string.player_speed_title), onDismiss) {
+            com.nuvio.tv.ui.appearance.notflix.NotflixPanelChoices(PLAYBACK_SPEEDS.map { speed ->
+                com.nuvio.tv.ui.appearance.notflix.NotflixPanelChoice(speed.toString(), formatSpeedLabel(speed).replace('x', '×'), speed == currentSpeed)
+            }, onSelect = { onSpeedSelected(it.key.toFloat()) })
+        }
+        return
+    }
     val selectedIndex = remember(currentSpeed) {
         PLAYBACK_SPEEDS.indices.minByOrNull { index ->
             abs(PLAYBACK_SPEEDS[index] - currentSpeed)
@@ -4526,7 +4675,7 @@ private fun partyNoticeText(notice: PartyNotice): String = when (notice.action) 
     PartyAction.Speed -> stringResource(R.string.party_action_speed, notice.name, formatSpeedLabel(notice.rate))
 }
 
-private fun formatSpeedLabel(rate: Float): String =
+internal fun formatSpeedLabel(rate: Float): String =
     if (rate % 1f == 0f) "${rate.toInt()}x" else "${rate}x"
 
 internal fun formatTime(millis: Long): String {

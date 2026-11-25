@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">ऑडियो और सबटाइटल</string>
+    <string name="notflix_player_more">और</string>
+    <string name="notflix_player_speed_value">गति (%1$s×)</string>
+    <string name="notflix_player_remaining">%1$s शेष</string>
+    <string name="notflix_player_buttons">प्लेयर के बटन</string>
+    <string name="notflix_player_buttons_help">अधिकतम %1$d क्रियाएँ चुनें। और अंत में रहता है और बाकी क्रियाएँ रखता है।</string>
+    <string name="notflix_player_row_order">बटनों का क्रम</string>
+</resources>
+

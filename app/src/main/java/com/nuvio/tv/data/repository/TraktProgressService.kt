@@ -290,6 +290,8 @@ class TraktProgressService @Inject constructor(
                 val success = try {
                     refreshRemoteSnapshot()
                     true
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to refresh remote snapshot", e)
                     false

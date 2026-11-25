@@ -187,7 +187,8 @@ fun SettingsScreen(
     partyViewModel: PartyViewModel = hiltViewModel(),
     onNavigateToCollections: () -> Unit = {},
     collectionManagerReturnToken: Int = 0,
-    initialNotflixIntegrations: Boolean = false
+    initialNotflixIntegrations: Boolean = false,
+    initialNotflixDestination: String? = null
 ) {
     val isPrimaryProfileActive by profileViewModel.isPrimaryProfileActive.collectAsStateWithLifecycle()
     val isWatchPartyAvailable by partyViewModel.party.available.collectAsStateWithLifecycle()
@@ -209,6 +210,25 @@ fun SettingsScreen(
     }
 
     val isEssentialMode = loadedExperienceMode == ExperienceMode.ESSENTIAL
+
+    if (LocalNotflixPresentation.current.active) {
+        val settingsProfileId by profileViewModel.settingsProfileId.collectAsStateWithLifecycle()
+        NotflixSettingsProfileScope(settingsProfileId) {
+        NotflixSettingsContent(
+            primary = isPrimaryProfileActive, partyAvailable = isWatchPartyAvailable,
+            integrationsRequested = initialNotflixIntegrations, showBuiltInHeader = showBuiltInHeader,
+            requestedDestination = initialNotflixDestination,
+            experienceModeViewModel = experienceModeViewModel,
+            onNavigateToAddons = onNavigateToAddons, onNavigateToPlugins = onNavigateToPlugins,
+            onNavigateToAuthQrSignIn = onNavigateToAuthQrSignIn, onNavigateToManageProfiles = onNavigateToManageProfiles,
+            onNavigateToSupportersContributors = onNavigateToSupportersContributors,
+            onNavigateToLicensesAttributions = onNavigateToLicensesAttributions,
+            onNavigateToWatchParty = onNavigateToWatchParty, onNavigateToCollections = onNavigateToCollections,
+            collectionManagerReturnToken = collectionManagerReturnToken
+        )
+        }
+        return
+    }
 
     val isNotflixAppearance = LocalNotflixPresentation.current.active
     val isLayoutAvailable = visibleLayoutSections(
@@ -1047,7 +1067,7 @@ private fun EssentialAdvancedSettingsContent(
 }
 
 @Composable
-private fun AccountSettingsInline(
+internal fun AccountSettingsInline(
     onNavigateToAuthQrSignIn: () -> Unit,
     initialFocusRequester: FocusRequester?
 ) {

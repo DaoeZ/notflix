@@ -735,6 +735,23 @@ internal fun PlayerRuntimeController.handleNaturalPlaybackEnded() {
     } else {
         saveWatchProgress()
     }
+    if (_uiState.value.sleepTimerEndOfEpisode) {
+        cancelSleepTimer()
+        userPausedManually = true
+        if (isUsingMpvEngine()) {
+            mpvView?.setPaused(true)
+        } else {
+            _exoPlayer?.let { p ->
+                runCatching {
+                    p.playWhenReady = false
+                    p.pause()
+                }
+            }
+        }
+        resetPostPlayStateAfterPlaybackEnded()
+        _uiState.update { it.copy(playbackEnded = false, showControls = true) }
+        return
+    }
     resetPostPlayStateAfterPlaybackEnded()
 }
 
@@ -1084,7 +1101,7 @@ fun PlayerRuntimeController.scheduleHideControls() {
         delay(3000)
         if (_uiState.value.isPlaying && !_uiState.value.showAudioOverlay &&
             !_uiState.value.showSubtitleOverlay && !_uiState.value.showSubtitleStylePanel &&
-            !_uiState.value.showSpeedDialog && !_uiState.value.showMoreDialog &&
+            !_uiState.value.showSpeedDialog && !_uiState.value.showSleepTimerDialog && !_uiState.value.showMoreDialog &&
             !_uiState.value.showSubtitleDelayOverlay &&
             !_uiState.value.showSubtitleTimingDialog &&
             !_uiState.value.showEpisodesPanel && !_uiState.value.showSourcesPanel &&
@@ -1193,7 +1210,7 @@ internal fun PlayerRuntimeController.schedulePauseOverlay() {
         delay(pauseOverlayDelayMs)
         val s = _uiState.value
         val anyPanelOpen = s.showSubtitleOverlay || s.showSubtitleStylePanel ||
-            s.showSpeedDialog || s.showMoreDialog || s.showEpisodesPanel ||
+            s.showSpeedDialog || s.showSleepTimerDialog || s.showMoreDialog || s.showEpisodesPanel ||
             s.showSourcesPanel || s.showChaptersPanel || s.showAudioOverlay || s.showStreamInfoOverlay ||
             s.showSubtitleTimingDialog || s.showSubtitleDelayOverlay || s.showPartyPanel
         if (!s.isPlaying && s.pauseOverlayEnabled && s.error == null && !anyPanelOpen) {
@@ -1713,6 +1730,7 @@ fun PlayerRuntimeController.onEvent(event: PlayerEvent) {
                     showSubtitleStylePanel = false,
                     showSubtitleTimingDialog = false,
                     showSpeedDialog = false,
+                    showSleepTimerDialog = false,
                     showSubtitleDelayOverlay = false,
                     showMoreDialog = false
                 )
@@ -1919,6 +1937,18 @@ fun PlayerRuntimeController.onEvent(event: PlayerEvent) {
         }
         PlayerEvent.OnToggleNotflixSharpen -> {
             toggleNotflixSharpen()
+        }
+        PlayerEvent.OnToggleNightMode -> {
+            toggleNightMode()
+        }
+        PlayerEvent.OnShowSleepTimerDialog -> {
+            showSleepTimerDialog()
+        }
+        PlayerEvent.OnDismissSleepTimerDialog -> {
+            dismissSleepTimerDialog()
+        }
+        is PlayerEvent.OnSetSleepTimer -> {
+            setSleepTimer(event.minutes, event.endOfEpisode)
         }
         PlayerEvent.OnSwitchToMpvPlayer -> {
             logSwitchTrace(

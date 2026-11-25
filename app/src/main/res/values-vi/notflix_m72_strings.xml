@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Hồ sơ và tài khoản</string>
+    <string name="notflix_settings_home">Màn hình chính</string>
+    <string name="notflix_settings_connected_accounts">Tài khoản đã kết nối</string>
+    <string name="notflix_settings_system">Hệ thống</string>
+    <string name="notflix_settings_advanced_options">Tùy chọn nâng cao</string>
+    <string name="notflix_settings_trailers">Đoạn giới thiệu</string>
+    <string name="notflix_settings_updates">Bản cập nhật</string>
+    <string name="notflix_settings_home_collection">Bộ sưu tập trang chủ Notflix</string>
+    <string name="notflix_settings_ratings">Đánh giá</string>
+    <string name="notflix_settings_metadata">Thông tin và danh mục</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

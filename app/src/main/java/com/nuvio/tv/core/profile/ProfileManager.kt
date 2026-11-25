@@ -2,6 +2,7 @@ package com.nuvio.tv.core.profile
 
 import android.content.Context
 import com.nuvio.tv.R
+import com.nuvio.tv.core.offline.NotflixOfflineVideos
 import com.nuvio.tv.data.local.ProfileDataStore
 import com.nuvio.tv.data.local.ProfileDataStoreFactory
 import com.nuvio.tv.domain.model.UserProfile
@@ -26,7 +27,8 @@ class ProfileManager @Inject constructor(
     private val profileDataStore: ProfileDataStore,
     private val factory: ProfileDataStoreFactory,
     private val credentialStores: Set<@JvmSuppressWildcards ProfileScopedCredentialStore>,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val offlineVideos: NotflixOfflineVideos? = null,
 ) {
     companion object {
         const val MAX_PROFILES = 6
@@ -174,6 +176,7 @@ class ProfileManager @Inject constructor(
 
     private suspend fun removeLocalProfileData(id: Int) {
         if (id == 1) return
+        offlineVideos?.clearProfile(id)
         credentialStores.forEach { store -> store.removeProfile(id) }
         deleteProfileDataAsync(id)
     }

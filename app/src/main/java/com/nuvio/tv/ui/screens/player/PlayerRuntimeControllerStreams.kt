@@ -1,5 +1,7 @@
 package com.nuvio.tv.ui.screens.player
 
+import kotlinx.coroutines.cancelAndJoin
+
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
@@ -656,6 +658,7 @@ private fun PlayerRuntimeController.applySelectedStreamState(
  * of stream type — critical for next-episode binge matching.
  */
 private fun PlayerRuntimeController.applyStreamMetadata(stream: Stream) {
+    autoPlayAudioLanguage = stream.autoPlayAudioLanguage
     currentStreamBingeGroup = stream.behaviorHints?.bingeGroup
     applyStreamAudioDelay(stream.behaviorHints?.audioDelayMs)
     currentVideoHash = stream.behaviorHints?.videoHash
@@ -1007,6 +1010,9 @@ internal fun PlayerRuntimeController.switchToSourceStream(
         scope.launch {
             try {
                 val playerSettings = playerSettingsDataStore.playerSettings.first()
+                player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+                    .setPreferredAudioLanguages(*resolvePlaybackAudioLanguages(playerSettings).toTypedArray())
+                    .build()
                 runAfrPreflightIfEnabled(
                     url = playbackUrl,
                     headers = playbackHeaders,
@@ -1847,6 +1853,21 @@ internal fun PlayerRuntimeController.cancelNextEpisodePreload() {
 }
 
 internal fun PlayerRuntimeController.playNextEpisode(userInitiated: Boolean = false) {
+    if (!userInitiated && _uiState.value.sleepTimerEndOfEpisode) {
+        cancelSleepTimer()
+        if (isUsingMpvEngine()) {
+            mpvView?.setPaused(true)
+        } else {
+            _exoPlayer?.let { p ->
+                runCatching {
+                    p.playWhenReady = false
+                    p.pause()
+                }
+            }
+        }
+        _uiState.update { it.copy(showControls = true) }
+        return
+    }
     if (isPartyControlLocked) {
         if (userInitiated) partyBlocksControl()
         return
@@ -1947,6 +1968,7 @@ internal fun PlayerRuntimeController.playNextEpisode(userInitiated: Boolean = fa
             } else {
                 playerSettings.streamAutoPlayRegex
             }
+            val strictPriority = effectiveMode == StreamAutoPlayMode.PRIORITY_LIST
             var selectedStream: Stream? = null
             var lastSuccessData: List<AddonStreams>? = null
             var autoSelectTriggered = false
@@ -1956,7 +1978,13 @@ internal fun PlayerRuntimeController.playNextEpisode(userInitiated: Boolean = fa
             // finishes, so the waiting code below resumes without polling.
             val searchSettled = CompletableDeferred<Unit>()
 
-            suspend fun trySelectStream(data: List<AddonStreams>): Stream? {
+            val priorityRules = playerSettings.streamAutoPlayPriorityList
+            var checkedPriorityRules = 0
+
+            suspend fun trySelectStream(
+                data: List<AddonStreams>,
+                rules: List<com.nuvio.tv.data.local.StreamAutoPlayPriorityRule> = priorityRules
+            ): Stream? {
                 val bingeGroup = currentStreamBingeGroup
                 return withContext(Dispatchers.Default) {
                     val orderedStreams = StreamAutoPlaySelector.orderAddonStreams(data, installedAddonOrder, preferredServerNames)
@@ -1969,20 +1997,21 @@ internal fun PlayerRuntimeController.playNextEpisode(userInitiated: Boolean = fa
                         installedAddonNames = installedAddonOrder.toSet(),
                         selectedAddons = effectiveSelectedAddons,
                         selectedPlugins = effectiveSelectedPlugins,
-                        preferredBingeGroup = if (playerSettings.streamAutoPlayPreferBingeGroupForNextEpisode) {
+                        preferredBingeGroup = if (!strictPriority && playerSettings.streamAutoPlayPreferBingeGroupForNextEpisode) {
                             bingeGroup
                         } else {
                             null
                         },
-                        preferBingeGroupInSelection = playerSettings.streamAutoPlayPreferBingeGroupForNextEpisode,
+                        preferBingeGroupInSelection = !strictPriority && playerSettings.streamAutoPlayPreferBingeGroupForNextEpisode,
                         bingeGroupOnly = bingeGroupOnlyManualMode,
-                        priorityList = playerSettings.streamAutoPlayPriorityList
+                        priorityList = rules,
+                        carryPriorityAudioLanguage = true
                     )
                 }
             }
 
             fun tryBingeGroupOnly(data: List<AddonStreams>): Stream? {
-                if (currentStreamBingeGroup == null || !playerSettings.streamAutoPlayPreferBingeGroupForNextEpisode) return null
+                if (strictPriority || currentStreamBingeGroup == null || !playerSettings.streamAutoPlayPreferBingeGroupForNextEpisode) return null
                 val orderedStreams = StreamAutoPlaySelector.orderAddonStreams(data, installedAddonOrder, preferredServerNames)
                 val allStreams = orderedStreams.flatMap { it.streams }
                 // Early: binge group + filename match (most precise)
@@ -2020,6 +2049,7 @@ internal fun PlayerRuntimeController.playNextEpisode(userInitiated: Boolean = fa
             }
 
             fun tryFilenameOnly(data: List<AddonStreams>): Stream? {
+                if (strictPriority) return null
                 val nextFilename = com.nuvio.tv.core.player.FilenameEpisodeMatcher.buildNextFilename(
                     filename = currentFilename.orEmpty(),
                     currentSeason = _uiState.value.currentSeason,
@@ -2059,6 +2089,15 @@ internal fun PlayerRuntimeController.playNextEpisode(userInitiated: Boolean = fa
                             if (!autoSelectTriggered) {
                                 val candidate = when {
                                     timeoutElapsed -> trySelectStream(result.data)
+                                    strictPriority -> {
+                                        val rules = StreamAutoPlaySelector.settledPriorityRules(
+                                            priorityRules, result.completedSources, installedAddonOrder
+                                        )
+                                        if (rules.size > checkedPriorityRules) {
+                                            checkedPriorityRules = rules.size
+                                            trySelectStream(result.data, rules)
+                                        } else null
+                                    }
                                     playerSettings.streamAutoPlayPreferBingeGroupForNextEpisode ->
                                         tryBingeGroupOnly(result.data)
                                     else -> null
@@ -2079,7 +2118,14 @@ internal fun PlayerRuntimeController.playNextEpisode(userInitiated: Boolean = fa
             }
 
             val timeoutMs = timeoutSeconds * 1_000L
-            if (PlayerSettings.isBoundedTimeout(timeoutSeconds)) {
+            if (strictPriority) {
+                val wait = com.nuvio.tv.core.player.StreamAutoPlayPolicy.priorityTimeoutMs(timeoutSeconds)
+                withTimeoutOrNull(wait) { searchSettled.await() }
+                innerJob.cancelAndJoin()
+                if (!autoSelectTriggered) {
+                    lastSuccessData?.let { data -> trySelectStream(data)?.let { recordSelection(it) } }
+                }
+            } else if (PlayerSettings.isBoundedTimeout(timeoutSeconds)) {
                 // Wait for the timeout, resuming as soon as a stream is settled.
                 withTimeoutOrNull(timeoutMs) { searchSettled.await() }
                 timeoutElapsed = true
@@ -2125,6 +2171,7 @@ internal fun PlayerRuntimeController.playNextEpisode(userInitiated: Boolean = fa
 
             val streamToPlay = selectedStream?.let {
                 resolveDirectDebridStreamIfNeeded(it, nextVideo.season, nextVideo.episode)
+                    ?.copy(autoPlayAudioLanguage = it.autoPlayAudioLanguage)
             }
             if (streamToPlay != null) {
                 val sourceName = (streamToPlay.name?.takeIf { it.isNotBlank() } ?: streamToPlay.addonName).trim()

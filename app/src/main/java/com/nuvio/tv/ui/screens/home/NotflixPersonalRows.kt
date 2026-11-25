@@ -33,6 +33,7 @@ import com.nuvio.tv.domain.repository.WatchProgressRepository
 import com.nuvio.tv.ui.screens.player.isPostPlayCandidateWatched
 import com.nuvio.tv.ui.screens.player.resolvePostPlayContentType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.onStart
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,13 +47,21 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.transformLatest
 
 internal const val NOTFLIX_PERSONAL_ROW_LIMIT = 20
 internal const val NOTFLIX_MY_LIST_KEY = "notflix-my-list"
 internal const val NOTFLIX_BECAUSE_KEY = "notflix-because"
+internal const val NOTFLIX_TOP10_MOVIES_KEY = "notflix-top10-movies"
+internal const val NOTFLIX_TOP10_SERIES_KEY = "notflix-top10-series"
+internal const val NOTFLIX_TOP10_KIDS_KEY = "notflix-top10-kids"
 
 /** «Because you watched X»: the anchor title name and official related titles, already filtered. */
-data class NotflixBecause(val anchorTitle: String, val anchorKey: String, val items: List<MetaPreview>)
+data class NotflixBecause(val anchorTitle: String, val anchorKey: String, val items: List<MetaPreview>, val profileId: Int? = null)
 
 /** Official library, newest first, as Home tiles. Each keeps its own addon so detail opens from the right source.
  *  [maxItems] allows the caller to fetch extra candidates before applying the age filter. */
@@ -74,6 +83,22 @@ internal fun notflixMyList(
 internal fun notflixAnchor(progress: List<WatchProgress>): WatchProgress? = progress
     .filter { it.contentId.isNotBlank() && resolvePostPlayContentType(it.contentType) != null }
     .maxByOrNull { it.lastWatched }
+
+internal fun notflixForYouAnchors(progress: List<WatchProgress>): List<WatchProgress> {
+    val movies = progress.asSequence()
+        .filter { it.contentId.isNotBlank() && resolvePostPlayContentType(it.contentType) == ContentType.MOVIE }
+        .sortedByDescending { it.lastWatched }
+        .distinctBy { it.contentId.trim().lowercase() }
+        .toList()
+    if (movies.size <= 6) return movies
+    return (0..5).map { movies[it * movies.lastIndex / 5] }
+}
+
+private data class ForYouHistory(
+    val anchors: List<WatchProgress>,
+    val watchedIds: Set<String>,
+    val limit: AgeLevel?,
+)
 
 /** Same filters as the official post-play recommendations: not the anchor, not watched, not unreleased if hidden, unique. */
 internal fun notflixBecauseCandidates(
@@ -118,15 +143,78 @@ class NotflixPersonalRowsViewModel @Inject constructor(
     private val profileManager: com.nuvio.tv.core.profile.ProfileManager,
     private val hiddenTitlesRepository: com.nuvio.tv.domain.repository.HiddenTitlesRepository,
 ) : ViewModel() {
+    val activeProfileId = profileManager.activeProfileId
     private val hiddenKeys: kotlinx.coroutines.flow.Flow<Set<String>> = profileManager.activeProfileId
         .flatMapLatest { hiddenTitlesRepository.observe(it) }
+
+    private val top10Inputs = combine(
+        tmdbSettingsDataStore.settings,
+        ageGate.limit,
+        hiddenKeys,
+        NotflixCountryPreference.selectedCountry
+    ) { settings, limit, hidden, countryOverride -> Pair(Triple(settings, limit, hidden), countryOverride) }
+
+    val top10Movies: StateFlow<List<MetaPreview>> = top10Inputs
+        .transformLatest { (triple, countryOverride) ->
+            val (settings, limit, hidden) = triple
+            if (com.nuvio.tv.core.profile.isKidsAgeLimit(limit)) {
+                emit(emptyList())
+                return@transformLatest
+            }
+            emit(emptyList())
+            val locale = java.util.Locale.getDefault()
+            val country = NotflixCountryPreference.resolveCountryCode(locale, countryOverride)
+            val lang = settings.language.takeIf { it.isNotBlank() } ?: locale.toLanguageTag()
+            val fetched = tmdbService.fetchTop10ByCountry("movie", country, lang, kidsOnly = false)
+            val visible = if (hidden.isEmpty()) fetched else fetched.filterNot { hiddenTitleKey(it.apiType, it.id) in hidden }
+            val allowed = if (limit == null) visible else ageGate.filterForLimit(visible, limit)
+            emit(allowed.take(10))
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val top10Series: StateFlow<List<MetaPreview>> = top10Inputs
+        .transformLatest { (triple, countryOverride) ->
+            val (settings, limit, hidden) = triple
+            if (com.nuvio.tv.core.profile.isKidsAgeLimit(limit)) {
+                emit(emptyList())
+                return@transformLatest
+            }
+            emit(emptyList())
+            val locale = java.util.Locale.getDefault()
+            val country = NotflixCountryPreference.resolveCountryCode(locale, countryOverride)
+            val lang = settings.language.takeIf { it.isNotBlank() } ?: locale.toLanguageTag()
+            val fetched = tmdbService.fetchTop10ByCountry("tv", country, lang, kidsOnly = false)
+            val visible = if (hidden.isEmpty()) fetched else fetched.filterNot { hiddenTitleKey(it.apiType, it.id) in hidden }
+            val allowed = if (limit == null) visible else ageGate.filterForLimit(visible, limit)
+            emit(allowed.take(10))
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val top10Kids: StateFlow<List<MetaPreview>> = top10Inputs
+        .transformLatest { (triple, countryOverride) ->
+            val (settings, limit, hidden) = triple
+            if (!com.nuvio.tv.core.profile.isKidsAgeLimit(limit)) {
+                emit(emptyList())
+                return@transformLatest
+            }
+            emit(emptyList())
+            val locale = java.util.Locale.getDefault()
+            val country = NotflixCountryPreference.resolveCountryCode(locale, countryOverride)
+            val lang = settings.language.takeIf { it.isNotBlank() } ?: locale.toLanguageTag()
+            val fetched = tmdbService.fetchTop10ByCountry("movie", country, lang, kidsOnly = true)
+            val visible = if (hidden.isEmpty()) fetched else fetched.filterNot { hiddenTitleKey(it.apiType, it.id) in hidden }
+            emit(visible.take(10))
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val myList: StateFlow<List<MetaPreview>> = combine(
         libraryRepository.libraryItems,
         ageGate.snapshot,
-        hiddenKeys
-    ) { entries, snapshot, hidden -> Triple(entries, snapshot, hidden) }
-        .mapLatest { (entries, snapshot, hidden) ->
+        hiddenKeys,
+        tmdbSettingsDataStore.settings
+    ) { entries, snapshot, hidden, settings -> Pair(Triple(entries, snapshot, hidden), settings) }
+        .mapLatest { (triple, settings) ->
+            val (entries, snapshot, hidden) = triple
             val previews = notflixMyList(entries, maxItems = NOTFLIX_PERSONAL_ROW_LIMIT * 4)
             val visible = if (hidden.isEmpty()) previews else previews.filterNot { hiddenTitleKey(it.apiType, it.id) in hidden }
             val allowed = if (snapshot.limit == null) visible else {
@@ -134,33 +222,68 @@ class NotflixPersonalRowsViewModel @Inject constructor(
                     item.copy(ageRating = ageGate.knownRating(item)?.displayRating() ?: item.ageRating)
                 }
             }
-            allowed.take(NOTFLIX_PERSONAL_ROW_LIMIT)
+            val page = allowed.take(NOTFLIX_PERSONAL_ROW_LIMIT)
+            val lang = settings.language.takeIf { it.isNotBlank() } ?: java.util.Locale.getDefault().toLanguageTag()
+            runCatching { tmdbService.localizeMyListPreviews(page, lang) }.getOrDefault(page)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val becauseYouWatched: StateFlow<NotflixBecause?> = combine(
+    val becauseYouWatched: StateFlow<NotflixBecause?> = profileManager.activeProfileId.flatMapLatest { profile -> combine(
         watchProgressRepository.allProgress,
         ageGate.limit,
-        hiddenKeys
-    ) { progress, limit, hidden -> Triple(progress, limit, hidden) }
-        .map { (progress, limit, hidden) -> notflixAnchor(progress)?.let { Triple(it, limit, hidden) } }
+        tmdbSettingsDataStore.settings.map { Triple(it.enabled, it.useMoreLikeThis, it.language) }
+            .onStart {
+                val cur = runCatching { tmdbSettingsDataStore.settings.value }.getOrNull()
+                emit(if (cur != null) Triple(cur.enabled, cur.useMoreLikeThis, cur.language) else Triple(true, true, ""))
+            },
+        traktSettingsDataStore.moreLikeThisSource.onStart { emit(MoreLikeThisSourcePreference.TMDB) }
+    ) { progress, limit, tmdbKey, recSource ->
+        Triple(
+            ForYouHistory(notflixForYouAnchors(progress), progress.mapTo(mutableSetOf()) { it.contentId.trim().lowercase() }, limit),
+            tmdbKey,
+            recSource
+        )
+    }
         .distinctUntilChanged { a, b ->
-            a?.first?.contentId == b?.first?.contentId &&
-                a?.first?.contentType == b?.first?.contentType &&
-                a?.second == b?.second &&
-                a?.third == b?.third
+            a.first.anchors.map { it.contentId to it.contentType } == b.first.anchors.map { it.contentId to it.contentType } &&
+                a.first.watchedIds == b.first.watchedIds && a.first.limit == b.first.limit &&
+                a.second == b.second && a.third == b.third
         }
-        .mapLatest { anchorAndLimit ->
-            anchorAndLimit?.let { (anchor, limit, hidden) ->
-                runCatching { load(anchor, limit, hidden) }.getOrNull()
+        .transformLatest { (history, _, _) ->
+            emit(emptyList<NotflixBecause>())
+            val limit = ageGate.currentLimitFromStore()
+            val loaded = mutableListOf<NotflixBecause>()
+            for (batch in history.anchors.chunked(2)) {
+                if (profileManager.activeProfileId.value != profile) return@transformLatest
+                val hidden = hiddenKeys.first()
+                loaded += coroutineScope {
+                    batch.filterNot { hiddenTitleKey(it.contentType, it.contentId) in hidden }
+                        .map { anchor ->
+                            async {
+                                try {
+                                    withTimeoutOrNull(14_000L) { load(anchor, limit, history.watchedIds) }
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    null
+                                }
+                            }
+                        }.awaitAll().filterNotNull()
+                }
+                if (profileManager.activeProfileId.value == profile) emit(loaded.toList())
             }
         }
+        .combine(hiddenKeys) { sources, hidden ->
+            val visible = sources.mapNotNull { it.withoutHidden(hidden) }
+            val items = mergeBalancedForYou(visible.map { it.items }, NOTFLIX_PERSONAL_ROW_LIMIT)
+            visible.firstOrNull()?.copy(items = items, profileId = profile)
+        }
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    private suspend fun load(anchor: WatchProgress, limit: AgeLevel?, hidden: Set<String>): NotflixBecause? {
+    private suspend fun load(anchor: WatchProgress, limit: AgeLevel?, historyIds: Set<String>): NotflixBecause? {
         val type = anchor.contentType
-        if (hiddenTitleKey(type, anchor.contentId) in hidden) return null
-        val meta: Meta = metaRepository.getCachedMeta(type, anchor.contentId) ?: withTimeoutOrNull(8_000L) {
+        val meta: Meta = metaRepository.getCachedMeta(type, anchor.contentId) ?: withTimeoutOrNull(5_000L) {
             (metaRepository.getMetaFromAllAddons(type = type, id = anchor.contentId).first { it !is NetworkResult.Loading }
                 as? NetworkResult.Success)?.data
         } ?: return null
@@ -169,7 +292,7 @@ class NotflixPersonalRowsViewModel @Inject constructor(
             if (!isAllowed(limit, anchorRating)) return null
         }
         val contentType = resolvePostPlayContentType(type, meta.type) ?: return null
-        val candidates = withTimeoutOrNull(10_000L) {
+        val candidates = withTimeoutOrNull(7_000L) {
             val source = traktSettingsDataStore.moreLikeThisSource.first()
             when {
                 source == MoreLikeThisSourcePreference.SIMKL && simklAuthRepository.state.value.isAuthenticated ->
@@ -188,15 +311,78 @@ class NotflixPersonalRowsViewModel @Inject constructor(
             }
         }.orEmpty()
         val watched = combine(watchProgressRepository.observeWatchedMovieIds(), watchedSeriesStateHolder.fullyWatchedSeriesIds) { m, s -> m to s }.first()
-        val base = notflixBecauseCandidates(candidates, setOf(meta.id.trim().lowercase(), anchor.contentId.trim().lowercase()),
+        val base = notflixBecauseCandidates(candidates, historyIds + meta.id.trim().lowercase(),
             watched.first, watched.second, layoutPreferenceDataStore.hideUnreleasedContent.first(), LocalDate.now(),
             maxItems = NOTFLIX_PERSONAL_ROW_LIMIT * 3)
-        val visible = if (hidden.isEmpty()) base else base.filterNot { hiddenTitleKey(it.apiType, it.id) in hidden }
-        val items = if (limit == null) visible.take(NOTFLIX_PERSONAL_ROW_LIMIT) else {
-            ageGate.filter(visible).map { item ->
+        // Keep a spare pool so hiding titles later still leaves a full row.
+        val items = if (limit == null) base else {
+            ageGate.filterForLimit(base, limit).map { item ->
                 item.copy(ageRating = ageGate.knownRating(item)?.displayRating() ?: item.ageRating)
-            }.take(NOTFLIX_PERSONAL_ROW_LIMIT)
+            }
         }
-        return items.takeIf { it.isNotEmpty() }?.let { NotflixBecause(anchor.name.ifBlank { meta.name }, "${type}:${anchor.contentId}", it) }
+        return items.takeIf { it.isNotEmpty() }?.let {
+            NotflixBecause(anchor.name.ifBlank { meta.name }, hiddenTitleKey(type, anchor.contentId), it)
+        }
     }
+}
+
+/** Drops hidden titles from a loaded row; a hidden anchor drops the whole row. */
+internal fun NotflixBecause.withoutHidden(hidden: Set<String>): NotflixBecause? {
+    if (anchorKey in hidden) return null
+    val visible = items.asSequence().filterNot { hiddenTitleKey(it.apiType, it.id) in hidden }.take(NOTFLIX_PERSONAL_ROW_LIMIT).toList()
+    return if (visible.isEmpty()) null else copy(items = visible)
+}
+
+/**
+ * Merges recommendations across multiple anchors: consensus hits (>= 2 anchors) first,
+ * followed by fair round-robin interleaving capped at 3 single-anchor items per source
+ * so no single recently watched movie floods "For You".
+ */
+internal fun mergeBalancedForYou(sources: List<List<MetaPreview>>, limit: Int): List<MetaPreview> {
+    if (sources.isEmpty()) return emptyList()
+    val deduped = sources.map { list -> list.distinctBy { it.apiType.lowercase() to it.id.trim().lowercase() } }
+    val counts = mutableMapOf<Pair<String, String>, Int>()
+    val firstByKey = linkedMapOf<Pair<String, String>, MetaPreview>()
+    for (list in deduped) {
+        for (item in list) {
+            val key = item.apiType.lowercase() to item.id.trim().lowercase()
+            counts[key] = (counts[key] ?: 0) + 1
+            if (key !in firstByKey) firstByKey[key] = item
+        }
+    }
+    val result = mutableListOf<MetaPreview>()
+    val emitted = mutableSetOf<Pair<String, String>>()
+    counts.entries.filter { it.value >= 2 }.sortedByDescending { it.value }.forEach { (key, _) ->
+        if (result.size >= limit) return result
+        val item = firstByKey[key] ?: return@forEach
+        if (emitted.add(key)) result += item
+    }
+    val perAnchorLimit = if (deduped.size >= 3) 3 else Int.MAX_VALUE
+    val perAnchorCount = IntArray(deduped.size)
+    val maxLen = deduped.maxOfOrNull { it.size } ?: 0
+    for (idx in 0 until maxLen) {
+        for (srcIdx in deduped.indices) {
+            if (result.size >= limit) return result
+            if (perAnchorCount[srcIdx] >= perAnchorLimit) continue
+            val item = deduped[srcIdx].getOrNull(idx) ?: continue
+            val key = item.apiType.lowercase() to item.id.trim().lowercase()
+            if (emitted.add(key)) {
+                result += item
+                perAnchorCount[srcIdx]++
+            }
+        }
+    }
+    return result
+}
+
+/**
+ * Resolves the 2-letter ISO country code from the OS system configuration first,
+ * because selecting an in-app language (e.g. "es") strips the region from [java.util.Locale.getDefault].
+ */
+internal fun notflixSystemCountryCode(fallbackLocale: java.util.Locale = java.util.Locale.getDefault()): String {
+    val systemCountry = runCatching {
+        val locales = android.content.res.Resources.getSystem()?.configuration?.locales ?: return@runCatching null
+        (0 until locales.size()).map { locales[it].country }.firstOrNull { it.length == 2 }
+    }.getOrNull()
+    return (systemCountry ?: fallbackLocale.country).trim().uppercase().takeIf { it.length == 2 } ?: "US"
 }

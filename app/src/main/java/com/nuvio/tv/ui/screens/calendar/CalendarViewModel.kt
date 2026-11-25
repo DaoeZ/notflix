@@ -36,7 +36,8 @@ class CalendarViewModel @Inject constructor(
     private val repository: CalendarRepository,
     private val ageGate: ActiveProfileAgeGate,
     private val profileManager: ProfileManager,
-    private val hiddenTitlesRepository: HiddenTitlesRepository
+    private val hiddenTitlesRepository: HiddenTitlesRepository,
+    private val reminderStore: com.nuvio.tv.data.local.NotflixCalendarReminderStore
 ) : ViewModel() {
 
     data class UiState(
@@ -46,7 +47,8 @@ class CalendarViewModel @Inject constructor(
         val days: List<CalendarDay> = emptyList(),
         val error: Boolean = false,
         /** Pósters de Trakt cargados al pintar cada fila (id de contenido → URL). */
-        val posters: Map<String, String> = emptyMap()
+        val posters: Map<String, String> = emptyMap(),
+        val remindedKeys: Set<String> = emptySet()
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -61,6 +63,8 @@ class CalendarViewModel @Inject constructor(
         if (!force && nuvioUpcoming == this.nuvioUpcoming && !current.loading && !current.error) return
         this.nuvioUpcoming = nuvioUpcoming
         loadJob?.cancel()
+        posterJobs.values.forEach { it.cancel() }
+        posterJobs.clear()
         loadJob = viewModelScope.launch {
             _uiState.update { it.copy(loading = true, error = false) }
             try {
@@ -70,13 +74,15 @@ class CalendarViewModel @Inject constructor(
                 )
                 val allowed = filterEntries(result.entries)
                 val days = groupByLocalDay(allowed, ZoneId.systemDefault(), LocalDate.now())
+                val reminded = reminderStore.loadForProfile(profileManager.activeProfileId.value)
                 _uiState.update {
                     it.copy(
                         loading = false,
                         error = false,
                         source = result.source,
                         traktFailed = result.traktFailed,
-                        days = days
+                        days = days,
+                        remindedKeys = reminded
                     )
                 }
             } catch (e: CancellationException) {
@@ -88,6 +94,17 @@ class CalendarViewModel @Inject constructor(
     }
 
     fun retry() = load(nuvioUpcoming, force = true)
+
+    fun reminderKeyFor(entry: CalendarEntry): String =
+        "${entry.contentId}|${entry.season ?: 0}|${entry.episode ?: 0}"
+
+    fun toggleReminder(entry: CalendarEntry): Boolean {
+        val profileId = profileManager.activeProfileId.value
+        val key = reminderKeyFor(entry)
+        val added = reminderStore.toggle(profileId, key)
+        _uiState.update { it.copy(remindedKeys = reminderStore.loadForProfile(profileId)) }
+        return added
+    }
 
     /** Carga perezosa: solo se pide el póster de las tarjetas que llegan a pintarse. */
     fun ensurePoster(entry: CalendarEntry) {

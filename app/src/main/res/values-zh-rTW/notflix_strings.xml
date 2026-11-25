@@ -201,4 +201,6 @@
         <item>現在可以連接 Simkl。</item>
         <item>Trakt：只需一組代碼即可連結，無需任何設定。</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Notflix 金鑰</string>
+    <string name="notflix_tmdb_attribution">本產品使用 TMDB API，但未經 TMDB 認可或認證。</string>
 </resources>

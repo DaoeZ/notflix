@@ -201,4 +201,6 @@
         <item>A Simkl most már csatlakoztatható.</item>
         <item>Trakt: csatlakozás egyetlen kóddal, beállítás nélkül.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Notflix-kulcs</string>
+    <string name="notflix_tmdb_attribution">Ez a termék a TMDB API-t használja, de a TMDB nem támogatja és nem tanúsítja.</string>
 </resources>

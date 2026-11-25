@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Preuzimanja</string>
+    <string name="notflix_offline_receive">Primi sa telefona</string>
+    <string name="notflix_offline_pairing">Ručni unos: %1$s · %2$s. Kôd važi 5 minuta.</string>
+    <string name="notflix_offline_scan">Skenirajte kamerom telefona da biste otvorili Notflix preuzimanja.</string>
+    <string name="notflix_offline_expired">Sesija je istekla. Izaberite Primi sa telefona da biste se ponovo povezali.</string>
+    <string name="notflix_offline_empty">Preuzmite video iz Izvora ili ga pošaljite sa telefona.</string>
+    <string name="notflix_offline_profile">Preuzimanja nisu dostupna na ovom profilu.</string>
+    <string name="notflix_offline_unavailable">Datoteka nije dostupna</string>
+    <string name="notflix_offline_confirm_remove">Potvrdi uklanjanje</string>
+    <string name="notflix_offline_choose_source">Izaberite izvor za preuzimanje</string>
+    <string name="notflix_offline_started">Preuzimanje je u redu čekanja</string>
+    <string name="notflix_offline_failed">Ova datoteka nije mogla da se otvori ili preuzme. Probajte direktnu video datoteku.</string>
+</resources>

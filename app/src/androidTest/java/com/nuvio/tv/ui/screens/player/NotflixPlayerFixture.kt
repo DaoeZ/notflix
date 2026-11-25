@@ -55,6 +55,7 @@ internal fun PlayerFixture(s: PlayerFixtureState) {
                         onShowPartyPanel = { s.event("party") }, partyActive = false,
                         onShowAudioDialog = { s.event("audio") }, onShowSubtitleDialog = { s.event("subtitle") },
                         onShowSpeedDialog = { s.event("speed") }, onToggleAspectRatio = { s.event("aspect") },
+                        onToggleNotflixSharpen = { s.event("sharpen") }, onSkipIntro = { s.event("skip") },
                         onSwitchPlayerEngine = { s.event("engine") }, onReportPlaybackIssue = { s.event("report") },
                         onToggleMoreActions = { s.event("more"); s.ui = s.ui.copy(showMoreDialog = !s.ui.showMoreDialog) },
                         onOpenInExternalPlayer = { s.event("external") }, onShowStreamInfo = { s.event("info") },
@@ -63,7 +64,7 @@ internal fun PlayerFixture(s: PlayerFixtureState) {
                         onSubtitleTitleBoundsChanged = { p, r -> s.progressClearance = p; s.titleRight = r })
                 }
             }
-            LaunchedEffect(s.visible, s.active) { if (s.visible) s.play.requestFocus() }
+            LaunchedEffect(s.visible, s.active) { if (s.visible && !s.active) s.play.requestFocus() }
         }
     }
 }

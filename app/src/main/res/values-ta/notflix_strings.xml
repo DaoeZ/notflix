@@ -201,4 +201,6 @@
         <item>Simkl இப்போது இணைக்கப்படலாம்.</item>
         <item>Trakt: ஒரு குறியீடு மட்டும் போதும், எந்த அமைப்பும் தேவையில்லை.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Notflix விசை</string>
+    <string name="notflix_tmdb_attribution">இந்தத் தயாரிப்பு TMDB API-ஐப் பயன்படுத்துகிறது, ஆனால் TMDB ஆல் அங்கீகரிக்கப்படவில்லை அல்லது சான்றளிக்கப்படவில்லை.</string>
 </resources>

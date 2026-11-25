@@ -344,8 +344,16 @@ class TmdbMetadataService(
                             tmdbId = network.id
                         )
                     }
-                val poster = buildImageUrl(details?.posterPath, size = "w500")
-                val backdrop = buildImageUrl(details?.backdropPath, size = "w1280")
+                val poster = buildImageUrl(
+                    images?.posters?.let { selectBestLocalizedImagePath(it, normalizedLanguage) }
+                        ?: details?.posterPath,
+                    size = "w500"
+                )
+                val backdrop = buildImageUrl(
+                    images?.backdrops?.let { selectBestBackdropPath(it, normalizedLanguage) }
+                        ?: details?.backdropPath,
+                    size = "w1280"
+                )
 
                 val collectionId = details?.belongsToCollection?.id
                 val collectionName = details?.belongsToCollection?.name
@@ -1306,6 +1314,33 @@ class TmdbMetadataService(
             ?.filePath
     }
 
+    /**
+     * Backdrops in the Hero billboard overlay our own localized logo/title on top, so clean
+     * textless artwork (iso6391 == null) looks best, followed by the user's language, before
+     * falling back to English or other languages.
+     */
+    private fun selectBestBackdropPath(
+        images: List<TmdbImage>,
+        normalizedLanguage: String
+    ): String? {
+        if (images.isEmpty()) return null
+        val languageCode = normalizedLanguage.substringBefore("-")
+        val explicitRegion = normalizedLanguage.substringAfter("-", "").uppercase(Locale.US).takeIf { it.length == 2 }
+        val regionCode = explicitRegion
+            ?: LANGUAGE_DEFAULT_REGION[languageCode]
+            ?: DEFAULT_LANGUAGE_REGIONS[languageCode]
+        return images
+            .sortedWith(
+                compareByDescending<TmdbImage> { it.iso6391 == null }
+                    .thenByDescending { it.iso6391 == languageCode && it.iso31661 == regionCode }
+                    .thenByDescending { it.iso6391 == languageCode && it.iso31661 == null }
+                    .thenByDescending { it.iso6391 == languageCode }
+                    .thenByDescending { it.iso6391 == "en" }
+            )
+            .firstOrNull()
+            ?.filePath
+    }
+
     companion object {
         private val DEFAULT_LANGUAGE_REGIONS = mapOf(
             "pt" to "PT",
@@ -1681,11 +1716,11 @@ internal fun selectMovieAgeRating(
             .firstOrNull { it.isNotBlank() }
         if (!rating.isNullOrBlank()) return rating
     }
-    return countries
-        .asSequence()
-        .flatMap { it.releaseDates.orEmpty().asSequence() }
-        .mapNotNull { it.certification?.trim() }
-        .firstOrNull { it.isNotBlank() }
+    // M68: none of the preferred countries has a certificate; use the strictest of all the rest
+    // instead of whichever happens to come first. An unknown label never beats a known one.
+    return strictestAgeRating(
+        countries.flatMap { country -> country.releaseDates.orEmpty().map { it.certification } }
+    )
 }
 
 internal fun selectTvAgeRating(
@@ -1698,10 +1733,17 @@ internal fun selectTvAgeRating(
         val rating = byRegion[region]?.rating?.trim()
         if (!rating.isNullOrBlank()) return rating
     }
-    return ratings
-        .mapNotNull { it.rating?.trim() }
-        .firstOrNull { it.isNotBlank() }
+    // M68: same rule as movies for the remaining countries.
+    return strictestAgeRating(ratings.map { it.rating })
 }
+
+/** The raw label whose level is the strictest; unrecognized labels are ignored. */
+private fun strictestAgeRating(candidates: List<String?>): String? =
+    candidates
+        .mapNotNull { raw -> raw?.trim()?.takeIf { it.isNotBlank() } }
+        .mapNotNull { raw -> com.nuvio.tv.core.profile.ageLevelOf(raw)?.let { raw to it } }
+        .maxByOrNull { it.second.ordinal }
+        ?.first
 
 data class TmdbMovieCollection(
     val name: String?,

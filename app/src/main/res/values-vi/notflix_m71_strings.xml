@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Âm thanh và phụ đề</string>
+    <string name="notflix_player_more">Thêm</string>
+    <string name="notflix_player_speed_value">Tốc độ (%1$s×)</string>
+    <string name="notflix_player_remaining">Còn %1$s</string>
+    <string name="notflix_player_buttons">Nút trình phát</string>
+    <string name="notflix_player_buttons_help">Chọn tối đa %1$d thao tác. Thêm luôn ở cuối và chứa các thao tác còn lại.</string>
+    <string name="notflix_player_row_order">Thứ tự các nút</string>
+</resources>
+

@@ -132,6 +132,7 @@ import dev.chrisbanes.haze.hazeSource
 fun StreamScreen(
     viewModel: StreamScreenViewModel = hiltViewModel(),
     startFromBeginning: Boolean = false,
+    downloadSelection: Boolean = false,
     restoreSourceSelection: Boolean = false,
     onSourceSelectionRestoreHandled: () -> Unit = {},
     onBackPress: () -> Unit,
@@ -158,6 +159,11 @@ fun StreamScreen(
     )
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
+    val offlineModel: com.nuvio.tv.core.offline.NotflixOfflineViewModel? =
+        if (LocalNotflixPresentation.current.active) hiltViewModel() else null
+    val offlineOwner = offlineModel?.owner?.collectAsStateWithLifecycle()?.value
+    var downloadMode by rememberSaveable { mutableStateOf(downloadSelection) }
+    var savingOffline by remember { mutableStateOf(false) }
     var focusedStreamIndex by rememberSaveable { mutableStateOf(0) }
     var restoreFocusedStream by rememberSaveable { mutableStateOf(false) }
     var pendingRestoreOnResume by rememberSaveable { mutableStateOf(false) }
@@ -415,8 +421,8 @@ fun StreamScreen(
             uiState = uiState,
             resumeText = resumeText,
             badgeSettings = streamBadgeSettings,
-            sharedStream = sharedStream,
-            partySource = partySource,
+            sharedStream = sharedStream.takeUnless { downloadSelection },
+            partySource = partySource.takeUnless { downloadSelection },
             focusedStreamIndex = focusedStreamIndex,
             shouldRestoreFocusedStream = restoreFocusedStream,
             onAddonFilterSelected = { viewModel.onEvent(StreamScreenEvent.OnAddonFilterSelected(it)) },
@@ -443,6 +449,25 @@ fun StreamScreen(
                             focusedStreamIndex = currentIndex
                         }
                         scope.coroutineLaunch {
+                            if (downloadSelection || downloadMode) {
+                                if (savingOffline || offlineModel == null || offlineOwner == null) return@coroutineLaunch
+                                savingOffline = true
+                                try {
+                                    require(stream.youTubeIdToResolve() == null)
+                                    val info = requireNotNull(viewModel.resolveStreamForPlayback(stream, saveLastLink = false))
+                                    offlineModel.enqueue(offlineOwner, info)
+                                    downloadMode = false
+                                    Toast.makeText(context, R.string.notflix_offline_started, Toast.LENGTH_SHORT).show()
+                                    if (downloadSelection) onBackPress()
+                                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    Toast.makeText(context, R.string.notflix_offline_failed, Toast.LENGTH_LONG).show()
+                                } finally {
+                                    savingOffline = false
+                                }
+                                return@coroutineLaunch
+                            }
                             val playbackInfo = viewModel.resolveStreamForPlayback(stream)
                             if (playbackInfo != null) {
                                 viewModel.persistBingeGroupForStream(stream)
@@ -460,6 +485,10 @@ fun StreamScreen(
                     },
             onRetry = { viewModel.onEvent(StreamScreenEvent.OnRetry) },
             onExpandStreams = { viewModel.expandFilteredStreamsIfNeeded() },
+            downloadSelected = downloadMode && offlineOwner != null,
+            downloadSelection = downloadSelection,
+            onToggleDownload = offlineOwner?.takeUnless { savingOffline || downloadSelection }
+                ?.let { { downloadMode = !downloadMode } },
             hazeState = streamHazeState,
             onBackPress = onBackPress
         )
@@ -527,12 +556,15 @@ internal fun StreamScreenContent(
     onStreamSelected: (Stream) -> Unit = {},
     onRetry: () -> Unit = {},
     onExpandStreams: () -> Unit = {},
-    hazeState: HazeState? = null
+    hazeState: HazeState? = null,
+    downloadSelected: Boolean = false,
+    downloadSelection: Boolean = false,
+    onToggleDownload: (() -> Unit)? = null,
 ) {
     val notflix = LocalNotflixPresentation.current.active
     val showOverlay = uiState.showDirectAutoPlayOverlay || uiState.externalPlayerOverlayVisible
-    val left: @Composable (Modifier) -> Unit = { slotModifier ->
-            LeftContentSection(
+    val heading: @Composable (Modifier) -> Unit = { headingModifier ->
+        LeftContentSection(
                 title = uiState.title,
                 logo = uiState.logo,
                 isEpisode = uiState.isEpisode,
@@ -542,8 +574,32 @@ internal fun StreamScreenContent(
                 runtime = uiState.runtime,
                 genres = uiState.genres,
                 year = uiState.year,
-                modifier = slotModifier
+                modifier = headingModifier
             )
+    }
+    val left: @Composable (Modifier) -> Unit = { slotModifier ->
+        if (notflix && downloadSelection) {
+            Box(slotModifier) {
+                heading(Modifier.fillMaxSize())
+                Text(
+                    stringResource(R.string.notflix_offline_choose_source),
+                    modifier = Modifier.align(Alignment.BottomStart)
+                )
+            }
+        } else if (notflix && onToggleDownload != null) {
+            Box(slotModifier) {
+                heading(Modifier.fillMaxSize())
+                com.nuvio.tv.ui.appearance.notflix.NotflixFlatButton(
+                    label = stringResource(if (downloadSelected) R.string.notflix_offline_choose_source else R.string.update_download),
+                    onClick = onToggleDownload,
+                    modifier = Modifier.align(Alignment.BottomStart),
+                    trailing = "",
+                    primary = downloadSelected,
+                )
+            }
+        } else {
+            heading(slotModifier)
+        }
     }
     val right: @Composable (Modifier) -> Unit = { slotModifier ->
             RightStreamSection(

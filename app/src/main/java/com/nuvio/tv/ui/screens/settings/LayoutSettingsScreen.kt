@@ -47,23 +47,30 @@ fun LayoutSettingsScreen(
 }
 
 @Composable
-fun LayoutSettingsContent(
+internal fun LayoutSettingsContent(
     viewModel: LayoutSettingsViewModel = hiltViewModel(),
     initialFocusRequester: FocusRequester? = null,
-    essentialMode: Boolean = false
+    essentialMode: Boolean = false,
+    sectionOverride: LayoutSection? = null,
+    embeddedDetailRows: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val streamBadgeUiState by viewModel.streamBadgeUiState.collectAsStateWithLifecycle()
     val customPosterQrState by viewModel.customPosterQrState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val notflixAppearance = LocalNotflixPresentation.current.active
-    val sections = visibleLayoutSections(
+    val sections = sectionOverride?.let { listOf(it) } ?: visibleLayoutSections(
         essentialMode = essentialMode,
         focusedPosterHasOptions = uiState.focusedPosterHasOptions(),
         notflixAppearance = notflixAppearance
     )
     var expandedSections by rememberSaveable(essentialMode) {
         mutableStateOf(if (essentialMode) listOf(LayoutSection.HOME_LAYOUT.name) else emptyList())
+    }
+
+    if (embeddedDetailRows) {
+        LayoutDetailPageSection(uiState, viewModel::onEvent)
+        return
     }
 
     LaunchedEffect(streamBadgeUiState.serverError) {
@@ -96,7 +103,12 @@ fun LayoutSettingsContent(
                     verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.md)
                 ) {
                     items(items = sections, key = { it.name }) { section ->
-                        val expanded = section.name in expandedSections
+                        val expanded = sectionOverride != null || section.name in expandedSections
+                        if (sectionOverride != null) {
+                            Column(verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.md)) {
+                                LayoutSectionContent(section, uiState, streamBadgeUiState, viewModel)
+                            }
+                        } else {
                         SettingsCollapsibleSection(
                             title = stringResource(section.title),
                             description = stringResource(section.description),
@@ -118,6 +130,7 @@ fun LayoutSettingsContent(
                                 streamBadgeUiState = streamBadgeUiState,
                                 viewModel = viewModel
                             )
+                        }
                         }
                     }
                 }

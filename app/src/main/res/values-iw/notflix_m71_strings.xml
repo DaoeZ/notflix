@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">שמע וכתוביות</string>
+    <string name="notflix_player_more">עוד</string>
+    <string name="notflix_player_speed_value">מהירות (%1$s×)</string>
+    <string name="notflix_player_remaining">נותרו %1$s</string>
+    <string name="notflix_player_buttons">כפתורי הנגן</string>
+    <string name="notflix_player_buttons_help">בחרו עד %1$d פעולות. עוד נשאר בסוף ומכיל את השאר.</string>
+    <string name="notflix_player_row_order">סדר הכפתורים</string>
+</resources>
+

@@ -75,14 +75,61 @@ class WatchProgressPreferences @Inject constructor(
     @Volatile private var recentMapCache: ProgressMapCache? = null
     @Volatile private var archiveMapCache: ProgressMapCache? = null
 
+    private data class ProgressListCache(
+        val profileId: Int,
+        val revision: Long,
+        val recentJson: String,
+        val archiveJson: String,
+        val result: List<WatchProgress>
+    )
+
+    private data class HotProgressEntry(
+        val revision: Long,
+        val job: kotlinx.coroutines.Job,
+        val state: kotlinx.coroutines.flow.StateFlow<ProgressSnapshot?>
+    )
+
     private val hotProgressSnapshots =
-        ConcurrentHashMap<Int, kotlinx.coroutines.flow.StateFlow<ProgressSnapshot?>>()
+        ConcurrentHashMap<Int, HotProgressEntry>()
+
+    private fun invalidateHotSnapshotsIfNeeded(revision: Long) {
+        val staleEntries = hotProgressSnapshots.entries.filter { it.value.revision != revision }
+        if (staleEntries.isEmpty()) return
+        staleEntries.forEach { (pid, entry) ->
+            if (hotProgressSnapshots.remove(pid, entry)) {
+                entry.job.cancel()
+            }
+        }
+        recentMapCache = null
+        archiveMapCache = null
+        cachedProgressEntry = null
+        cachedRawProgressEntry = null
+        synchronized(initializedProfiles) { initializedProfiles.clear() }
+    }
+
+    private fun profileDataRevisionFlow(): Flow<Long> =
+        runCatching { factory.profileDataRevision }.getOrElse { kotlinx.coroutines.flow.flowOf(0L) }
+
+    private fun currentProfileDataRevision(): Long =
+        runCatching { factory.profileDataRevision.value }.getOrDefault(0L)
 
     private fun progressSnapshots(profileId: Int): Flow<ProgressSnapshot> {
-        return hotProgressSnapshots.computeIfAbsent(profileId) {
-            progressSnapshotsCold(profileId)
-                .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Eagerly, null)
-        }.mapNotNull { it }
+        return profileDataRevisionFlow().flatMapLatest { revision ->
+            invalidateHotSnapshotsIfNeeded(revision)
+            val entry = hotProgressSnapshots.compute(profileId) { _, existing ->
+                if (existing != null && existing.revision == revision) {
+                    existing
+                } else {
+                    existing?.job?.cancel()
+                    val entryJob = kotlinx.coroutines.SupervisorJob()
+                    val entryScope = kotlinx.coroutines.CoroutineScope(entryJob + Dispatchers.IO)
+                    val state = progressSnapshotsCold(profileId)
+                        .stateIn(entryScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, null)
+                    HotProgressEntry(revision = revision, job = entryJob, state = state)
+                }
+            }!!
+            entry.state.mapNotNull { it }
+        }
     }
 
     /** Persisted timestamp of the last successful push to remote. */
@@ -129,10 +176,7 @@ class WatchProgressPreferences @Inject constructor(
      * JSON parsing, grouping, and sorting are performed off the main thread.
      * Results are cached — re-parsing only happens when the raw JSON actually changes.
      */
-    @Volatile private var cachedProgressJson: String? = null
-    @Volatile private var cachedProgressArchiveJson: String? = null
-    @Volatile private var cachedProgressResult: List<WatchProgress>? = null
-    @Volatile private var cachedProfileId: Int = -1
+    @Volatile private var cachedProgressEntry: ProgressListCache? = null
 
     val allProgress: Flow<List<WatchProgress>> = profileManager.activeProfileId.flatMapLatest { pid ->
         observeAllProgress(pid)
@@ -140,18 +184,20 @@ class WatchProgressPreferences @Inject constructor(
 
     fun observeAllProgress(profileId: Int): Flow<List<WatchProgress>> {
         return progressSnapshots(profileId).map { snapshot ->
+            val revision = currentProfileDataRevision()
             val recentJson = snapshot.recentJson
             val archiveJson = snapshot.archiveJson
 
-            // Fast path: if JSON hasn't changed, return cached result immediately.
-            val cached = cachedProgressResult
+            // Fast path: atomic immutable cache entry prevents cross-thread torn reads.
+            val cached = cachedProgressEntry
             if (
-                recentJson == cachedProgressJson &&
-                archiveJson == cachedProgressArchiveJson &&
                 cached != null &&
-                cachedProfileId == profileId
+                cached.profileId == profileId &&
+                cached.revision == revision &&
+                cached.recentJson == recentJson &&
+                cached.archiveJson == archiveJson
             ) {
-                return@map cached
+                return@map cached.result
             }
 
             val allItems = mergeWatchProgressBuckets(snapshot.recent, snapshot.archive)
@@ -172,19 +218,18 @@ class WatchProgressPreferences @Inject constructor(
 
             val result = latestByContent.sortedByDescending { it.lastWatched }
 
-            // Cache for next emission
-            cachedProfileId = profileId
-            cachedProgressJson = recentJson
-            cachedProgressArchiveJson = archiveJson
-            cachedProgressResult = result
+            cachedProgressEntry = ProgressListCache(
+                profileId = profileId,
+                revision = revision,
+                recentJson = recentJson,
+                archiveJson = archiveJson,
+                result = result
+            )
             result
         }.flowOn(Dispatchers.Default)
     }
 
-    @Volatile private var cachedRawProgressJson: String? = null
-    @Volatile private var cachedRawProgressArchiveJson: String? = null
-    @Volatile private var cachedRawProgressResult: List<WatchProgress>? = null
-    @Volatile private var cachedRawProfileId: Int = -1
+    @Volatile private var cachedRawProgressEntry: ProgressListCache? = null
 
     val allRawProgress: Flow<List<WatchProgress>> = profileManager.activeProfileId.flatMapLatest { pid ->
         observeAllRawProgress(pid)
@@ -192,27 +237,32 @@ class WatchProgressPreferences @Inject constructor(
 
     fun observeAllRawProgress(profileId: Int): Flow<List<WatchProgress>> {
         return progressSnapshots(profileId).map { snapshot ->
+            val revision = currentProfileDataRevision()
             val recentJson = snapshot.recentJson
             val archiveJson = snapshot.archiveJson
 
-            val cached = cachedRawProgressResult
+            val cached = cachedRawProgressEntry
             if (
-                recentJson == cachedRawProgressJson &&
-                archiveJson == cachedRawProgressArchiveJson &&
                 cached != null &&
-                cachedRawProfileId == profileId
+                cached.profileId == profileId &&
+                cached.revision == revision &&
+                cached.recentJson == recentJson &&
+                cached.archiveJson == archiveJson
             ) {
-                return@map cached
+                return@map cached.result
             }
 
             val result = mergeWatchProgressBuckets(snapshot.recent, snapshot.archive)
                 .values
                 .sortedByDescending { it.lastWatched }
 
-            cachedRawProfileId = profileId
-            cachedRawProgressJson = recentJson
-            cachedRawProgressArchiveJson = archiveJson
-            cachedRawProgressResult = result
+            cachedRawProgressEntry = ProgressListCache(
+                profileId = profileId,
+                revision = revision,
+                recentJson = recentJson,
+                archiveJson = archiveJson,
+                result = result
+            )
             result
         }.flowOn(Dispatchers.Default)
     }

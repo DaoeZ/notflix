@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">פרופיל וחשבון</string>
+    <string name="notflix_settings_home">מסך הבית</string>
+    <string name="notflix_settings_connected_accounts">חשבונות מחוברים</string>
+    <string name="notflix_settings_system">מערכת</string>
+    <string name="notflix_settings_advanced_options">אפשרויות מתקדמות</string>
+    <string name="notflix_settings_trailers">קדימונים</string>
+    <string name="notflix_settings_updates">עדכונים</string>
+    <string name="notflix_settings_home_collection">אוסף הבית של Notflix</string>
+    <string name="notflix_settings_ratings">דירוגים</string>
+    <string name="notflix_settings_metadata">מידע וקטלוגים</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

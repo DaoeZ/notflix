@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">الملف الشخصي والحساب</string>
+    <string name="notflix_settings_home">الشاشة الرئيسية</string>
+    <string name="notflix_settings_connected_accounts">الحسابات المتصلة</string>
+    <string name="notflix_settings_system">النظام</string>
+    <string name="notflix_settings_advanced_options">خيارات متقدمة</string>
+    <string name="notflix_settings_trailers">المقاطع الدعائية</string>
+    <string name="notflix_settings_updates">التحديثات</string>
+    <string name="notflix_settings_home_collection">مجموعة Notflix الرئيسية</string>
+    <string name="notflix_settings_ratings">التقييمات</string>
+    <string name="notflix_settings_metadata">التفاصيل والكتالوجات</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

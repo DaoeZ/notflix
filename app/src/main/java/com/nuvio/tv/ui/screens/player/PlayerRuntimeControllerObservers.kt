@@ -340,6 +340,7 @@ internal fun PlayerRuntimeController.observeSubtitleSettings() {
 
                 state.copy(
                     subtitleStyle = settings.subtitleStyle,
+                    notflixPlayerButtons = settings.notflixPlayerButtons,
                     loadingOverlayEnabled = settings.loadingOverlayEnabled,
                     showPlayerLoadingStatus = settings.showPlayerLoadingStatus,
                     playbackIssueReportsEnabled = settings.playbackIssueReportsEnabled,
@@ -426,12 +427,7 @@ internal fun PlayerRuntimeController.observeSubtitleSettings() {
                 mpvView?.applyHardwareDecodeMode(mpvHardwareDecodeModeSetting)
             }
 
-            val resolvedAudioLanguages = resolvePreferredAudioLanguages(
-                preferredAudioLanguage = settings.preferredAudioLanguage,
-                secondaryPreferredAudioLanguage = settings.secondaryPreferredAudioLanguage,
-                deviceLanguages = resolveDeviceAudioLanguages(),
-                contentOriginalLanguage = contentLanguage
-            )
+            val resolvedAudioLanguages = resolvePlaybackAudioLanguages(settings)
             if (resolvedAudioLanguages != mpvPreferredAudioLanguages) {
                 mpvPreferredAudioLanguages = resolvedAudioLanguages
                 if (isUsingMpvEngine()) {

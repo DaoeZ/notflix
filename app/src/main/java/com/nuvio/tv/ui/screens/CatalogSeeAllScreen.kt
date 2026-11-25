@@ -193,6 +193,7 @@ fun CatalogSeeAllScreen(
                 onHide = { item -> viewModel.hideTitle(item) }
             )
         }
+        com.nuvio.tv.ui.screens.home.HiddenTitleUndoScope {
         Box(Modifier.fillMaxSize()) {
             NotflixCatalogSeeAllScreen(
                 catalogKey = catalogKey,
@@ -238,8 +239,10 @@ fun CatalogSeeAllScreen(
             )
             uiState.hiddenTitleUndo?.takeIf { it.profileId == viewModel.profileManager.activeProfileId.value }?.let { undo ->
                 com.nuvio.tv.ui.screens.home.HiddenTitleUndoNotice(undo, viewModel::undoHideTitle,
-                    Modifier.align(Alignment.BottomCenter).padding(bottom = NuvioTheme.spacing.xl), autoFocus = false)
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = NuvioTheme.spacing.xl), autoFocus = false,
+                    onFocusChange = { viewModel.setHiddenUndoFocused(undo, it) })
             }
+        }
         }
         return
     }

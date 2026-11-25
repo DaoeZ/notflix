@@ -98,8 +98,10 @@ internal fun SubtitleSelectionOverlay(
     onDisableSubtitles: () -> Unit,
     onEvent: (PlayerEvent) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSwitchToAudio: (() -> Unit)? = null
 ) {
+    val combinedTabs = com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active && onSwitchToAudio != null
     val noneLabel = stringResource(R.string.subtitle_none)
     val unknownLabel = stringResource(R.string.subtitle_language_unknown)
     val builtInLabel = stringResource(R.string.subtitle_built_in)
@@ -395,8 +397,8 @@ internal fun SubtitleSelectionOverlay(
         captureKeys = false,
         contentPadding = PaddingValues(start = 52.dp, end = 52.dp, top = 36.dp, bottom = 76.dp)
     ) {
-        LaunchedEffect(visible) {
-            if (!visible) return@LaunchedEffect
+        LaunchedEffect(visible, combinedTabs) {
+            if (!visible || combinedTabs) return@LaunchedEffect
             if (sessionInitialLanguageKey != SubtitleOffLanguageKey && sessionInitialSelectedOptionId != null) {
                 Log.d(
                     SubtitleFocusTag,
@@ -462,6 +464,9 @@ internal fun SubtitleSelectionOverlay(
         }
 
         Column(verticalArrangement = Arrangement.Bottom) {
+            if (com.nuvio.tv.ui.appearance.LocalNotflixPresentation.current.active && onSwitchToAudio != null) {
+                NotflixAudioSubtitleTabs(audioSelected = false, onAudio = onSwitchToAudio, onSubtitles = {})
+            }
             Text(
                 text = stringResource(R.string.subtitle_dialog_title),
                 style = MaterialTheme.typography.headlineMedium,

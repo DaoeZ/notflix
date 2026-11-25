@@ -147,9 +147,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         minSdk = 24
         targetSdk = 36
-        // Above Nuvio's 1071 so lab builds still install over the ones already on the TV.
-        versionCode = 1076
-        versionName = "1.0.0-beta.4.1"
+        // Above the published Notflix 1.0.0 (1077) and private 1.0.0 (1078) so every build updates in place.
+        versionCode = 1079
+        versionName = "1.0.1"
 
         buildConfigField("String", "PARENTAL_GUIDE_API_URL", "\"${localProperties.getProperty("PARENTAL_GUIDE_API_URL", "")}\"")
         buildConfigField("String", "TRAILER_API_URL", "\"${localProperties.getProperty("TRAILER_API_URL", "")}\"")
@@ -163,6 +163,8 @@ android {
         buildConfigField("String", "SIMKL_CLIENT_ID", buildConfigString(resolveProperty(devProperties, localProperties, "SIMKL_CLIENT_ID")))
         buildConfigField("String", "SIMKL_APP_NAME", buildConfigString(resolveProperty(devProperties, localProperties, "SIMKL_APP_NAME", "nuvio")))
         buildConfigField("String", "MDBLIST_CLIENT_ID", buildConfigString(resolveProperty(devProperties, localProperties, "MDBLIST_CLIENT_ID")))
+        // M68: Notflix's own TMDB key, same build-time pattern as Trakt/Simkl. Empty if not defined.
+        buildConfigField("String", "TMDB_API_KEY", buildConfigString(resolveProperty(devProperties, localProperties, "TMDB_API_KEY")))
         buildConfigField("String", "TV_LOGIN_WEB_BASE_URL", "\"${localProperties.getProperty("TV_LOGIN_WEB_BASE_URL", "https://nuvio.tv/tv-login")}\"")
         buildConfigField("String", "DEVICE_LOGIN_WEB_BASE_URL", "\"${localProperties.getProperty("DEVICE_LOGIN_WEB_BASE_URL", "https://nuvio.tv/link")}\"")
         buildConfigField("boolean", "DOVI_NATIVE_ENABLED", enableDoviNative.toString())
@@ -290,7 +292,12 @@ android {
             buildConfigField("boolean", "IS_DEBUG_BUILD", "false")
             buildConfigField("String", "SENTRY_ENVIRONMENT", buildConfigString("production"))
 
-            // Production environment (from local.properties)
+            // Production environment (from local.properties only — never inherit local.dev.properties)
+            buildConfigField("String", "TRAKT_CLIENT_ID", buildConfigString(localProperties.getProperty("TRAKT_CLIENT_ID", "")))
+            buildConfigField("String", "TRAKT_CLIENT_SECRET", buildConfigString(localProperties.getProperty("TRAKT_CLIENT_SECRET", "")))
+            buildConfigField("String", "SIMKL_CLIENT_ID", buildConfigString(localProperties.getProperty("SIMKL_CLIENT_ID", "")))
+            buildConfigField("String", "MDBLIST_CLIENT_ID", buildConfigString(localProperties.getProperty("MDBLIST_CLIENT_ID", "")))
+            buildConfigField("String", "TMDB_API_KEY", buildConfigString(localProperties.getProperty("TMDB_API_KEY", "")))
             buildConfigField("String", "SUPABASE_URL", buildConfigString(localProperties.getProperty("NUVIO_SUPABASE_URL", "")))
             buildConfigField("String", "SUPABASE_ANON_KEY", buildConfigString(localProperties.getProperty("NUVIO_SUPABASE_ANON_KEY", "")))
             buildConfigField("String", "SUPABASE_FALLBACK_URL", buildConfigString(localProperties.getProperty("NUVIO_SUPABASE_FALLBACK_URL", "")))
@@ -392,8 +399,10 @@ android {
 
 androidComponents {
     onVariants(selector().withBuildType("debug")) { variant ->
+        // Notflix: the full flavor keeps com.notflix.tv in every build type, so a lab build updates the
+        // installed Notflix instead of appearing as a second app on the TV.
         val isPlaystore = variant.productFlavors.any { it.second == "playstore" }
-        variant.applicationId.set(if (isPlaystore) "com.nuvio.appdebug" else "com.nuviodebug.com")
+        if (isPlaystore) variant.applicationId.set("com.nuvio.appdebug")
     }
     // Only the full flavor ships the in-app updater.
     onVariants(selector().withFlavor("distribution" to "full")) { variant ->

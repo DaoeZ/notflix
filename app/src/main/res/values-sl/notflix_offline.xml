@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Prenosi</string>
+    <string name="notflix_offline_receive">Prejmi iz telefona</string>
+    <string name="notflix_offline_pairing">Ročni vnos: %1$s · %2$s. Koda velja 5 minut.</string>
+    <string name="notflix_offline_scan">Skenirajte s kamero telefona, da odprete prenose Notflix.</string>
+    <string name="notflix_offline_expired">Seja je potekla. Za ponovno povezavo izberite Prejmi iz telefona.</string>
+    <string name="notflix_offline_empty">Prenesite videoposnetek iz Virov ali ga pošljite s telefona.</string>
+    <string name="notflix_offline_profile">Prenosi v tem profilu niso na voljo.</string>
+    <string name="notflix_offline_unavailable">Datoteka ni na voljo</string>
+    <string name="notflix_offline_confirm_remove">Potrdi odstranitev</string>
+    <string name="notflix_offline_choose_source">Izberite vir za prenos</string>
+    <string name="notflix_offline_started">Prenos je v čakalni vrsti</string>
+    <string name="notflix_offline_failed">Te datoteke ni bilo mogoče odpreti ali prenesti. Poskusite z neposredno video datoteko.</string>
+</resources>

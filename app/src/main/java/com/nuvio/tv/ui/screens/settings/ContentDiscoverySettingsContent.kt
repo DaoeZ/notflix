@@ -31,15 +31,16 @@ internal fun ContentDiscoverySettingsContent(
     onNavigateToAddons: () -> Unit,
     onNavigateToPlugins: () -> Unit,
     showPlugins: Boolean,
-    initialFocusRequester: FocusRequester?
+    initialFocusRequester: FocusRequester?,
+    startAtServers: Boolean = false
 ) {
-    var serverPage by rememberSaveable { mutableStateOf<String?>(null) }
+    var serverPage by rememberSaveable { mutableStateOf<String?>(if (startAtServers) SERVERS_PAGE else null) }
     val hubServersRequester = remember { FocusRequester() }
     val serversRequester = remember { FocusRequester() }
     val serverRequester = remember { FocusRequester() }
     var returningToHub by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = serverPage != null) {
+    BackHandler(enabled = serverPage != null && (!startAtServers || serverPage != SERVERS_PAGE)) {
         serverPage = if (serverPage == SERVERS_PAGE) null else SERVERS_PAGE
         if (serverPage == null) returningToHub = true
     }

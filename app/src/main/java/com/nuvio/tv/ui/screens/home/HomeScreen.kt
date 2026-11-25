@@ -105,9 +105,8 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val notflix = LocalNotflixPresentation.current.active
     val notflixEnriched by viewModel.enrichedPreviews.collectAsStateWithLifecycle()
-    DisposableEffect(viewModel, notflix) {
+    LaunchedEffect(viewModel, notflix) {
         viewModel.setNotflixPresentation(notflix)
-        onDispose { viewModel.setNotflixPresentation(false) }
     }
 
 
@@ -148,12 +147,34 @@ fun HomeScreen(
     // M28: personal rows from official library/recommendations; Notflix only.
     val personalRows = if (notflix) hiltViewModel<NotflixPersonalRowsViewModel>() else null
     val myListItems = personalRows?.myList?.collectAsStateWithLifecycle()?.value.orEmpty()
-    val because = personalRows?.becauseYouWatched?.collectAsStateWithLifecycle()?.value
+    val top10MoviesItems = personalRows?.top10Movies?.collectAsStateWithLifecycle()?.value.orEmpty()
+    val top10SeriesItems = personalRows?.top10Series?.collectAsStateWithLifecycle()?.value.orEmpty()
+    val top10KidsItems = personalRows?.top10Kids?.collectAsStateWithLifecycle()?.value.orEmpty()
+    val personalProfile = personalRows?.activeProfileId?.collectAsStateWithLifecycle()?.value
+    val because = personalRows?.becauseYouWatched?.collectAsStateWithLifecycle()?.value?.takeIf { it.profileId == personalProfile }
     val myListTitle = stringResource(R.string.notflix_my_list)
-    val becauseTitle = because?.let { stringResource(R.string.player_post_play_because, it.anchorTitle) }
+    val becauseTitle = because?.let { stringResource(R.string.notflix_for_you) }
+    val countryOverride by NotflixCountryPreference.selectedCountry.collectAsStateWithLifecycle()
+    val homeLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val countryName = remember(countryOverride, homeLocale) {
+        val code = NotflixCountryPreference.resolveCountryCode(homeLocale, countryOverride)
+        NotflixCountryPreference.displayCountryName(code, homeLocale)
+    }
+    val top10MoviesTitle = stringResource(R.string.top10_movies_country, countryName)
+    val top10SeriesTitle = stringResource(R.string.top10_series_country, countryName)
+    val top10KidsTitle = stringResource(R.string.top10_kids_country, countryName)
     val myListRow = remember(myListItems, myListTitle) { notflixPersonalRow(NOTFLIX_MY_LIST_KEY, myListTitle, myListItems) }
     val becauseRow = remember(because, becauseTitle) {
         if (because != null && becauseTitle != null) notflixPersonalRow(NOTFLIX_BECAUSE_KEY, becauseTitle, because.items) else null
+    }
+    val top10MoviesRow = remember(top10MoviesItems, top10MoviesTitle) {
+        notflixPersonalRow(NOTFLIX_TOP10_MOVIES_KEY, top10MoviesTitle, top10MoviesItems)
+    }
+    val top10SeriesRow = remember(top10SeriesItems, top10SeriesTitle) {
+        notflixPersonalRow(NOTFLIX_TOP10_SERIES_KEY, top10SeriesTitle, top10SeriesItems)
+    }
+    val top10KidsRow = remember(top10KidsItems, top10KidsTitle) {
+        notflixPersonalRow(NOTFLIX_TOP10_KIDS_KEY, top10KidsTitle, top10KidsItems)
     }
     val latestCardUi = androidx.compose.runtime.rememberUpdatedState(uiState)
     val notflixCardActions = remember(viewModel, uiState.librarySourceMode) {
@@ -307,12 +328,14 @@ fun HomeScreen(
         }
     }
 
+    HiddenTitleUndoScope(active = notflix) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
         when {
             notflix -> NotflixHomeContent(
                 state = notflixHomeEntryState(uiState), memory = viewModel.notflixMemory, enriched = notflixEnriched,
+                loadLocalizedPoster = viewModel::loadNotflixPoster,
                 onDetail = onNavigateToDetailStable,
                 onPlay = { id, type, base -> onNavigateToBillboardPlay(id, type, base, !effectiveAutoplayEnabled) },
                 onContinue = onContinueWatchingClickStable,
@@ -331,6 +354,9 @@ fun HomeScreen(
                 cardActions = notflixCardActions,
                 myListRow = myListRow,
                 becauseRow = becauseRow,
+                top10MoviesRow = top10MoviesRow,
+                top10SeriesRow = top10SeriesRow,
+                top10KidsRow = top10KidsRow,
                 onOpenIntegrations = onNavigateToNotflixIntegrations,
                 onLongPress = onCatalogItemLongPress,
                 onRetry = { viewModel.onEvent(HomeEvent.OnRetry) }
@@ -542,15 +568,18 @@ fun HomeScreen(
                 )
             }
         }
-        uiState.hiddenTitleUndo?.let { undo ->
+        uiState.hiddenTitleUndo?.takeIf { !notflix || it.profileId == viewModel.profileManager.activeProfileId.value }?.let { undo ->
             HiddenTitleUndoNotice(
                 undo = undo,
                 onUndo = viewModel::undoHideTitle,
+                autoFocus = !notflix,
+                onFocusChange = { if (notflix) viewModel.setHiddenUndoFocused(undo, it) },
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = NuvioTheme.spacing.xl)
             )
         }
     }
 
+    }
     val selectedPoster = posterOptionsTarget
     if (selectedPoster != null) {
         val item = selectedPoster.item

@@ -5,6 +5,7 @@ package com.nuvio.tv.ui.screens.account
 import com.nuvio.tv.ui.theme.NuvioPrimitives
 import com.nuvio.tv.ui.theme.NuvioTheme
 import com.nuvio.tv.ui.util.contentTextDirection
+import com.nuvio.tv.ui.screens.settings.notflixSettingsRowFocus
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -380,7 +381,7 @@ private fun SettingsActionButton(
 
     Card(
         onClick = onClick,
-        modifier = modifier
+        modifier = modifier.notflixSettingsRowFocus("account.sign_in", true, onClick)
             .fillMaxWidth()
             .onFocusChanged { isFocused = it.isFocused },
         colors = CardDefaults.colors(
@@ -466,7 +467,7 @@ private fun SignOutSettingsButton(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.notflixSettingsRowFocus("account.sign_out", true, onClick).fillMaxWidth(),
         colors = CardDefaults.colors(
             containerColor = NuvioPrimitives.red600.copy(alpha = 0.12f),
             focusedContainerColor = NuvioPrimitives.red600.copy(alpha = 0.25f)

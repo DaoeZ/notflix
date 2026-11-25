@@ -10,6 +10,7 @@ import com.nuvio.tv.core.qr.QrCodeGenerator
 import com.nuvio.tv.core.server.DeviceIpAddress
 import com.nuvio.tv.core.server.NotflixKeysConfigServer
 import com.nuvio.tv.core.util.withAppLocale
+import com.nuvio.tv.data.local.NotflixIntegrationConfig
 import com.nuvio.tv.data.local.NotflixIntegrationCredentials
 import com.nuvio.tv.data.local.NotflixIntegrationStore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,9 +18,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -29,11 +33,19 @@ data class NotflixPhoneEntry(val url: String, val qrBitmap: Bitmap)
 @HiltViewModel
 class NotflixProviderSettingsViewModel @Inject constructor(
     private val store: NotflixIntegrationStore,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    // M68: last with a default so existing callers keep compiling; Hilt injects the real config.
+    private val integrationConfig: NotflixIntegrationConfig =
+        NotflixIntegrationConfig { NotflixIntegrationCredentials() }
 ) : ViewModel() {
 
     private val mutableValues = MutableStateFlow(NotflixIntegrationCredentials())
     val values: StateFlow<NotflixIntegrationCredentials> = mutableValues.asStateFlow()
+
+    /** M68: the build's own TMDB key is in use, so the row says so instead of «not set». */
+    val builtInTmdbKeyInUse: StateFlow<Boolean> = store.values
+        .map { it.tmdbApiKey.isBlank() && integrationConfig.hasBuiltInTmdbKey() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, integrationConfig.isTmdbBuiltInKeyInUse())
 
     private val mutablePhoneEntry = MutableStateFlow<NotflixPhoneEntry?>(null)
     val phoneEntry: StateFlow<NotflixPhoneEntry?> = mutablePhoneEntry.asStateFlow()
@@ -71,7 +83,13 @@ class NotflixProviderSettingsViewModel @Inject constructor(
             token = token,
             currentProvider = { store.read() },
             onSave = { credentials -> viewModelScope.launch(Dispatchers.IO) { store.save(credentials) } },
-            labels = { phonePageLabels() }
+            labels = { phonePageLabels() + ("lang" to appLanguageTag()) },
+            builtInInUse = {
+                mapOf(
+                    "tmdb" to integrationConfig.isTmdbBuiltInKeyInUse(),
+                    "trakt" to (store.read().traktClientId.isBlank() && integrationConfig.traktClientId().isNotBlank())
+                )
+            }
         )
         if (server == null) {
             mutablePhoneError.value = context.withAppLocale().getString(R.string.notflix_provider_phone_error)
@@ -110,9 +128,15 @@ class NotflixProviderSettingsViewModel @Inject constructor(
             "error" to localizedContext.getString(R.string.notflix_keys_page_error),
             "forbidden" to localizedContext.getString(R.string.notflix_keys_page_forbidden),
             "none" to localizedContext.getString(R.string.notflix_keys_page_none),
-            "current" to localizedContext.getString(R.string.notflix_keys_page_current)
+            "current" to localizedContext.getString(R.string.notflix_keys_page_current),
+            "builtIn" to localizedContext.getString(R.string.notflix_provider_tmdb_built_in)
         )
     }
+
+    /** Same source as withAppLocale(); Locale.getDefault() follows the system when no app language is set. */
+    private fun appLanguageTag(): String =
+        com.nuvio.tv.LocaleCache.localeTag.takeIf { it != com.nuvio.tv.LocaleCache.UNSET && it.isNotEmpty() }
+            ?: java.util.Locale.getDefault().toLanguageTag()
 
     private fun update(transform: (NotflixIntegrationCredentials) -> NotflixIntegrationCredentials) {
         viewModelScope.launch {

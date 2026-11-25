@@ -85,7 +85,10 @@ class ServerMatcher internal constructor(
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<LookupKey, TitleLookup>): Boolean =
             size > LOOKUP_CACHE_SIZE
     }
-    private val convertedImdb = mutableMapOf<Long, String>()
+    private val convertedImdb = object : LinkedHashMap<Pair<ServerMediaKind, Long>, String>(32, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Pair<ServerMediaKind, Long>, String>): Boolean =
+            size > LOOKUP_CACHE_SIZE
+    }
 
     fun request(type: String, videoId: String, season: Int?, episode: Int?): MatchRequest? {
         val title = titleRequest(type, videoId) ?: return null
@@ -246,7 +249,13 @@ class ServerMatcher internal constructor(
         if (ids.tmdb != null) return ids
         val imdb = ids.imdb ?: return ids
         val tmdb = withTimeoutOrNull(CONVERSION_TIMEOUT_MS) {
-            runCatching { tmdbService.ensureTmdbId(imdb, request.kind.contentType) }.getOrNull()
+            try {
+                tmdbService.ensureTmdbId(imdb, request.kind.contentType)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
         }?.toLongOrNull() ?: return ids
         return ids.copy(tmdb = tmdb)
     }
@@ -255,11 +264,18 @@ class ServerMatcher internal constructor(
         val ids = request.ids
         val tmdb = ids.tmdb
         if (ids.imdb != null || tmdb == null) return ids
-        synchronized(lock) { convertedImdb[tmdb] }?.let { return ids.copy(imdb = it) }
+        val cacheKey = request.kind to tmdb
+        synchronized(lock) { convertedImdb[cacheKey] }?.let { return ids.copy(imdb = it) }
         val imdb = withTimeoutOrNull(CONVERSION_TIMEOUT_MS) {
-            runCatching { tmdbService.tmdbToImdb(tmdb.toInt(), request.kind.contentType) }.getOrNull()
+            try {
+                tmdbService.tmdbToImdb(tmdb.toInt(), request.kind.contentType)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
         }?.takeIf { it.startsWith("tt") } ?: return ids
-        synchronized(lock) { convertedImdb[tmdb] = imdb }
+        synchronized(lock) { convertedImdb[cacheKey] = imdb }
         return ids.copy(imdb = imdb)
     }
 

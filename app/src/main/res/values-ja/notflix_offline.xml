@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">ダウンロード</string>
+    <string name="notflix_offline_receive">スマホから受信</string>
+    <string name="notflix_offline_pairing">手動入力: %1$s · %2$s。コードの有効期限は5分です。</string>
+    <string name="notflix_offline_scan">スマホのカメラでスキャンすると Notflix のダウンロードが開きます。</string>
+    <string name="notflix_offline_expired">セッションの有効期限が切れました。「スマホから受信」を選んで再接続してください。</string>
+    <string name="notflix_offline_empty">「ソース」から動画をダウンロードするか、スマホから送信してください。</string>
+    <string name="notflix_offline_profile">このプロフィールではダウンロードを利用できません。</string>
+    <string name="notflix_offline_unavailable">ファイルを利用できません</string>
+    <string name="notflix_offline_confirm_remove">削除を確認</string>
+    <string name="notflix_offline_choose_source">ダウンロードするソースを選択</string>
+    <string name="notflix_offline_started">ダウンロードを待機中</string>
+    <string name="notflix_offline_failed">このファイルを開けないか、ダウンロードできませんでした。直接リンクの動画ファイルをお試しください。</string>
+</resources>

@@ -18,7 +18,10 @@ class NotflixPlayerPresentationTest {
     private fun text(id: Int) = InstrumentationRegistry.getInstrumentation().targetContext.getString(id)
     private fun show(s: PlayerFixtureState) { compose.setContent { PlayerFixture(s) }; compose.waitForIdle() }
     private fun control(label: String) = compose.onNode(isFocusable() and hasClickAction() and
-        (hasContentDescription(label) or hasAnyDescendant(hasContentDescription(label))))
+        (hasContentDescription(label) or hasAnyDescendant(hasContentDescription(label)) or hasText(label) or hasAnyDescendant(hasText(label))))
+    private fun row(id: String) = compose.onNodeWithTag("notflix-player-action-$id")
+    private fun more(id: String) = compose.onNodeWithTag("notflix-player-more-$id")
+    private fun openMore(s: PlayerFixtureState) { if (!s.ui.showMoreDialog) row("more").performClick(); compose.waitForIdle() }
     private fun button(label: String) = compose.onNode(isFocusable() and hasClickAction() and
         (hasText(label) or hasAnyDescendant(hasText(label))))
     private fun focus(n: SemanticsNodeInteraction) { n.performSemanticsAction(SemanticsActions.RequestFocus); compose.waitForIdle(); n.assertIsFocused() }
@@ -43,7 +46,7 @@ class NotflixPlayerPresentationTest {
         assertTrue(((transport.top + transport.bottom) / 2).value / height in .47f.. .53f)
         assertTrue(progress.top.value / height > .80f)
         compose.onNodeWithText("Synthetic film").assertIsDisplayed()
-        compose.onNodeWithText("0:30 / 2:00").assertIsDisplayed()
+        compose.onNodeWithText(InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.notflix_player_remaining, "1:30")).assertIsDisplayed()
         control(text(R.string.cd_pause)).assertIsFocused()
         compose.runOnIdle { assertTrue(s.events.isEmpty()); assertTrue(s.timerResets > 0) }
     }
@@ -60,13 +63,13 @@ class NotflixPlayerPresentationTest {
         control("Rewind 10 s").assertIsNotEnabled(); control("Forward 10 s").assertIsNotEnabled()
         compose.onNodeWithTag("player_controls_progress").assertDoesNotExist()
         key(control(text(R.string.cd_pause)), Key.DirectionDown)
-        control(text(R.string.cd_sources)).assertIsFocused(); activate(control(text(R.string.cd_sources)))
-        compose.runOnIdle { assertEquals(listOf("sources"), s.events) }
+        row("speed").assertIsFocused(); openMore(s); more("sources").performClick()
+        compose.runOnIdle { assertEquals(listOf("sources"), s.events.filterNot { it == "more" }) }
     }
 
     @Test fun zeroOrUnknownDurationDoesNotInventProgressOrEnableTransportSeek() {
         val s = PlayerFixtureState().apply { timeline = timeline.copy(currentPosition = 0, duration = 0) }; show(s)
-        compose.onNodeWithText("0:00 / 0:00").assertIsDisplayed(); control("Forward 10 s").assertIsNotEnabled()
+        compose.onNodeWithText("—").assertIsDisplayed(); control("Forward 10 s").assertIsNotEnabled()
         compose.runOnIdle { s.timeline = s.timeline.copy(duration = -1) }
         control("Rewind 10 s").assertIsNotEnabled(); compose.runOnIdle { assertTrue(s.events.isEmpty()) }
     }
@@ -76,8 +79,8 @@ class NotflixPlayerPresentationTest {
         key(control(text(R.string.cd_pause)), Key.DirectionDown)
         compose.onNodeWithTag("player_controls_progress").assertIsFocused()
         compose.onNodeWithTag("player_controls_progress").performKeyInput { pressKey(Key.DirectionDown) }
-        control(text(R.string.cd_sources)).assertIsFocused()
-        key(control(text(R.string.cd_sources)), Key.DirectionUp)
+        row("speed").assertIsFocused()
+        key(row("speed"), Key.DirectionUp)
         compose.onNodeWithTag("player_controls_progress").assertIsFocused()
         compose.onNodeWithTag("player_controls_progress").performKeyInput { pressKey(Key.DirectionUp) }
         control(text(R.string.cd_pause)).assertIsFocused(); compose.runOnIdle { assertTrue(s.events.isEmpty()) }
@@ -113,18 +116,24 @@ class NotflixPlayerPresentationTest {
             audioTracks=listOf(TrackInfo(0,"Synthetic audio","en")),subtitleTracks=listOf(TrackInfo(0,"Synthetic subtitle","es")),
             chapters=listOf(PlayerChapter(0,"Synthetic chapter 1"),PlayerChapter(60_000,"Synthetic chapter 2")),
             nextEpisode=NextEpisodeInfo("synthetic:1:3",1,3,"Synthetic next",null,null,"2020-01-01T00:00:00Z",true,available=true,unairedMessage=null),
-            playbackIssueReportsEnabled=true) }; show(s)
-        for((id,name) in listOf(R.string.next_episode_label to "next", R.string.cd_subtitles to "subtitle",
-            R.string.cd_audio_tracks to "audio",R.string.player_chapters to "chapters",R.string.cd_sources to "sources",
-            R.string.cd_episodes to "episodes",R.string.party_title to "party")) activate(control(text(id)))
-        activate(control(text(R.string.cd_more_actions)))
-        for((id,name) in listOf(R.string.cd_playback_speed to "speed",R.string.cd_aspect_ratio to "aspect",
-            R.string.cd_open_external_player to "external",R.string.cd_stream_info to "info",R.string.player_report_issue to "report")) activate(control(text(id)))
-        compose.runOnIdle { assertEquals(listOf("next","subtitle","audio","chapters","sources","episodes","party","more","speed","aspect","external","info","report"),s.events) }
+            playbackIssueReportsEnabled=true, internalPlayerEngine = com.nuvio.tv.data.local.InternalPlayerEngine.MVP_PLAYER,
+            notflixSharpenAvailable = true, activeSkipInterval = com.nuvio.tv.data.repository.SkipInterval(0.0, 60.0, "intro", "test")) }; show(s)
+        row("next_episode").performClick(); row("audio_subtitles").performClick()
+        compose.runOnIdle { s.ui = s.ui.copy(audioTracks = emptyList()) }
+        row("audio_subtitles").performClick()
+        compose.runOnIdle { s.ui = s.ui.copy(audioTracks = listOf(TrackInfo(0, "Synthetic audio", "en"))) }
+        row("episodes").performClick(); row("speed").performClick()
+        for (id in listOf("chapters", "sources", "party", "aspect", "external", "stream_info", "report", "skip_segment", "sharpen")) {
+            openMore(s)
+            compose.onNodeWithTag("notflix-player-more-actions").performScrollToNode(hasTestTag("notflix-player-more-$id"))
+            more(id).performClick()
+        }
+        compose.runOnIdle { assertEquals(listOf("next", "audio", "subtitle", "episodes", "speed", "chapters", "sources", "party", "aspect", "external", "info", "report", "skip", "sharpen"), s.events.filterNot { it == "more" }) }
     }
 
     @Test fun engineConfirmationCanCancelAndConfirmWithoutDuplicateDispatch() {
         val s=PlayerFixtureState().apply { ui=ui.copy(showMoreDialog=true) }; show(s)
+        compose.onNodeWithTag("notflix-player-more-actions").performScrollToNode(hasTestTag("notflix-player-more-engine"))
         activate(control(text(R.string.cd_switch_player_engine)))
         compose.runOnIdle { assertFalse("engine" in s.events) }
         activate(button(text(R.string.action_cancel)))
@@ -136,14 +145,15 @@ class NotflixPlayerPresentationTest {
 
     @Test fun unavailableSecondaryActionsAndSentReportAreNotActionable() {
         val s=PlayerFixtureState().apply { ui=ui.copy(showMoreDialog=true,playbackIssueReportsEnabled=true,playbackIssueReportStatus=PlaybackIssueReportStatus.Sent) }; show(s)
-        control(text(R.string.cd_audio_tracks)).assertDoesNotExist(); control(text(R.string.cd_subtitles)).assertDoesNotExist()
+        row("audio_subtitles").assertDoesNotExist()
         control(text(R.string.cd_episodes)).assertDoesNotExist(); control(text(R.string.player_chapters)).assertDoesNotExist()
-        control(text(R.string.player_report_issue)).assertIsNotEnabled(); compose.runOnIdle { assertTrue(s.events.isEmpty()) }
+        compose.onNodeWithTag("notflix-player-more-actions").performScrollToNode(hasTestTag("notflix-player-more-report"))
+        more("report").assertIsNotEnabled(); compose.runOnIdle { assertTrue(s.events.isEmpty()) }
     }
 
     @Test fun hideAndReopenDoNotDispatchPlaybackAndKeepUsefulFocus() {
         val s=PlayerFixtureState(); show(s)
-        key(control(text(R.string.cd_sources)),Key.DirectionDown)
+        key(row("speed"),Key.DirectionDown)
         compose.onNodeWithTag("notflix_player_stage").assertDoesNotExist()
         compose.runOnIdle { assertEquals(listOf("hide"),s.events); s.visible=true }
         control(text(R.string.cd_pause)).assertIsFocused(); compose.runOnIdle { assertEquals(listOf("hide"),s.events) }

@@ -6,8 +6,10 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.loadExtractor
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 
 private const val TAG = "ExtExtractorRegistry"
 
@@ -19,7 +21,7 @@ private const val TAG = "ExtExtractorRegistry"
 @Singleton
 class ExternalExtractorRegistry @Inject constructor() {
 
-    private val missingExtractorDomains = mutableSetOf<String>()
+    private val missingExtractorDomains: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private var installed = false
 
     fun registerExtractor(extractor: ExtractorApi) {
@@ -61,6 +63,8 @@ class ExternalExtractorRegistry @Inject constructor() {
                 }
             }
             result
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "loadExtractor error for ${url.take(80)}: ${e.message}", e)
             false

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="notflix_for_you">Para ti</string>
     <string name="app_name">NotFlix</string>
     <string name="tv_channel_continue_watching">Continuar viendo</string>
     <string name="type_movie">Película</string>
@@ -99,7 +100,7 @@
 
     <string name="home_no_addons">No hay complementos instalados. Instala uno para empezar.</string>
     <string name="home_no_catalog_addons">No hay complementos de catálogo instalados. Instala un complemento de catálogo para ver contenido.</string>
-    <string name="auth_notice_nuvio_logged_out">Has sido desconectado de Nuvio. Por favor, inicia sesión de nuevo.</string>
+    <string name="auth_notice_nuvio_logged_out">Has sido desconectado de Notflix. Por favor, inicia sesión de nuevo.</string>
     <string name="auth_notice_trakt_logged_out">Has sido desconectado de Trakt. Por favor, reconéctate.</string>
     <string name="error_generic">Ha ocurrido un error</string>
 
@@ -372,7 +373,7 @@
     <string name="appearance_settings_style">Estilo de configuración</string>
     <string name="appearance_settings_style_subtitle">Elige cómo se presentan las pantallas de configuración</string>
     <string name="appearance_launcher_artwork">Aspecto en la pantalla de inicio</string>
-    <string name="appearance_launcher_artwork_subtitle">Elige cómo aparece Nuvio en la pantalla de inicio de tu TV</string>
+    <string name="appearance_launcher_artwork_subtitle">Elige cómo aparece Notflix en la pantalla de inicio de tu TV</string>
     <string name="ambient_mode_title">Modo ambiente</string>
     <string name="ambient_mode_subtitle">Muestra imágenes de tus catálogos mientras el televisor está inactivo</string>
     <string name="ambient_mode_enabled_subtitle">Llena la pantalla con fondos tras un período sin usar el mando a distancia</string>
@@ -387,12 +388,12 @@
     <string name="ambient_mode_catalogs_dialog_subtitle">Elige hasta 3 catálogos</string>
     <string name="ambient_mode_catalogs_default">Los mismos que en destacados</string>
     <string name="ambient_mode_catalogs_count">%1$d de %2$d</string>
-    <string name="appearance_app_icon_and_banner">Icono &amp; banner de la app</string>
+    <string name="appearance_app_icon_and_banner">Icono y banner de la app</string>
     <string name="appearance_app_icon_and_banner_subtitle">Cambia el icono y el banner de la aplicación</string>
-    <string name="appearance_app_icon_picker_title">Elige icono &amp; banner de la app</string>
+    <string name="appearance_app_icon_picker_title">Elige icono y banner de la app</string>
     <string name="appearance_app_icon_picker_subtitle">Cada estilo incluye un icono cuadrado y un banner de TV a juego</string>
     <string name="appearance_app_icon_confirmation_title">¿Cambiar icono de la app?</string>
-    <string name="appearance_app_icon_confirmation_message">Cambiar a %1$s cerrará Nuvio. Es posible que el banner de TV requiera reiniciar el dispositivo antes de actualizarse. Selecciona OK para continuar.</string>
+    <string name="appearance_app_icon_confirmation_message">Cambiar a %1$s cerrará Notflix. Es posible que el banner de TV requiera reiniciar el dispositivo antes de actualizarse. Selecciona OK para continuar.</string>
     <string name="appearance_app_icon_change_failed">No se pudo cambiar el icono y el banner. Inténtalo de nuevo.</string>
     <string name="appearance_app_icon_original">Original</string>
     <string name="appearance_app_icon_arctic_blue">Azul ártico</string>
@@ -431,37 +432,37 @@
     <string name="update_channel_beta_description">Actualizaciones anticipadas que pueden contener errores, romper funciones o comportarse de forma inesperada.</string>
     <string name="about_privacy_policy">Política de privacidad</string>
     <string name="about_privacy_policy_subtitle">Ver nuestra política de privacidad</string>
-    <string name="support_nuvio_name">Apoya a Nuvio</string>
-    <string name="about_supporters_contributors">Apoya a Nuvio</string>
+    <string name="support_nuvio_name">Apoya a Notflix</string>
+    <string name="about_supporters_contributors">Apoya a Notflix</string>
     <string name="about_supporters_contributors_subtitle">Apoya el proyecto y consulta los créditos de la comunidad</string>
-    <string name="about_licenses_attributions">Licencias &amp; atribución</string>
+    <string name="about_licenses_attributions">Licencias y atribución</string>
     <string name="about_licenses_attributions_subtitle">Fuentes de datos, agradecimientos y licencias de Android</string>
-    <string name="licenses_attributions_title">Licencias &amp; atribución</string>
-    <string name="licenses_attributions_subtitle">Proveedores de datos, créditos de servicios y licencias de reproducción de Android utilizadas por Nuvio TV.</string>
+    <string name="licenses_attributions_title">Licencias y atribución</string>
+    <string name="licenses_attributions_subtitle">Proveedores de datos, créditos de servicios y licencias de reproducción de Android utilizadas por Notflix TV.</string>
     <string name="licenses_attributions_section_app">LICENCIA DE LA APP</string>
-    <string name="licenses_attributions_section_data">DATOS &amp; SERVICIOS</string>
+    <string name="licenses_attributions_section_data">DATOS Y SERVICIOS</string>
     <string name="licenses_attributions_section_playback">LICENCIAS DE REPRODUCCIÓN DE ANDROID</string>
     <string name="licenses_attributions_section_ui">BIBLIOTECAS DE INTERFAZ</string>
     <string name="licenses_attributions_haze_title">Haze 1.7.2</string>
     <string name="licenses_attributions_haze_body">Se usa para efectos de desenfoque de fondo. Creado por Chris Banes. Con licencia Apache License, versión 2.0.</string>
-    <string name="licenses_attributions_nuvio_title">Nuvio TV</string>
+    <string name="licenses_attributions_nuvio_title">Notflix TV</string>
     <string name="licenses_attributions_nuvio_body">El código fuente y los términos de la licencia están disponibles en el repositorio del proyecto. Con licencia GNU General Public License v3.0.</string>
     <string name="licenses_attributions_tmdb_title">The Movie Database (TMDB)</string>
-    <string name="licenses_attributions_tmdb_body">Nuvio usa la API de TMDB para metadatos de películas y series, ilustraciones, tráilers, elenco, detalles de producción, colecciones y recomendaciones. Este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB.</string>
+    <string name="licenses_attributions_tmdb_body">Notflix usa la API de TMDB para metadatos de películas y series, ilustraciones, tráilers, elenco, detalles de producción, colecciones y recomendaciones. Este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB.</string>
     <string name="licenses_attributions_trakt_title">Trakt</string>
-    <string name="licenses_attributions_trakt_body">Nuvio se conecta a Trakt para autenticación de cuenta, historial de visualización, sincronización de progreso, datos de biblioteca, calificaciones, listas y comentarios. Nuvio no está afiliado ni respaldado por Trakt.</string>
+    <string name="licenses_attributions_trakt_body">Notflix se conecta a Trakt para autenticación de cuenta, historial de visualización, sincronización de progreso, datos de biblioteca, calificaciones, listas y comentarios. Notflix no está afiliado ni respaldado por Trakt.</string>
     <string name="licenses_attributions_simkl_title">Simkl</string>
-    <string name="licenses_attributions_simkl_body">Nuvio se conecta a Simkl para autenticación de cuenta, listas de deseos, historial de visualización, progreso de reproducción y scrobbling. Los datos de seguimiento de películas, series y anime los proporciona Simkl. Nuvio no está afiliado ni respaldado por Simkl.</string>
+    <string name="licenses_attributions_simkl_body">Notflix se conecta a Simkl para autenticación de cuenta, listas de deseos, historial de visualización, progreso de reproducción y scrobbling. Los datos de seguimiento de películas, series y anime los proporciona Simkl. Notflix no está afiliado ni respaldado por Simkl.</string>
     <string name="licenses_attributions_premiumize_title">Premiumize</string>
-    <string name="licenses_attributions_premiumize_body">Nuvio se conecta a Premiumize para autenticación de cuenta, acceso a la biblioteca en la nube, comprobaciones de caché y funciones de reproducción en la nube. Nuvio no está afiliado ni respaldado por Premiumize.</string>
+    <string name="licenses_attributions_premiumize_body">Notflix se conecta a Premiumize para autenticación de cuenta, acceso a la biblioteca en la nube, comprobaciones de caché y funciones de reproducción en la nube. Notflix no está afiliado ni respaldado por Premiumize.</string>
     <string name="licenses_attributions_torbox_title">TorBox</string>
-    <string name="licenses_attributions_torbox_body">Nuvio se conecta a TorBox para autenticación de cuenta, acceso a la biblioteca en la nube, comprobaciones de caché y funciones de reproducción en la nube. Nuvio no está afiliado ni respaldado por TorBox.</string>
+    <string name="licenses_attributions_torbox_body">Notflix se conecta a TorBox para autenticación de cuenta, acceso a la biblioteca en la nube, comprobaciones de caché y funciones de reproducción en la nube. Notflix no está afiliado ni respaldado por TorBox.</string>
     <string name="licenses_attributions_mdblist_title">MDBList</string>
-    <string name="licenses_attributions_mdblist_body">Nuvio usa MDBList para calificaciones, historial de visualización y seguimiento de reproducción. Nuvio no está afiliado ni respaldado por MDBList.</string>
+    <string name="licenses_attributions_mdblist_body">Notflix usa MDBList para calificaciones, historial de visualización y seguimiento de reproducción. Notflix no está afiliado ni respaldado por MDBList.</string>
     <string name="licenses_attributions_introdb_title">IntroDB</string>
-    <string name="licenses_attributions_introdb_body">Nuvio usa la API de IntroDB para marcas de tiempo de introducción, resumen, créditos y avance proporcionadas por la comunidad, utilizadas por los controles de salto. Nuvio no está afiliado ni respaldado por IntroDB.</string>
+    <string name="licenses_attributions_introdb_body">Notflix usa la API de IntroDB para marcas de tiempo de introducción, resumen, créditos y avance proporcionadas por la comunidad, utilizadas por los controles de salto. Notflix no está afiliado ni respaldado por IntroDB.</string>
     <string name="licenses_attributions_imdb_title">IMDb Non-Commercial Datasets</string>
-    <string name="licenses_attributions_imdb_body">Nuvio usa IMDb Non-Commercial Datasets, incluido title.ratings.tsv.gz, para calificaciones y recuentos de votos de IMDb. Información cortesía de IMDb (https://www.imdb.com). Usado con permiso. Los datos de IMDb son para uso personal y no comercial según los términos de IMDb.</string>
+    <string name="licenses_attributions_imdb_body">Notflix usa IMDb Non-Commercial Datasets, incluido title.ratings.tsv.gz, para calificaciones y recuentos de votos de IMDb. Información cortesía de IMDb (https://www.imdb.com). Usado con permiso. Los datos de IMDb son para uso personal y no comercial según los términos de IMDb.</string>
     <string name="licenses_attributions_exoplayer_title">AndroidX Media3 ExoPlayer 1.8.0</string>
     <string name="licenses_attributions_exoplayer_body">Se usa como motor de reproducción de Android. Con licencia Apache License, versión 2.0.</string>
     <string name="licenses_attributions_libmpv_title">libmpv / libmpv-android</string>
@@ -472,7 +473,7 @@
     <string name="settings_account">Cuenta</string>
     <string name="settings_profiles">Perfiles</string>
     <string name="settings_layout">Diseño</string>
-    <string name="settings_content_discovery">Contenido &amp; descubrimiento</string>
+    <string name="settings_content_discovery">Contenido y descubrimiento</string>
     <string name="settings_content_discovery_subtitle">Complementos, catálogos y fuentes de descubrimiento</string>
     <string name="settings_content_discovery_addons_subtitle">Administra complementos, orden de catálogos y colecciones</string>
     <string name="settings_content_discovery_plugins_subtitle">Administra repositorios y proveedores de transmisión</string>
@@ -486,7 +487,7 @@
     <string name="tracking_accounts_title">Cuentas</string>
     <string name="tracking_accounts_subtitle">Conecta y administra servicios de seguimiento</string>
     <string name="tracking_sources_title">Fuentes</string>
-    <string name="tracking_sources_subtitle">Elige de dónde lee Nuvio tu biblioteca y tu progreso de visualización. La reproducción hace scrobbling en todos los servicios conectados.</string>
+    <string name="tracking_sources_subtitle">Elige de dónde lee Notflix tu biblioteca y tu progreso de visualización. La reproducción hace scrobbling en todos los servicios conectados.</string>
     <string name="tracking_trakt_features_title">Funciones de Trakt</string>
     <string name="tracking_trakt_features_subtitle">Historial, reseñas y recomendaciones específicas de Trakt</string>
     <string name="tracking_simkl_features_title">Funciones de Simkl</string>
@@ -503,8 +504,8 @@
     <string name="tracking_status_connecting">Conectando</string>
     <string name="tracking_finish_connection">Finalizar aprobación de conexión</string>
     <string name="tracking_connecting_provider">Iniciando conexión con %1$s…</string>
-    <string name="tracking_watch_progress_dialog_subtitle">Elige el servicio que Nuvio usa para reanudar y Continuar viendo. El scrobbling permanece activo en todos los servicios conectados.</string>
-    <string name="tracking_library_source_dialog_subtitle">Elige el servicio que Nuvio lee para tu Biblioteca. La reproducción hace scrobbling en todos los servicios conectados.</string>
+    <string name="tracking_watch_progress_dialog_subtitle">Elige el servicio que Notflix usa para reanudar y Continuar viendo. El scrobbling permanece activo en todos los servicios conectados.</string>
+    <string name="tracking_library_source_dialog_subtitle">Elige el servicio que Notflix lee para tu Biblioteca. La reproducción hace scrobbling en todos los servicios conectados.</string>
     <string name="tracking_trakt_progress_required">Disponible cuando Trakt es la fuente de progreso de visualización</string>
     <string name="trakt_name">Trakt</string>
     <string name="simkl_name">Simkl</string>
@@ -514,7 +515,7 @@
     <string name="settings_advanced_subtitle">Rendimiento, navegación, caché y diagnósticos</string>
     <string name="experience_mode_essential">Esencial</string>
     <string name="experience_mode_advanced">Avanzado</string>
-    <string name="experience_mode_choose_title">Elige tu experiencia de Nuvio</string>
+    <string name="experience_mode_choose_title">Elige tu experiencia de Notflix</string>
     <string name="experience_mode_choose_subtitle">Empieza de forma sencilla o desbloquea todas las personalizaciones. Puedes cambiar cuando quieras.</string>
     <string name="experience_mode_essential_card_subtitle">Configuración enfocada, complementos, aspectos básicos de reproducción, Trakt y ajustes de cuenta.</string>
     <string name="experience_mode_advanced_card_subtitle">Ajustes completos, controles de diseño, orden de catálogo, colecciones, complementos y diagnóstico.</string>
@@ -590,7 +591,7 @@
     <string name="network_connection_wifi">Wi-Fi</string>
     <string name="network_connection_ethernet">Ethernet</string>
     <string name="network_connection_offline">Sin conexión</string>
-    <string name="advanced_section_performance">Rendimiento &amp; navegación</string>
+    <string name="advanced_section_performance">Rendimiento y navegación</string>
     <string name="advanced_section_diagnostics">Diagnósticos</string>
     <string name="advanced_sentry_reports">Informes de fallos de Sentry</string>
     <string name="advanced_sentry_reports_subtitle">Envía informes de fallos y ANR con contexto seguro. Activado de forma predeterminada.</string>
@@ -624,8 +625,8 @@
     <string name="buffer_safe_status">Seguro: dentro del límite recomendado para tu dispositivo.</string>
     <string name="buffer_unsafe_warning">Advertencia: supera el límite seguro recomendado (%1$d MB) para tu dispositivo %2$s. Puede provocar fallos en la app.</string>
     <string name="buffer_auto_limit_active">Límite seguro autoajustado: %d MB</string>
-    <string name="advanced_nuvio_focus_scroll">Desplazamiento de enfoque de Nuvio</string>
-    <string name="advanced_nuvio_focus_scroll_subtitle">Usa la animación y el posicionamiento personalizados de desplazamiento de enfoque global de Nuvio.</string>
+    <string name="advanced_nuvio_focus_scroll">Desplazamiento de enfoque de Notflix</string>
+    <string name="advanced_nuvio_focus_scroll_subtitle">Usa la animación y el posicionamiento personalizados de desplazamiento de enfoque global de Notflix.</string>
     <string name="advanced_rgb565">Decodificación de imágenes RGB565</string>
     <string name="advanced_rgb565_subtitle">Usa color de 16 bits de menor consumo de memoria para imágenes opacas compatibles. Cambiar esto reinicia la app.</string>
     <string name="advanced_memory_only_vertical_scroll">Desplazamiento vertical solo en memoria</string>
@@ -668,20 +669,20 @@
     <string name="action_close">Cerrar</string>
 
     <string name="supporters_contributors_title">Apoyadores y colaboradores</string>
-    <string name="supporters_contributors_subtitle">Las personas que respaldan Nuvio y los colaboradores que lo construyen en TV y móvil.</string>
+    <string name="supporters_contributors_subtitle">Las personas que respaldan Notflix y los colaboradores que lo construyen en TV y móvil.</string>
     <string name="supporters_contributors_supporters_copy">Los apoyadores y donantes ayudan a mantener el proyecto en movimiento, financiar la infraestructura y dejar espacio para características ambiciosas.</string>
-    <string name="supporters_contributors_donate_copy">Nuvio seguirá siendo gratis y de código abierto. Si deseas respaldar el proyecto, puedes ayudar a cubrir el tiempo e infraestructura detrás.</string>
-    <string name="supporters_contributors_donation_progress_title">Servidor &amp; mantenimiento de este mes</string>
+    <string name="supporters_contributors_donate_copy">Notflix seguirá siendo gratis y de código abierto. Si deseas respaldar el proyecto, puedes ayudar a cubrir el tiempo e infraestructura detrás.</string>
+    <string name="supporters_contributors_donation_progress_title">Servidor y mantenimiento de este mes</string>
     <string name="supporters_contributors_donation_progress_complete">Cubierto. El apoyo adicional ahora se destina al desarrollo.</string>
     <string name="supporters_contributors_donation_progress_remaining">Después del 100%, el apoyo adicional se destina al desarrollo.</string>
     <string name="supporters_contributors_loading_donation_progress">Cargando progreso de financiación...</string>
-    <string name="supporters_contributors_donate_button">Donar a Nuvio</string>
+    <string name="supporters_contributors_donate_button">Donar a Notflix</string>
     <string name="supporters_contributors_qr_title">Escanear para donar</string>
-    <string name="supporters_contributors_qr_subtitle">Abre el enlace en tu teléfono para apoyar a Nuvio.</string>
+    <string name="supporters_contributors_qr_subtitle">Abre el enlace en tu teléfono para apoyar a Notflix.</string>
     <string name="supporters_contributors_qr_hint">Apunta tu cámara al código QR o usa el botón de abajo.</string>
     <string name="supporters_contributors_back_button">Volver a detalles</string>
-    <string name="supporter_membership_title">Membresía de apoyador de Nuvio</string>
-    <string name="supporter_membership_description">Apoyar a Nuvio ayuda a cubrir la infraestructura y el desarrollo continuo, manteniendo la experiencia principal gratuita para todos.</string>
+    <string name="supporter_membership_title">Membresía de apoyador de Notflix</string>
+    <string name="supporter_membership_description">Apoyar a Notflix ayuda a cubrir la infraestructura y el desarrollo continuo, manteniendo la experiencia principal gratuita para todos.</string>
     <string name="supporter_membership_view">Ver membresía</string>
     <string name="supporter_membership_manage">Administrar membresía</string>
     <string name="supporter_membership_refresh">Actualizar</string>
@@ -694,7 +695,7 @@
     <string name="supporter_membership_tier_supporter">Apoyador</string>
     <string name="supporter_membership_tier_supporter_plus">Apoyador Plus</string>
     <string name="supporter_membership_connected_title">Patreon está conectado</string>
-    <string name="supporter_membership_connected_description">No se encontró ningún nivel activo de Nuvio en esta cuenta de Patreon. Consulta las opciones disponibles o actualiza después de cambiar tu membresía de Patreon.</string>
+    <string name="supporter_membership_connected_description">No se encontró ningún nivel activo de Notflix en esta cuenta de Patreon. Consulta las opciones disponibles o actualiza después de cambiar tu membresía de Patreon.</string>
     <string name="supporter_membership_scan_support">Escanea para ver la membresía</string>
     <string name="supporter_membership_scan_support_description">Abre la página de membresía de apoyador en tu teléfono.</string>
     <string name="supporter_membership_scan_manage">Escanea para administrar la membresía</string>
@@ -709,13 +710,13 @@
     <string name="supporters_no_message">Ningún mensaje compartido.</string>
     <string name="supporters_level_supporter">Apoyador</string>
     <string name="supporters_level_supporter_plus">Apoyador+</string>
-    <string name="supporters_since">Apoyando a Nuvio desde %1$s</string>
-    <string name="supporters_since_unknown">Apoyando a Nuvio con orgullo</string>
+    <string name="supporters_since">Apoyando a Notflix desde %1$s</string>
+    <string name="supporters_since_unknown">Apoyando a Notflix con orgullo</string>
     <string name="supporters_open_donations">Abrir página de donaciones</string>
     <string name="sponsors_loading">Cargando patrocinadores…</string>
     <string name="sponsors_empty">Aún no se encontraron patrocinadores.</string>
     <string name="sponsors_error_title">No se pudieron cargar los patrocinadores</string>
-    <string name="sponsors_detail_copy">Los patrocinadores ayudan a impulsar Nuvio apoyando las distintas partes del desarrollo.</string>
+    <string name="sponsors_detail_copy">Los patrocinadores ayudan a impulsar Notflix apoyando las distintas partes del desarrollo.</string>
     <string name="sponsors_channel_unavailable">Canal de patrocinadores no disponible.</string>
     <string name="sponsors_open_channel">Abrir canal de patrocinadores</string>
     <string name="contributors_loading">Cargando colaboradores de GitHub…</string>
@@ -806,8 +807,8 @@
     <string name="playback_player_ask_desc">Elige el reproductor cada vez</string>
     <string name="playback_player_auto">Automático (Mejor para el contenido)</string>
     <string name="playback_player_auto_desc">ExoPlayer para Películas y Series · MPV para Anime</string>
-    <string name="playback_engine_exoplayer_desc">Mejor compatibilidad con las funciones actuales de Nuvio.</string>
-    <string name="playback_engine_mvplayer_desc">Usa libmpv con los controles OSD de Nuvio. Experimental.</string>
+    <string name="playback_engine_exoplayer_desc">Mejor compatibilidad con las funciones actuales de Notflix.</string>
+    <string name="playback_engine_mvplayer_desc">Usa libmpv con los controles OSD de Notflix. Experimental.</string>
 
     <string name="video_section">Vídeo</string>
     <string name="playback_true_black_letterbox">Barras negras puras</string>
@@ -1319,7 +1320,7 @@
     <string name="debrid_add_key_first">Conecta una cuenta primero.</string>
     <string name="debrid_section_account">Cuentas</string>
     <string name="debrid_section_instant_playback">Preparación de enlaces</string>
-    <string name="debrid_section_filters">Filtros &amp; ordenación</string>
+    <string name="debrid_section_filters">Filtros y ordenación</string>
     <string name="debrid_section_formatting">Formato</string>
     <string name="debrid_provider_title">Proveedor</string>
     <string name="debrid_provider_subtitle">Se añadirán más proveedores más adelante</string>
@@ -1347,7 +1348,7 @@
     <string name="debrid_disconnect">Desconectar</string>
     <string name="debrid_device_auth_connected">%1$s está conectado en este dispositivo.</string>
     <string name="debrid_device_auth_starting">Iniciando sesión segura…</string>
-    <string name="debrid_device_auth_instructions">Escanea el QR e introduce este código para aprobar Nuvio.</string>
+    <string name="debrid_device_auth_instructions">Escanea el QR e introduce este código para aprobar Notflix.</string>
     <string name="debrid_device_auth_code_copied">Código copiado.</string>
     <string name="debrid_device_auth_waiting">Esperando aprobación…</string>
     <string name="debrid_device_auth_failed">No se pudo iniciar sesión.</string>
@@ -1547,21 +1548,21 @@
     <string name="trakt_watch_progress_title">Progreso de visualización</string>
     <string name="trakt_watch_progress_subtitle">Elige qué fuente de progreso impulsa la reanudación y continuar viendo</string>
     <string name="trakt_watch_progress_dialog_title">Progreso de visualización</string>
-    <string name="trakt_watch_progress_dialog_subtitle">Elige si la reanudación y continuar viendo deben usar Trakt o Nuvio Sync mientras el scrobbling de Trakt permanece activo.</string>
+    <string name="trakt_watch_progress_dialog_subtitle">Elige si la reanudación y continuar viendo deben usar Trakt o Notflix Sync mientras el scrobbling de Trakt permanece activo.</string>
     <string name="trakt_watch_progress_source_trakt">Trakt</string>
-    <string name="trakt_watch_progress_source_nuvio">Nuvio Sync</string>
+    <string name="trakt_watch_progress_source_nuvio">Notflix Sync</string>
     <string name="trakt_library_source_title">Fuente de biblioteca</string>
-    <string name="trakt_library_source_subtitle">Elige de qué fuente lee Nuvio tu biblioteca</string>
+    <string name="trakt_library_source_subtitle">Elige de qué fuente lee Notflix tu biblioteca</string>
     <string name="trakt_library_source_dialog_title">Fuente de biblioteca</string>
     <string name="trakt_library_source_dialog_subtitle">Elige dónde guardar y administrar los elementos de tu biblioteca</string>
     <string name="trakt_library_source_trakt">Trakt</string>
-    <string name="trakt_library_source_nuvio">Biblioteca de Nuvio</string>
+    <string name="trakt_library_source_nuvio">Biblioteca de Notflix</string>
     <string name="trakt_library_source_trakt_selected">Biblioteca de Trakt seleccionada</string>
-    <string name="trakt_library_source_nuvio_selected">Biblioteca de Nuvio seleccionada</string>
+    <string name="trakt_library_source_nuvio_selected">Biblioteca de Notflix seleccionada</string>
     <string name="trakt_setting_on">Activado</string>
     <string name="trakt_setting_off">Desactivado</string>
     <string name="trakt_watch_progress_trakt_selected">Fuente de progreso de visualización establecida en Trakt</string>
-    <string name="trakt_watch_progress_nuvio_selected">Fuente de progreso de visualización establecida en Nuvio Sync</string>
+    <string name="trakt_watch_progress_nuvio_selected">Fuente de progreso de visualización establecida en Notflix Sync</string>
     <string name="trakt_continue_watching_window">Ventana de continuar viendo</string>
     <string name="trakt_continue_watching_subtitle">Historial de Trakt considerado para continuar viendo</string>
     <string name="trakt_unaired_next_up">Episodios siguientes sin transmitir</string>
@@ -1590,7 +1591,7 @@
     <string name="trakt_stat_watched_hours">Horas vistas</string>
     <string name="trakt_disconnect">Desconectar</string>
     <string name="trakt_disconnect_title">¿Desconectar Trakt?</string>
-    <string name="trakt_disconnect_subtitle">Esto desconectará tu cuenta de Trakt de Nuvio.</string>
+    <string name="trakt_disconnect_subtitle">Esto desconectará tu cuenta de Trakt de Notflix.</string>
     <string name="trakt_login">Iniciar sesión</string>
     <string name="trakt_retry">Reintentar</string>
     <string name="trakt_back">Atrás</string>
@@ -1653,7 +1654,7 @@
     <string name="profile_shares_primary">Comparte %1$s del principal</string>
     <string name="profile_edit_label">Editar</string>
     <string name="profile_age_limit_label">Límite de edad</string>
-    <string name="profile_age_limit_subtitle">Solo en este dispositivo. Se aplica a este perfil.</string>
+    <string name="profile_age_limit_subtitle">Se aplica a este perfil.</string>
     <string name="profile_age_limit_title">Límite de edad</string>
     <string name="profile_age_limit_none">Sin límite</string>
     <string name="profile_age_limit_tp">TP</string>
@@ -1681,11 +1682,11 @@
     <string name="profile_addons">complementos</string>
     <string name="profile_plugins">complementos</string>
     <string name="profile_choose_avatar">Elige avatar</string>
-    <string name="profile_custom_avatar_web_panel_note">Las URLs de avatar personalizado se pueden configurar desde el panel web de Nuvio.</string>
+    <string name="profile_custom_avatar_web_panel_note">Las URLs de avatar personalizado se pueden configurar desde el panel web de Notflix.</string>
     <string name="profile_editor_tab_avatar">Avatar</string>
     <string name="profile_editor_tab_background">Fondo</string>
     <string name="profile_choose_background">Elige el fondo de perfil</string>
-    <string name="profile_background_member_note">Las URLs de fondo personalizado se pueden configurar desde el panel web de Nuvio.</string>
+    <string name="profile_background_member_note">Las URLs de fondo personalizado se pueden configurar desde el panel web de Notflix.</string>
     <string name="profile_background_normal">Normal</string>
     <string name="profile_background_custom">Personalizado</string>
     <string name="profile_avatar_none_selected">Ningún avatar seleccionado</string>
@@ -1757,7 +1758,7 @@
     <string name="profile_pin_overlay_set_support">Este PIN será requerido antes de abrir este perfil.</string>
     <string name="profile_pin_overlay_confirm_support">Reintroduce los mismos 4 dígitos para terminar la configuración.</string>
     <string name="profile_pin_overlay_mismatch">Los PINs no coincidieron. Introduce un nuevo PIN de nuevo.</string>
-    <string name="profile_pin_overlay_forgot_hint">¿Olvidaste el PIN? Restablécelo desde tu cuenta de Nuvio en sitio web de nuvio.</string>
+    <string name="profile_pin_overlay_forgot_hint">¿Olvidaste el PIN? Restablécelo desde los ajustes de tu cuenta de Notflix.</string>
     <string name="profile_pin_overlay_back_hint">Presiona atrás para cancelar</string>
 
 
@@ -1845,8 +1846,8 @@
 • Tu dirección IP será visible para otros nodos de la red
 • Eres el único responsable del contenido al que accedes
 • Confirmas que tienes el derecho legal de reproducir este contenido en tu jurisdicción
-• Nuvio no aloja, distribuye ni controla ningún contenido P2P
-• Nuvio no asume ninguna responsabilidad por las consecuencias legales derivadas del uso de fuentes P2P
+• Notflix no aloja, distribuye ni controla ningún contenido P2P
+• Notflix no asume ninguna responsabilidad por las consecuencias legales derivadas del uso de fuentes P2P
 
 Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar en cualquier momento desde Ajustes.</string>
     <string name="p2p_consent_enable">Activar P2P</string>
@@ -2197,7 +2198,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="library_delete_subtitle">Esto elimina la lista y todos los elementos de la lista de Trakt.</string>
     <string name="library_delete_confirm">Eliminar</string>
     <string name="library_source_local">LOCAL</string>
-    <string name="library_source_nuvio">NUVIO</string>
+    <string name="library_source_nuvio">NOTFLIX</string>
     <string name="library_source_trakt">TRAKT</string>
     <string name="library_source_saved">Guardado</string>
     <string name="library_source_cloud">Nube</string>
@@ -2440,7 +2441,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="catalog_see_all_empty_title">No hay elementos disponibles</string>
     <string name="catalog_see_all_empty_subtitle">Intenta un catálogo diferente o vuelve más tarde</string>
 
-    <string name="layout_selection_welcome">Bienvenido a Nuvio</string>
+    <string name="layout_selection_welcome">Bienvenido a Notflix</string>
     <string name="layout_selection_subtitle">Elige tu diseño de pantalla de inicio</string>
     <string name="layout_selection_continue">Continuar</string>
 
@@ -2630,7 +2631,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="cd_preview">Vista previa</string>
     <string name="cd_test">Prueba</string>
     <string name="cd_unlink">Desvincular</string>
-    <string name="cd_nuvio_logo">NuvioTV</string>
+    <string name="cd_nuvio_logo">Notflix TV</string>
     <string name="cd_trakt_logo">Logotipo de Trakt</string>
     <string name="cd_trakt_qr">Código QR de activación de Trakt</string>
     <string name="cd_imdb">IMDb</string>
@@ -2642,7 +2643,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="cd_expand">Expandir %1$s</string>
     <string name="cd_collapse">Contraer %1$s</string>
     <string name="cd_qr_login">Código QR de inicio de sesión</string>
-    <string name="cd_nuvio">Nuvio</string>
+    <string name="cd_nuvio">Notflix</string>
 
     <string name="debug_signin_success">Sesión iniciada correctamente</string>
     <string name="debug_generate_description">Elemento %1$s #%2$d generado para depuración</string>
@@ -2785,7 +2786,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="collections_editor_tmdb_list_helper">Ejemplo: https://www.themoviedb.org/list/8504994 o 8504994.</string>
     <string name="collections_editor_tmdb_person_id">ID de persona</string>
     <string name="collections_editor_tmdb_person_helper">Ejemplo: https://www.themoviedb.org/person/31-tom-hanks o 31.</string>
-    <string name="collections_editor_tmdb_title_helper">Se muestra como el nombre de la fila/pestaña. Si está vacío, Nuvio crea uno a partir de la fuente.</string>
+    <string name="collections_editor_tmdb_title_helper">Se muestra como el nombre de la fila/pestaña. Si está vacío, Notflix crea uno a partir de la fuente.</string>
     <string name="collections_editor_tmdb_quick_genres">Géneros rápidos</string>
     <string name="collections_editor_tmdb_quick_languages">Idiomas rápidos</string>
     <string name="collections_editor_tmdb_quick_countries">Países rápidos</string>
@@ -2967,7 +2968,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="autoplay_regex_preset_no_remux_hdr">Sin REMUX/HDR</string>
 
     <!-- Playback settings sections -->
-    <string name="playback_player_internal_desc">Usa el reproductor integrado de NuvioTV</string>
+    <string name="playback_player_internal_desc">Usa el reproductor integrado de Notflix TV</string>
 
     <!-- Player runtime: torrent overlay + tracks -->
     <string name="player_torrent_peer_info">%1$d semillas · %2$d pares</string>
@@ -3072,9 +3073,9 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="simkl_visit">Visitar Simkl</string>
     <string name="simkl_sync_info_action">Cómo funciona la sincronización</string>
     <string name="simkl_sync_info_title">Cómo funciona la sincronización con Simkl</string>
-    <string name="simkl_sync_info_description">Nuvio comprueba Simkl automáticamente como máximo una vez cada %1$d minutos. Los cambios realizados a través de otra aplicación o del sitio web de Simkl pueden tardar ese tiempo en aparecer.</string>
+    <string name="simkl_sync_info_description">Notflix comprueba Simkl automáticamente como máximo una vez cada %1$d minutos. Los cambios realizados a través de otra aplicación o del sitio web de Simkl pueden tardar ese tiempo en aparecer.</string>
     <string name="simkl_sync_info_activity">Cada actualización comprueba primero si Simkl indica algún cambio y descarga solo las novedades. Esto sigue las reglas de la API de Simkl, reduce el uso innecesario de datos y ayuda a mantener el servicio estable.</string>
-    <string name="simkl_sync_info_manual">Los cambios realizados en Nuvio se envían a Simkl de inmediato. Usa Sincronizar ahora cuando quieras que Nuvio compruebe antes los cambios remotos.</string>
+    <string name="simkl_sync_info_manual">Los cambios realizados en Notflix se envían a Simkl de inmediato. Usa Sincronizar ahora cuando quieras que Notflix compruebe antes los cambios remotos.</string>
     <string name="simkl_sync_info_library_statuses">Las series colocadas en las listas En espera o Abandonadas de Simkl se ocultan de Continuar viendo. Permanecen ocultas mientras sigan en cualquiera de esas listas.</string>
     <string name="simkl_sync_info_docs">Lee la guía de sincronización de Simkl</string>
     <string name="error_open_browser_failed">No se pudo abrir el navegador</string>
@@ -3264,7 +3265,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="web_debrid_intro_title">Personaliza las fuentes de Debrid</string>
     <string name="web_debrid_intro_copy">Ajusta las etiquetas, los filtros y el orden usados en los resultados de Debrid Directo.</string>
     <string name="web_debrid_tab_formatter">Formateador</string>
-    <string name="web_debrid_tab_rules">Filtros &amp; Orden</string>
+    <string name="web_debrid_tab_rules">Filtros y orden</string>
     <string name="web_debrid_template_fields">Campos de plantilla</string>
     <string name="web_debrid_name_template">Plantilla de nombre</string>
     <string name="web_debrid_description_template">Plantilla de descripción</string>
@@ -3294,7 +3295,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="web_stream_badge_error_import_limit">Puedes importar hasta %1$d URLs de etiquetas.</string>
 
     <!-- Playback — Buffer & Network settings -->
-    <string name="playback_section_buffer_network">Búfer &amp; Red</string>
+    <string name="playback_section_buffer_network">Búfer y red</string>
     <string name="playback_section_buffer_network_desc">Cuánto contenido mantener en memoria y cómo obtener las transmisiones.</string>
     <string name="playback_net_device_memory_info">Memoria del dispositivo: %1$s | Límite de seguridad recomendado: %2$d MB</string>
     <string name="playback_net_nuvio_performance_mode">Memoria nativa de ExoPlayer</string>
@@ -3351,7 +3352,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <!-- Playback diagnostics card -->
     <string name="diag_last_playback_title">Diagnóstico de la última reproducción</string>
     <string name="diag_no_data">Aún no hay datos de reproducción. Reproduce una transmisión y vuelve aquí para ver los detalles de la decisión de DV para esa reproducción.</string>
-    <string name="diag_section_source_hardware">Origen &amp; Hardware</string>
+    <string name="diag_section_source_hardware">Origen y hardware</string>
     <string name="diag_section_source_hardware_sub">Haz una foto de esta tarjeta si vas a informar de un problema.</string>
     <string name="diag_label_host">Host</string>
     <string name="diag_label_when">Cuándo</string>
@@ -3362,7 +3363,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="diag_label_dv_bridge">Puente DV</string>
     <string name="diag_label_bridge_version">Versión del puente</string>
     <string name="diag_label_bridge_reason">Motivo del puente</string>
-    <string name="diag_section_decision_settings">Decisión &amp; Ajustes</string>
+    <string name="diag_section_decision_settings">Decisión y ajustes</string>
     <string name="diag_label_dv_mode_requested">Modo DV (solicitado)</string>
     <string name="diag_label_dv_mode_effective">Modo DV (efectivo)</string>
     <string name="diag_label_auto_decision">Decisión AUTO</string>

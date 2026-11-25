@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Profil in račun</string>
+    <string name="notflix_settings_home">Začetni zaslon</string>
+    <string name="notflix_settings_connected_accounts">Povezani računi</string>
+    <string name="notflix_settings_system">Sistem</string>
+    <string name="notflix_settings_advanced_options">Napredne možnosti</string>
+    <string name="notflix_settings_trailers">Napovedniki</string>
+    <string name="notflix_settings_updates">Posodobitve</string>
+    <string name="notflix_settings_home_collection">Začetna zbirka Notflix</string>
+    <string name="notflix_settings_ratings">Ocene</string>
+    <string name="notflix_settings_metadata">Podatki in katalogi</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

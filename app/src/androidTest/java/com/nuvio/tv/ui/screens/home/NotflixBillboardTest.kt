@@ -115,12 +115,13 @@ class NotflixBillboardTest {
         live = false;step(1000)
         assertEquals(0, advances);assertEquals(0f, progress(), 0f)
     }
-    @Test fun reducedAndZeroOrOneHeroNeverInventAnAutomaticCycle() {
+    @Test fun reducedRotatesWithStaticArtworkAndZeroOrOneHeroNeverInventsACycle() {
         reduced = true;standalone();step(30_000)
-        assertEquals(0, advances);assertEquals(0f, progress(), 0f)
+        assertTrue(advances > 0)
+        val beforeSingle = advances
         assertEquals(1f, frameScale(), 0f)
         compose.runOnUiThread { reduced = false;items = listOf(item(0)) };step(32);step(30_000)
-        assertEquals(0, advances);compose.onAllNodesWithTag("notflix-billboard-select-0").assertCountEquals(0)
+        assertEquals(beforeSingle, advances);compose.onAllNodesWithTag("notflix-billboard-select-0").assertCountEquals(0)
         compose.runOnUiThread { items = emptyList() };step(32)
         compose.onNodeWithText("No official hero").assertExists()
         compose.onAllNodesWithTag("notflix-editorial-play").assertCountEquals(0)

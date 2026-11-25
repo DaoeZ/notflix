@@ -248,7 +248,13 @@ data class PlayerUiState(
     // When true, suppress all torrent stats text (buffer, seeds, peers, speed)
     // from loading overlay, rebuffering indicator, and corner overlay.
     val hideTorrentStats: Boolean = true,
-    val isLive: Boolean = false
+    val isLive: Boolean = false,
+    val notflixPlayerButtons: List<String> = com.nuvio.tv.domain.model.NotflixPlayerActions.defaults,
+    val nightModeEnabled: Boolean = false,
+    val sleepTimerMinutes: Int? = null,
+    val sleepTimerEndOfEpisode: Boolean = false,
+    val sleepTimerRemainingSec: Int? = null,
+    val showSleepTimerDialog: Boolean = false
 ) {
     /** Subtitle style to render with, after applying the HDR override for the current video. */
     val effectiveSubtitleStyle: SubtitleStyleSettings
@@ -389,6 +395,10 @@ sealed class PlayerEvent {
     data object OnResetSubtitleDefaults : PlayerEvent()
     data object OnToggleAspectRatio : PlayerEvent()
     data object OnToggleNotflixSharpen : PlayerEvent()
+    data object OnToggleNightMode : PlayerEvent()
+    data object OnShowSleepTimerDialog : PlayerEvent()
+    data object OnDismissSleepTimerDialog : PlayerEvent()
+    data class OnSetSleepTimer(val minutes: Int?, val endOfEpisode: Boolean = false) : PlayerEvent()
     data object OnSwitchInternalPlayerEngine : PlayerEvent()
     data object OnSwitchToMpvPlayer : PlayerEvent()
     data object OnShowStreamInfo : PlayerEvent()

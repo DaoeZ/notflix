@@ -1,11 +1,13 @@
 package com.nuvio.tv.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.nuvio.tv.R
 import com.nuvio.tv.core.profile.ProfileManager
 import com.nuvio.tv.core.trakt.traktBestBackdropUrl
 import com.nuvio.tv.core.trakt.traktBestLogoUrl
 import com.nuvio.tv.core.trakt.traktBestPosterUrl
+import com.nuvio.tv.data.local.TraktAuthDataStore
 import com.nuvio.tv.data.remote.api.TraktApi
 import com.nuvio.tv.data.remote.dto.trakt.TraktCreateOrUpdateListRequestDto
 import com.nuvio.tv.data.remote.dto.trakt.TraktIdsDto
@@ -24,6 +26,7 @@ import com.nuvio.tv.domain.model.ListMembershipSnapshot
 import com.nuvio.tv.domain.model.LibraryListPrivacy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
@@ -48,7 +51,8 @@ class TraktLibraryService @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val traktApi: TraktApi,
     private val traktAuthService: TraktAuthService,
-    private val profileManager: ProfileManager
+    private val profileManager: ProfileManager,
+    private val authDataStore: TraktAuthDataStore
 ) {
     private data class Snapshot(
         val listTabs: List<LibraryListTab> = emptyList(),
@@ -70,9 +74,13 @@ class TraktLibraryService @Inject constructor(
     init {
         scope.launch {
             profileManager.activeProfileId
-                .collectLatest {
+                .collectLatest { profileId ->
                     resetProfileScopedState()
-                    refresh(force = true)
+                    // The synced Trakt token can arrive after the active profile is already selected.
+                    authDataStore.isEffectivelyAuthenticated.distinctUntilChanged().collectLatest auth@{ connected ->
+                        if (profileManager.activeProfileId.value != profileId) return@auth
+                        if (connected) refresh(force = true) else resetProfileScopedState()
+                    }
                 }
         }
     }
@@ -298,7 +306,7 @@ class TraktLibraryService @Inject constructor(
     }
 
     suspend fun refreshNow() {
-        refresh(force = true)
+        check(refresh(force = true)) { appContext.getString(R.string.library_error_refresh_failed) }
     }
 
 
@@ -315,6 +323,7 @@ class TraktLibraryService @Inject constructor(
 
     private suspend fun refresh(force: Boolean): Boolean {
         val now = System.currentTimeMillis()
+        val profileId = profileManager.activeProfileId.value
         return refreshMutex.withLock {
             if (!force && now - lastRefreshMs <= cacheTtlMs && snapshotState.value.updatedAtMs > 0L) {
                 return@withLock true
@@ -323,9 +332,20 @@ class TraktLibraryService @Inject constructor(
             refreshingState.value = true
             try {
                 val previous = snapshotState.value
-                val refreshed = runCatching { fetchSnapshot() }.getOrNull()
+                val refreshed = try {
+                    fetchSnapshot(previous)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    reportReadFailure("library", error)
+                    null
+                }
+                if (profileManager.activeProfileId.value != profileId) return@withLock false
                 val snapshotToUse = refreshed ?: previous
                 snapshotState.value = snapshotToUse
+                if (refreshed != null) {
+                    Log.d("TraktLibrary", "Loaded ${refreshed.allEntries.size} items in ${refreshed.listTabs.size} lists")
+                }
                 lastRefreshMs = now
                 refreshed != null
             } finally {
@@ -431,10 +451,15 @@ class TraktLibraryService @Inject constructor(
         )
     }
 
-    private suspend fun fetchSnapshot(): Snapshot {
-        val watchlistEntries = fetchWatchlistEntries()
-
-        val personalLists = fetchPersonalLists()
+    private suspend fun fetchSnapshot(previous: Snapshot): Snapshot {
+        val watchlist = readSection("watchlist") { fetchWatchlistEntries() }
+        val lists = readSection("personal lists") { fetchPersonalLists(previous.entriesByList) }
+        if (watchlist == null && lists == null) error("Trakt library unavailable")
+        val watchlistEntries = watchlist ?: previous.entriesByList[WATCHLIST_KEY].orEmpty()
+        val personalLists = lists ?: PersonalListFetchResult(
+            previous.listTabs.filter { it.type == LibraryListTab.Type.PERSONAL },
+            previous.entriesByList
+        )
         val personalTabs = personalLists.tabs
         val personalEntriesByList = personalLists.entriesByList
 
@@ -534,7 +559,7 @@ class TraktLibraryService @Inject constructor(
         val entriesByList: Map<String, List<LibraryEntry>>
     )
 
-    private suspend fun fetchPersonalLists(): PersonalListFetchResult {
+    private suspend fun fetchPersonalLists(previous: Map<String, List<LibraryEntry>>): PersonalListFetchResult {
         val response = traktAuthService.executeAuthorizedRequest { authHeader ->
             traktApi.getUserLists(
                 authorization = authHeader,
@@ -559,20 +584,12 @@ class TraktLibraryService @Inject constructor(
                         if (listIdPath.isNullOrBlank()) {
                             tab.key to emptyList()
                         } else {
-                            val movies = fetchPersonalListItems(
-                                listIdPath = listIdPath,
-                                type = "movie",
-                                listKey = tab.key,
-                                sortBy = tab.sortBy,
-                                sortHow = tab.sortHow
-                            )
-                            val shows = fetchPersonalListItems(
-                                listIdPath = listIdPath,
-                                type = "show",
-                                listKey = tab.key,
-                                sortBy = tab.sortBy,
-                                sortHow = tab.sortHow
-                            )
+                            val movies = readSection("personal movies") {
+                                fetchPersonalListItems(listIdPath, "movie", tab.key, tab.sortBy, tab.sortHow)
+                            } ?: previous[tab.key].orEmpty().filter { it.type == "movie" }
+                            val shows = readSection("personal series") {
+                                fetchPersonalListItems(listIdPath, "show", tab.key, tab.sortBy, tab.sortHow)
+                            } ?: previous[tab.key].orEmpty().filter { it.type == "series" }
                             tab.key to (movies + shows).sortedWith(
                                 compareBy<LibraryEntry> { it.traktRank ?: Int.MAX_VALUE }
                                     .thenByDescending { it.listedAt }
@@ -587,6 +604,20 @@ class TraktLibraryService @Inject constructor(
             tabs = tabs,
             entriesByList = entriesByList
         )
+    }
+
+    private suspend fun <T : Any> readSection(name: String, load: suspend () -> T): T? = try {
+        load()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        reportReadFailure(name, error)
+        null
+    }
+
+    private fun reportReadFailure(section: String, error: Exception) {
+        val status = Regex("""\((\d{3})\)$""").find(error.message.orEmpty())?.groupValues?.get(1)
+        Log.w("TraktLibrary", "Could not load $section (${status ?: error.javaClass.simpleName})")
     }
 
     private suspend fun fetchPersonalListItems(

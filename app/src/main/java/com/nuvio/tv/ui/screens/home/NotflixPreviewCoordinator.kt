@@ -20,7 +20,8 @@ internal data class PreviewEnvironment(
     val binding: PreviewBinding? = null, val enabled: Boolean = false, val sound: Boolean = false,
     val valid: Boolean = false, val reduced: Boolean = true, val resumed: Boolean = false,
     val windowFocused: Boolean = false, val introActive: Boolean = true,
-    val blocked: Boolean = false, val otherVideo: Boolean = false
+    val blocked: Boolean = false, val otherVideo: Boolean = false,
+    val rotationBlocked: Boolean? = null
 )
 internal data class PreviewSource(val video: String, val audio: String? = null) {
     fun valid(): Boolean = validUrl(video) && (audio == null || validUrl(audio))

@@ -18,12 +18,14 @@ internal fun PlaybackPlayerSection(
     val usesExternalPlayer = settings.playerPreference == PlayerPreference.EXTERNAL
 
     SettingsActionRow(
+        settingId = "PlaybackPlayerSettings.playback_default_player",
         title = stringResource(R.string.playback_default_player),
         subtitle = null,
         value = playerPreferenceLabel(settings.playerPreference),
         onClick = { onOpenDialog(PlaybackDialog.PLAYER_PREFERENCE) }
     )
     SettingsActionRow(
+        settingId = "PlaybackPlayerSettings.playback_internal_player_engine",
         title = stringResource(R.string.playback_internal_player_engine),
         subtitle = null,
         value = internalEngineLabel(settings.internalPlayerEngine),
@@ -31,6 +33,7 @@ internal fun PlaybackPlayerSection(
         onClick = { onOpenDialog(PlaybackDialog.INTERNAL_ENGINE) }
     )
     SettingsToggleRow(
+        settingId = "PlaybackPlayerSettings.playback_auto_switch_internal_player_on_error",
         title = stringResource(R.string.playback_auto_switch_internal_player_on_error),
         subtitle = stringResource(R.string.playback_auto_switch_internal_player_on_error_sub),
         checked = settings.autoSwitchInternalPlayerOnError,
@@ -41,12 +44,14 @@ internal fun PlaybackPlayerSection(
     if (settings.playerPreference != PlayerPreference.INTERNAL) {
         SettingsSectionLabel(text = stringResource(R.string.playback_external_player_label))
         SettingsToggleRow(
+            settingId = "PlaybackPlayerSettings.playback_external_forward_subtitles",
             title = stringResource(R.string.playback_external_forward_subtitles),
             subtitle = stringResource(R.string.playback_external_forward_subtitles_sub),
             checked = settings.externalPlayerForwardSubtitles,
             onToggle = { onUpdate { setExternalPlayerForwardSubtitles(!settings.externalPlayerForwardSubtitles) } }
         )
         SettingsToggleRow(
+            settingId = "PlaybackPlayerSettings.playback_external_send_skip_segments",
             title = stringResource(R.string.playback_external_send_skip_segments),
             subtitle = stringResource(R.string.playback_external_send_skip_segments_sub),
             checked = settings.externalPlayerSendSkipSegments,
@@ -64,6 +69,7 @@ internal fun PlaybackSkipSegmentsSection(
     val autoSkipEnabled = internalPlayer && settings.skipIntroEnabled
 
     SettingsToggleRow(
+        settingId = "PlaybackPlayerSettings.playback_skip_intro",
         title = stringResource(R.string.playback_skip_intro),
         subtitle = stringResource(R.string.playback_skip_intro_sub),
         checked = settings.skipIntroEnabled,
@@ -136,6 +142,7 @@ internal fun PlaybackPlayerInterfaceSection(
     val internalPlayer = settings.playerPreference != PlayerPreference.EXTERNAL
 
     SettingsToggleRow(
+        settingId = "PlaybackPlayerSettings.playback_loading_overlay",
         title = stringResource(R.string.playback_loading_overlay),
         subtitle = stringResource(R.string.playback_loading_overlay_sub),
         checked = settings.loadingOverlayEnabled,
@@ -143,12 +150,14 @@ internal fun PlaybackPlayerInterfaceSection(
         enabled = internalPlayer
     )
     SettingsToggleRow(
+        settingId = "PlaybackPlayerSettings.playback_show_loading_status",
         title = stringResource(R.string.playback_show_loading_status),
         subtitle = stringResource(R.string.playback_show_loading_status_sub),
         checked = settings.showPlayerLoadingStatus,
         onToggle = { onUpdate { setShowPlayerLoadingStatus(!settings.showPlayerLoadingStatus) } }
     )
     SettingsToggleRow(
+        settingId = "PlaybackPlayerSettings.playback_pause_overlay",
         title = stringResource(R.string.playback_pause_overlay),
         subtitle = stringResource(R.string.playback_pause_overlay_sub),
         checked = settings.pauseOverlayEnabled,
@@ -156,6 +165,7 @@ internal fun PlaybackPlayerInterfaceSection(
         enabled = internalPlayer
     )
     SettingsToggleRow(
+        settingId = "PlaybackPlayerSettings.playback_osd_clock",
         title = stringResource(R.string.playback_osd_clock),
         subtitle = stringResource(R.string.playback_show_clock_sub),
         checked = settings.osdClockEnabled,
@@ -163,6 +173,7 @@ internal fun PlaybackPlayerInterfaceSection(
         enabled = internalPlayer
     )
     SettingsToggleRow(
+        settingId = "PlaybackPlayerSettings.playback_parental_guide",
         title = stringResource(R.string.playback_parental_guide),
         subtitle = stringResource(R.string.playback_parental_guide_sub),
         checked = settings.parentalGuideEnabled,

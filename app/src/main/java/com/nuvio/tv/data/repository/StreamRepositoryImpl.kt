@@ -130,6 +130,38 @@ class StreamRepositoryImpl @Inject constructor(
         buildStreamSearchRequestKey(captureSourceConfiguration(), type, videoId, season, episode)
     )
 
+    override suspend fun prewarmStreams(
+        type: String,
+        videoId: String,
+        season: Int?,
+        episode: Int?
+    ) {
+        if (videoId.isBlank() || serverStreams.isNativeRequest(videoId)) return
+        val sourceConfiguration = captureSourceConfiguration()
+        if (sourceConfiguration.addons.isEmpty() && !sourceConfiguration.pluginsEnabled) return
+        val requestKey = buildStreamSearchRequestKey(sourceConfiguration, type, videoId, season, episode)
+        if (streamSearchSessions.peek(requestKey) != null) return
+        // Collect until the first non-loading result so the detached session stays warm in cache.
+        runCatching {
+            streamSearchSessions.observe(
+                key = requestKey,
+                forceRefresh = false
+            ) {
+                fetchStreamsFromAllSources(
+                    type = type,
+                    videoId = videoId,
+                    season = season,
+                    episode = episode,
+                    addons = sourceConfiguration.addons,
+                    debridSettings = sourceConfiguration.debridSettings,
+                    hasCompatiblePlugins = sourceConfiguration.pluginsEnabled &&
+                        sourceConfiguration.enabledScrapers.any { scraper -> scraper.supportsType(type) },
+                    serverSources = serverStreams.sources(type, videoId, season, episode, false)
+                )
+            }.first { it !is NetworkResult.Loading }
+        }
+    }
+
     private fun buildStreamSearchRequestKey(
         sourceConfiguration: StreamSourceConfigurationSnapshot,
         type: String,
@@ -179,6 +211,11 @@ class StreamRepositoryImpl @Inject constructor(
         }
     }
 
+    private data class SourceResult(
+        val group: AddonStreams,
+        val completesAddon: Boolean = false
+    )
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun fetchStreamsFromAllSources(
         type: String,
@@ -208,7 +245,7 @@ class StreamRepositoryImpl @Inject constructor(
 
             coroutineScope {
                 // Channel to receive results as they complete
-                val resultChannel = Channel<AddonStreams>(Channel.UNLIMITED)
+                val resultChannel = Channel<SourceResult>(Channel.UNLIMITED)
                 
                 // Track number of pending jobs
                 val totalJobs = streamAddons.size + 1 + serverSources.size
@@ -217,21 +254,15 @@ class StreamRepositoryImpl @Inject constructor(
                 // Launch addon jobs
                 streamAddons.forEach { addon ->
                     launch {
+                        var streams: List<Stream> = emptyList()
                         try {
                             val streamsResult = getStreamsFromAddon(addon, type, videoId)
                             when (streamsResult) {
                                 is NetworkResult.Success -> {
                                     if (streamsResult.data.isNotEmpty()) {
-                                        val namedStreams = streamsResult.data.map {
+                                        streams = streamsResult.data.map {
                                             it.copy(addonName = addon.displayName, addonLogo = addon.logo)
                                         }
-                                        resultChannel.send(
-                                            AddonStreams(
-                                                addonName = addon.displayName,
-                                                addonLogo = addon.logo,
-                                                streams = namedStreams
-                                            )
-                                        )
                                     } else {
                                         // Stream endpoint returned empty - try inline
                                         // streams from meta response as fallback.
@@ -239,13 +270,7 @@ class StreamRepositoryImpl @Inject constructor(
                                             addon, type, videoId
                                         )
                                         if (inlineStreams.isNotEmpty()) {
-                                            resultChannel.send(
-                                                AddonStreams(
-                                                    addonName = addon.displayName,
-                                                    addonLogo = addon.logo,
-                                                    streams = inlineStreams
-                                                )
-                                            )
+                                            streams = inlineStreams
                                         } else {
                                             attemptedFailures += buildMissingStreamFailure(addon)
                                         }
@@ -265,6 +290,9 @@ class StreamRepositoryImpl @Inject constructor(
                                 detail = e.message ?: context.getString(com.nuvio.tv.R.string.stream_error_detail_addon_request_failed)
                             )
                         } finally {
+                            resultChannel.trySend(
+                                SourceResult(AddonStreams(addon.displayName, addon.logo, streams), completesAddon = true)
+                            )
                             if (completedJobs.incrementAndGet() >= totalJobs) {
                                 resultChannel.close()
                             }
@@ -277,7 +305,7 @@ class StreamRepositoryImpl @Inject constructor(
                         try {
                             val streams = source.load()
                             if (streams.isNotEmpty()) {
-                                resultChannel.send(AddonStreams(addonName = source.name, addonLogo = null, streams = streams))
+                                resultChannel.send(SourceResult(AddonStreams(source.name, null, streams)))
                             } else {
                                 attemptedFailures += StreamAttemptFailure(
                                     addonName = source.name,
@@ -339,12 +367,23 @@ class StreamRepositoryImpl @Inject constructor(
                 }
 
                 // Emit results as they arrive
-                for (result in resultChannel) {
-                    val checkingResult = localDebridAvailabilityService.markChecking(listOf(result)).firstOrNull() ?: result
-                    val checkedResult = localDebridAvailabilityService.annotateCachedAvailability(listOf(checkingResult)).firstOrNull() ?: checkingResult
-                    mergePresentedResult(accumulatedResults, checkedResult, debridSettings)
-                    emit(NetworkResult.Success(accumulatedResults.toList()))
-                    Log.d(TAG, "Emitted ${accumulatedResults.size} addon(s), latest: ${checkedResult.addonName} with ${checkedResult.streams.size} streams")
+                val remainingByName = streamAddons.groupingBy { it.displayName }.eachCount().toMutableMap()
+                val completedSources = linkedSetOf<String>()
+                for ((result, completesAddon) in resultChannel) {
+                    if (completesAddon) {
+                        val remaining = remainingByName.getValue(result.addonName) - 1
+                        remainingByName[result.addonName] = remaining
+                        if (remaining == 0) completedSources += result.addonName
+                    }
+                    if (result.streams.isNotEmpty()) {
+                        val checkingResult = localDebridAvailabilityService.markChecking(listOf(result)).firstOrNull() ?: result
+                        val checkedResult = localDebridAvailabilityService.annotateCachedAvailability(listOf(checkingResult)).firstOrNull() ?: checkingResult
+                        mergePresentedResult(accumulatedResults, checkedResult, debridSettings)
+                        Log.d(TAG, "Emitted ${accumulatedResults.size} addon(s), latest: ${checkedResult.addonName} with ${checkedResult.streams.size} streams")
+                    }
+                    if (accumulatedResults.isNotEmpty()) {
+                        emit(NetworkResult.Success(accumulatedResults.toList(), completedSources.toSet()))
+                    }
                 }
             }
 
@@ -498,7 +537,7 @@ class StreamRepositoryImpl @Inject constructor(
         pluginSource: String,
         season: Int?,
         episode: Int?,
-        resultChannel: Channel<AddonStreams>
+        resultChannel: Channel<SourceResult>
     ) {
         // Check if plugins are enabled
         if (!pluginManager.pluginsEnabled.first()) {
@@ -530,7 +569,7 @@ class StreamRepositoryImpl @Inject constructor(
                         addonLogo = null,
                         streams = results.map { result -> result.toPluginStream(scraper, addonName) }
                     )
-                    resultChannel.send(addonStreams)
+                    resultChannel.send(SourceResult(addonStreams))
                     Log.d(TAG, "Streamed ${results.size} results from ${scraper.name}")
                 }
             }

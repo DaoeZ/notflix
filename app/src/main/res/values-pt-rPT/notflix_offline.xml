@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Transferências</string>
+    <string name="notflix_offline_receive">Receber do telemóvel</string>
+    <string name="notflix_offline_pairing">Introdução manual: %1$s · %2$s. O código é válido durante 5 minutos.</string>
+    <string name="notflix_offline_scan">Leia com a câmara do telemóvel para abrir as Transferências do Notflix.</string>
+    <string name="notflix_offline_expired">A sessão expirou. Selecione Receber do telemóvel para voltar a ligar.</string>
+    <string name="notflix_offline_empty">Transfira um vídeo a partir de Fontes ou envie um a partir do telemóvel.</string>
+    <string name="notflix_offline_profile">As transferências não estão disponíveis neste perfil.</string>
+    <string name="notflix_offline_unavailable">Ficheiro indisponível</string>
+    <string name="notflix_offline_confirm_remove">Confirmar remoção</string>
+    <string name="notflix_offline_choose_source">Escolha uma fonte para transferir</string>
+    <string name="notflix_offline_started">Transferência em fila</string>
+    <string name="notflix_offline_failed">Não foi possível abrir ou transferir este ficheiro. Experimente um ficheiro de vídeo direto.</string>
+</resources>

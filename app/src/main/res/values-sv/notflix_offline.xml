@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Nedladdningar</string>
+    <string name="notflix_offline_receive">Ta emot från telefon</string>
+    <string name="notflix_offline_pairing">Manuell inmatning: %1$s · %2$s. Koden gäller i 5 minuter.</string>
+    <string name="notflix_offline_scan">Skanna med telefonens kamera för att öppna Notflix nedladdningar.</string>
+    <string name="notflix_offline_expired">Sessionen har gått ut. Välj Ta emot från telefon för att ansluta igen.</string>
+    <string name="notflix_offline_empty">Ladda ned en video från Källor eller skicka en från telefonen.</string>
+    <string name="notflix_offline_profile">Nedladdningar är inte tillgängliga i den här profilen.</string>
+    <string name="notflix_offline_unavailable">Filen är inte tillgänglig</string>
+    <string name="notflix_offline_confirm_remove">Bekräfta borttagning</string>
+    <string name="notflix_offline_choose_source">Välj en källa att ladda ned</string>
+    <string name="notflix_offline_started">Nedladdningen har köats</string>
+    <string name="notflix_offline_failed">Filen kunde inte öppnas eller laddas ned. Prova en direkt videofil.</string>
+</resources>

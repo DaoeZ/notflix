@@ -38,6 +38,17 @@ interface StreamRepository {
     ): List<AddonStreams>?
 
     /**
+     * Speculatively warms the detached stream session cache for a likely playback target.
+     * No-op if the target is already cached or currently being searched.
+     */
+    suspend fun prewarmStreams(
+        type: String,
+        videoId: String,
+        season: Int? = null,
+        episode: Int? = null
+    ) {}
+
+    /**
      * Fetches streams from a specific addon.
      *
      * Takes the installed [Addon] rather than a bare base URL so the display name and logo

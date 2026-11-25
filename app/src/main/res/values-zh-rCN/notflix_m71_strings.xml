@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">音频和字幕</string>
+    <string name="notflix_player_more">更多</string>
+    <string name="notflix_player_speed_value">速度（%1$s倍）</string>
+    <string name="notflix_player_remaining">剩余 %1$s</string>
+    <string name="notflix_player_buttons">播放器按钮</string>
+    <string name="notflix_player_buttons_help">最多选择%1$d个操作。更多始终位于末尾，包含其余操作。</string>
+    <string name="notflix_player_row_order">按钮顺序</string>
+</resources>
+

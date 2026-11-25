@@ -115,6 +115,7 @@ sealed class MetaDetailsEvent {
     data object OnUserInteraction : MetaDetailsEvent()
     data object OnPlayButtonFocused : MetaDetailsEvent()
     data object OnTrailerButtonClick : MetaDetailsEvent()
+    data class OnPlaySeasonRecap(val seasonNumber: Int) : MetaDetailsEvent()
     data object OnTrailerEnded : MetaDetailsEvent()
     data class OnSharedTrailerSelected(val trailer: MetaTrailer) : MetaDetailsEvent()
     data object OnDismissSharedTrailer : MetaDetailsEvent()

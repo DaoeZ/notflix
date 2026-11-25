@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Nedlastinger</string>
+    <string name="notflix_offline_receive">Motta fra telefon</string>
+    <string name="notflix_offline_pairing">Manuell inntasting: %1$s · %2$s. Koden er gyldig i 5 minutter.</string>
+    <string name="notflix_offline_scan">Skann med telefonkameraet for å åpne Notflix-nedlastinger.</string>
+    <string name="notflix_offline_expired">Økten er utløpt. Velg Motta fra telefon for å koble til igjen.</string>
+    <string name="notflix_offline_empty">Last ned en video fra Kilder, eller send en fra telefonen.</string>
+    <string name="notflix_offline_profile">Nedlastinger er ikke tilgjengelige på denne profilen.</string>
+    <string name="notflix_offline_unavailable">Filen er ikke tilgjengelig</string>
+    <string name="notflix_offline_confirm_remove">Bekreft fjerning</string>
+    <string name="notflix_offline_choose_source">Velg en kilde å laste ned</string>
+    <string name="notflix_offline_started">Nedlasting satt i kø</string>
+    <string name="notflix_offline_failed">Filen kunne ikke åpnes eller lastes ned. Prøv en direkte videofil.</string>
+</resources>

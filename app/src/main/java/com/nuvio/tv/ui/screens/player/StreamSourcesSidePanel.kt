@@ -211,8 +211,8 @@ internal fun StreamSourcesSidePanel(
         modifier = modifier
             .fillMaxHeight()
             .width(520.dp)
-            .clip(RoundedCornerShape(topStart = NuvioTheme.spacing.lg, bottomStart = NuvioTheme.spacing.lg))
-            .background(NuvioTheme.colors.BackgroundElevated)
+            .clip(playerPanelShape(RoundedCornerShape(topStart = NuvioTheme.spacing.lg, bottomStart = NuvioTheme.spacing.lg)))
+            .background(playerPanelColor(NuvioTheme.colors.BackgroundElevated))
     ) {
         Column(modifier = Modifier.padding(NuvioTheme.spacing.xl)) {
             Row(

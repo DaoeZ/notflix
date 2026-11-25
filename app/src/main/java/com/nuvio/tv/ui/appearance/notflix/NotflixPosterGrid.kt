@@ -10,6 +10,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
@@ -20,7 +22,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -32,6 +33,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -53,6 +56,7 @@ fun NotflixPosterGrid(
     columns: Int = NotflixPosterMetrics.COLUMNS,
     posterWidth: Dp = NotflixPosterMetrics.Width,
     posterHeight: Dp = NotflixPosterMetrics.Height,
+    centerPosters: Boolean = false,
     state: LazyGridState = rememberLazyGridState(),
     contentPadding: PaddingValues = PaddingValues(
         start = Spec.GUTTER.dp,
@@ -73,12 +77,11 @@ fun NotflixPosterGrid(
     removedFocusKey: (() -> String?)? = null,
     headerItemCount: Int = 0
 ) {
+    val undoFocus = com.nuvio.tv.ui.screens.home.LocalHiddenTitleUndoFocus.current
     val keys = remember(items) { items.map { it.key } }
     val requesters = remember(keys) { keys.associateWith { FocusRequester() } }
     var savedKey by rememberSaveable(saveKey) { mutableStateOf<String?>(null) }
     var initialFocusDone by remember(saveKey) { mutableStateOf(false) }
-    // M67: posición del póster enfocado, para heredarla cuando ese título desaparece (ocultar).
-    val focusedIndex = remember { mutableIntStateOf(-1) }
 
     LaunchedEffect(keys, requestInitialFocus) {
         if (initialFocusDone || !requestInitialFocus || keys.isEmpty()) return@LaunchedEffect
@@ -98,11 +101,19 @@ fun NotflixPosterGrid(
 
     // M67: si el título enfocado desaparece de la rejilla (Ocultar), el foco pasa a su vecino en
     // lugar de perderse; no se toca la posición ni el resto de la cuadrícula.
-    LaunchedEffect(keys, initialFocusDone) {
+    // Claude (M69 review): when the focused poster leaves, Compose moves focus by itself (often to
+    // the first poster) before this runs, overwriting savedKey. The removed key's position in the
+    // previous list is the reliable anchor; pendingHide only names the card the user acted on.
+    val previousKeys = remember { arrayOf<List<String>>(emptyList()) }
+    LaunchedEffect(keys, initialFocusDone, undoFocus?.hasFocus) {
+        if (undoFocus?.hasFocus == true) return@LaunchedEffect
+        val before = previousKeys[0]
+        previousKeys[0] = keys
         if (!initialFocusDone) return@LaunchedEffect
-        val lost = removedFocusKey?.invoke()?.takeIf { it == savedKey } ?: return@LaunchedEffect
-        if (keys.isEmpty() || lost in keys || focusedIndex.intValue < 0) return@LaunchedEffect
-        val target = notflixPosterFocusAfterRemoval(focusedIndex.intValue, keys) ?: return@LaunchedEffect
+        val lost = removedFocusKey?.invoke() ?: return@LaunchedEffect
+        val lostIndex = before.indexOf(lost)
+        if (keys.isEmpty() || lost in keys || lostIndex < 0) return@LaunchedEffect
+        val target = notflixPosterFocusAfterRemoval(lostIndex, keys) ?: return@LaunchedEffect
         val index = keys.indexOf(target)
         // The next item may still be outside the lazy viewport (last row/column removal).
         if (state.layoutInfo.visibleItemsInfo.none { it.key == target }) {
@@ -110,7 +121,6 @@ fun NotflixPosterGrid(
         }
         if (requesters[target]?.requestFocusAfterFrames(frames = 2) == true) {
             savedKey = target
-            focusedIndex.intValue = index
         }
     }
 
@@ -120,7 +130,11 @@ fun NotflixPosterGrid(
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns.coerceAtLeast(1)),
         state = state,
-        modifier = modifier.testTag("notflix-poster-grid"),
+        modifier = modifier.testTag("notflix-poster-grid").onPreviewKeyEvent { event ->
+            event.type == androidx.compose.ui.input.key.KeyEventType.KeyDown &&
+                event.key == androidx.compose.ui.input.key.Key.DirectionDown &&
+                undoFocus?.enter { savedKey?.let { requesters[it] }?.requestFocus() } == true
+        },
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(NotflixPosterMetrics.Spacing),
         verticalArrangement = Arrangement.spacedBy(verticalSpacing)
@@ -131,6 +145,7 @@ fun NotflixPosterGrid(
             NotflixPosterCard(
                 item = item,
                 modifier = Modifier.focusRequester(requester)
+                    .then(if (centerPosters) Modifier.wrapContentWidth(Alignment.CenterHorizontally) else Modifier)
                     .then(if (onActualFocus != null) Modifier.onFocusChanged { onActualFocus(item, it.isFocused) } else Modifier)
                     .then(if (covered != null) Modifier.graphicsLayer { alpha = if (covered(item)) 0f else 1f } else Modifier)
                     .then(
@@ -142,7 +157,6 @@ fun NotflixPosterGrid(
                 height = posterHeight,
                 onFocused = {
                     savedKey = item.key
-                    focusedIndex.intValue = keys.indexOf(item.key)
                     onFocused(item)
                 },
                 onClick = { onClick(item) },

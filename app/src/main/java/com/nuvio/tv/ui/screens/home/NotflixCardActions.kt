@@ -21,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -269,6 +271,8 @@ internal fun notflixCardActions(meta: MetaPreview, host: NotflixCardActionsHost,
 internal fun notflixCardPanelMinWidth(actionCount: Int): Int =
     actionCount * 28 + (actionCount - 1).coerceAtLeast(0) * 5 + 40 + Spec.PANEL_PADDING * 2
 
+internal fun notflixShowActionsHint(cursor: Int?, actionCount: Int): Boolean = cursor == null && actionCount > 0
+
 @Composable
 internal fun NotflixCardPanel(
     meta: MetaPreview, identity: String, actions: List<NotflixCardActionUi>, cursor: Int?, hasOptions: Boolean,
@@ -290,10 +294,12 @@ internal fun NotflixCardPanel(
     val formatter = remember(context) { DateFormat.getTimeFormat(context) }
     val endsAt = notflixEndsAt(now, minutes)?.let { stringResource(R.string.player_ends_at, formatter.format(Date(it))) }
     val optionsDescription = stringResource(R.string.notflix_hold_options)
+    val actionsHint = stringResource(R.string.notflix_card_actions_hint)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
             actions.forEachIndexed { index, action ->
                 val selected = cursor == index
+                val showHint = index == 0 && notflixShowActionsHint(cursor, actions.size)
                 // M56: with no action selected, Play carries a thin hint ring: OK plays right now.
                 val playHint = cursor == null && action.action == NotflixCardAction.PLAY && action.enabled
                 val pulse = remember { Animatable(1f) }
@@ -308,7 +314,18 @@ internal fun NotflixCardPanel(
                         pulse.snapTo(1f)
                     }
                 }
-                Box(Modifier.size(28.dp)
+                Box(Modifier.size(28.dp).drawWithContent {
+                    drawContent()
+                    if (showHint) {
+                        val x = size.width / 2
+                        val triangle = Path().apply {
+                            moveTo(x - 3.dp.toPx(), size.height)
+                            lineTo(x + 3.dp.toPx(), size.height)
+                            lineTo(x, size.height + 3.dp.toPx()); close()
+                        }
+                        drawPath(triangle, Spec.Secondary)
+                    }
+                }
                     .graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }
                     .border(if (selected) 2.dp else 1.dp, when {
                         selected -> Spec.Text
@@ -320,6 +337,7 @@ internal fun NotflixCardPanel(
                         role = Role.Button
                         contentDescription = action.label
                         action.state?.let { stateDescription = it }
+                        if (showHint) stateDescription = listOfNotNull(action.state, actionsHint).joinToString(". ")
                         this.selected = selected
                         if (!action.enabled) disabled()
                         onClick(action.label) { if (action.enabled) onActivate(index); action.enabled }

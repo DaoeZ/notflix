@@ -298,7 +298,7 @@ private fun DebugToggleCard(
 ) {
     Card(
         onClick = { onToggle(!checked) },
-        modifier = Modifier
+        modifier = Modifier.notflixSettingsRowFocus("debug.toggle.$title", true) { onToggle(!checked) }
             .fillMaxWidth(),
         colors = CardDefaults.colors(
             containerColor = NuvioTheme.colors.BackgroundCard,
@@ -360,7 +360,7 @@ private fun DebugActionCard(
 
     Card(
         onClick = onClick,
-        modifier = Modifier
+        modifier = Modifier.notflixSettingsRowFocus("debug.action.$title", true, onClick)
             .fillMaxWidth()
             .onFocusChanged { isFocused = it.isFocused },
         colors = CardDefaults.colors(
@@ -405,7 +405,7 @@ private fun DebugDialogButton(
 
     Card(
         onClick = onClick,
-        modifier = Modifier
+        modifier = Modifier.notflixSettingsRowFocus("debug.button.$text", true, onClick)
             .fillMaxWidth()
             .onFocusChanged { isFocused = it.isFocused },
         colors = CardDefaults.colors(

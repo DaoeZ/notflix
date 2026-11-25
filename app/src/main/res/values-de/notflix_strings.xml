@@ -201,4 +201,6 @@
         <item>Simkl kann jetzt verbunden werden.</item>
         <item>Trakt: Verbindung nur mit einem Code, ohne Einrichtung.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Notflix-Schlüssel</string>
+    <string name="notflix_tmdb_attribution">Dieses Produkt verwendet die TMDB-API, wird jedoch nicht von TMDB unterstützt oder zertifiziert.</string>
 </resources>

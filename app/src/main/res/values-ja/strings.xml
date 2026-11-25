@@ -347,11 +347,11 @@
     <string name="about_licenses_attributions">ライセンス &amp; 帰属</string>
     <string name="about_licenses_attributions_subtitle">データソース、謝辞、Androidライセンス</string>
     <string name="licenses_attributions_title">ライセンス &amp; 帰属</string>
-    <string name="licenses_attributions_subtitle">Nuvio TVが使用するデータプロバイダー、サービス、Android再生ライセンス</string>
+    <string name="licenses_attributions_subtitle">Notflix TVが使用するデータプロバイダー、サービス、Android再生ライセンス</string>
     <string name="licenses_attributions_section_app">アプリライセンス</string>
     <string name="licenses_attributions_section_data">データ &amp; サービス</string>
     <string name="licenses_attributions_section_playback">Android再生ライセンス</string>
-    <string name="licenses_attributions_nuvio_title">Nuvio TV</string>
+    <string name="licenses_attributions_nuvio_title">Notflix TV</string>
     <string name="licenses_attributions_nuvio_body">ソースコードとライセンス条項はプロジェクトリポジトリで入手可能です。GNU General Public License v3.0 の下でライセンスされています。</string>
     <string name="licenses_attributions_tmdb_title">The Movie Database (TMDB)</string>
     <string name="licenses_attributions_tmdb_body">Nuvioは映画・TVのメタデータ、アートワーク、予告編、キャスト、制作詳細、コレクション、レコメンドにTMDB APIを使用しています。この製品はTMDB APIを使用していますが、TMDBによって承認または認定されていません。</string>
@@ -598,7 +598,7 @@
     <string name="playback_player_auto">自動（コンテンツに最適化）</string>
     <string name="playback_player_auto_desc">映画やドラマにはExoPlayer・アニメにはMPV</string>
     <string name="playback_engine_exoplayer_desc">現在のNuvio機能との互換性が最も高い。</string>
-    <string name="playback_engine_mvplayer_desc">Nuvio OSDコントロール付きのlibmpvを使用。実験的。</string>
+    <string name="playback_engine_mvplayer_desc">Notflix OSDコントロール付きのlibmpvを使用。実験的。</string>
 
     <string name="video_section">映像</string>
     <string name="audio_trailer_section">予告編</string>
@@ -1131,7 +1131,7 @@
     <string name="trakt_watch_progress_dialog_title">視聴進行状況</string>
     <string name="trakt_watch_progress_dialog_subtitle">Traktのスクロブルが有効な間、再開と視聴を続けるにTraktとNuvio Syncのどちらを使用するか選択してください</string>
     <string name="trakt_watch_progress_source_trakt">Trakt</string>
-    <string name="trakt_watch_progress_source_nuvio">Nuvio Sync</string>
+    <string name="trakt_watch_progress_source_nuvio">Notflix Sync</string>
     <string name="trakt_library_source_title">ライブラリソース</string>
     <string name="trakt_library_source_subtitle">コレクションの保存と表示に使用するライブラリを選択</string>
     <string name="trakt_library_source_dialog_title">ライブラリソース</string>
@@ -1631,7 +1631,7 @@
     <string name="library_delete_subtitle">Traktからリストとすべてのリストアイテムが削除されます</string>
     <string name="library_delete_confirm">削除</string>
     <string name="library_source_local">ローカル</string>
-    <string name="library_source_nuvio">NUVIO</string>
+    <string name="library_source_nuvio">NOTFLIX</string>
     <string name="library_source_trakt">TRAKT</string>
     <string name="library_source_saved">保存済み</string>
     <string name="library_source_cloud">クラウド</string>
@@ -1984,7 +1984,7 @@
     <string name="cd_preview">プレビュー</string>
     <string name="cd_test">テスト</string>
     <string name="cd_unlink">リンク解除</string>
-    <string name="cd_nuvio_logo">NuvioTV</string>
+    <string name="cd_nuvio_logo">Notflix TV</string>
     <string name="cd_trakt_logo">Traktロゴ</string>
     <string name="cd_trakt_qr">Trakt認証QR</string>
     <string name="cd_imdb">IMDb</string>
@@ -1995,7 +1995,7 @@
     <string name="cd_expand">%1$sを展開</string>
     <string name="cd_collapse">%1$sを折りたたむ</string>
     <string name="cd_qr_login">QRログインコード</string>
-    <string name="cd_nuvio">Nuvio</string>
+    <string name="cd_nuvio">Notflix</string>
 
     <string name="debug_signin_success">サインイン成功</string>
     <string name="debug_generate_description">デバッグ生成 %1$s アイテム #%2$d</string>
@@ -2704,6 +2704,7 @@
     <string name="autoplay_priority_priority_language">言語</string>
     <string name="autoplay_priority_audio_order_title">選択した言語（順序どおり）</string>
     <string name="layout_cw_card_style_title">視聴を続けるのスタイル</string>
+    <string name="notflix_for_you">あなたにおすすめ</string>
     <string name="notflix_player_seek_backward">%1$d秒戻る</string>
     <string name="notflix_player_seek_forward">%1$d秒進む</string>
     <string name="cd_notflix_sharpen_on">シャープネス オン</string>

@@ -9,11 +9,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -84,9 +86,11 @@ class DirectDebridResolver @Inject constructor(
             result
         } finally {
             if (ownsResolve) {
-                mutex.withLock {
-                    if (inFlightResolves[cacheKey] === deferred) {
-                        inFlightResolves.remove(cacheKey)
+                withContext(NonCancellable) {
+                    mutex.withLock {
+                        if (inFlightResolves[cacheKey] === deferred) {
+                            inFlightResolves.remove(cacheKey)
+                        }
                     }
                 }
             }

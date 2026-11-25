@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Downloads</string>
+    <string name="notflix_offline_receive">Receive from phone</string>
+    <string name="notflix_offline_new_code">Refresh code</string>
+    <string name="notflix_offline_pairing">Manual entry: %1$s · %2$s. The code is valid for 5 minutes.</string>
+    <string name="notflix_offline_scan">Scan with your phone camera to open Notflix Downloads.</string>
+    <string name="notflix_offline_expired">The session expired. Select Receive from phone to reconnect.</string>
+    <string name="notflix_offline_empty">Download a video from Sources or send one from your phone.</string>
+    <string name="notflix_offline_profile">Downloads are unavailable on this profile.</string>
+    <string name="notflix_offline_unavailable">File unavailable</string>
+    <string name="notflix_offline_confirm_remove">Confirm removal</string>
+    <string name="notflix_offline_choose_source">Select a source to download</string>
+    <string name="notflix_offline_started">Download queued</string>
+    <string name="notflix_offline_failed">This file could not be opened or downloaded. Try a direct video file.</string>
+</resources>

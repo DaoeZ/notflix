@@ -431,7 +431,7 @@
     <string name="trakt_stat_watched_hours">Ore vizionate</string>
     <string name="trakt_disconnect">Deconectare</string>
     <string name="trakt_disconnect_title">Deconectare Trakt?</string>
-    <string name="trakt_disconnect_subtitle">Aceasta va deconecta contul tău Trakt de Nuvio.</string>
+    <string name="trakt_disconnect_subtitle">Aceasta va deconecta contul tău Trakt de Notflix.</string>
     <string name="trakt_login">Autentificare</string>
     <string name="trakt_retry">Reîncercare</string>
     <string name="trakt_back">Înapoi</string>
@@ -758,7 +758,7 @@
     <string name="catalog_see_all_empty_subtitle">Încearcă un catalog diferit sau revino mai târziu</string>
 
     <!-- LayoutSelectionScreen -->
-    <string name="layout_selection_welcome">Bine ai venit la Nuvio</string>
+    <string name="layout_selection_welcome">Bine ai venit la Notflix</string>
     <string name="layout_selection_subtitle">Alege aspectul ecranului de pornire</string>
     <string name="layout_selection_continue">Continuă</string>
 
@@ -836,6 +836,7 @@
     <string name="autoplay_priority_priority_language">Limbă</string>
     <string name="autoplay_priority_audio_order_title">Limbi selectate, în ordine</string>
     <string name="layout_cw_card_style_title">Stil pentru Continuă vizionarea</string>
+    <string name="notflix_for_you">Pentru tine</string>
     <string name="notflix_player_seek_backward">Derulează înapoi %1$d s</string>
     <string name="notflix_player_seek_forward">Derulează înainte %1$d s</string>
     <string name="cd_notflix_sharpen_on">Claritate activată</string>

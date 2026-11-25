@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">சுயவிவரம் மற்றும் கணக்கு</string>
+    <string name="notflix_settings_home">முகப்புத் திரை</string>
+    <string name="notflix_settings_connected_accounts">இணைக்கப்பட்ட கணக்குகள்</string>
+    <string name="notflix_settings_system">அமைப்பு</string>
+    <string name="notflix_settings_advanced_options">மேம்பட்ட விருப்பங்கள்</string>
+    <string name="notflix_settings_trailers">முன்னோட்டங்கள்</string>
+    <string name="notflix_settings_updates">புதுப்பிப்புகள்</string>
+    <string name="notflix_settings_home_collection">Notflix முகப்புத் தொகுப்பு</string>
+    <string name="notflix_settings_ratings">மதிப்பீடுகள்</string>
+    <string name="notflix_settings_metadata">தகவல் மற்றும் பட்டியல்கள்</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

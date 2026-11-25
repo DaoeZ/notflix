@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Stažené</string>
+    <string name="notflix_offline_receive">Přijmout z telefonu</string>
+    <string name="notflix_offline_pairing">Ruční zadání: %1$s · %2$s. Kód platí 5 minut.</string>
+    <string name="notflix_offline_scan">Naskenujte fotoaparátem telefonu a otevřete Stažené v Notflixu.</string>
+    <string name="notflix_offline_expired">Relace vypršela. Pro opětovné připojení vyberte Přijmout z telefonu.</string>
+    <string name="notflix_offline_empty">Stáhněte video ze Zdrojů nebo ho pošlete z telefonu.</string>
+    <string name="notflix_offline_profile">Stahování není v tomto profilu k dispozici.</string>
+    <string name="notflix_offline_unavailable">Soubor není k dispozici</string>
+    <string name="notflix_offline_confirm_remove">Potvrdit odebrání</string>
+    <string name="notflix_offline_choose_source">Vyberte zdroj ke stažení</string>
+    <string name="notflix_offline_started">Stahování zařazeno do fronty</string>
+    <string name="notflix_offline_failed">Tento soubor nelze otevřít ani stáhnout. Zkuste přímý videosoubor.</string>
+</resources>

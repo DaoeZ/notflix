@@ -8,6 +8,27 @@ import org.junit.Test
 class PlayerAudioFallbackPolicyTest {
 
     @Test
+    fun `automatic source language precedes original and device audio preferences`() {
+        assertEquals(
+            listOf("es", "spa", "en"),
+            resolvePreferredAudioLanguages(
+                preferredAudioLanguage = "en",
+                secondaryPreferredAudioLanguage = null,
+                deviceLanguages = emptyList(),
+                autoPlayAudioLanguage = "es"
+            )
+        )
+        assertEquals(
+            listOf("en"),
+            resolvePreferredAudioLanguages(
+                preferredAudioLanguage = "en",
+                secondaryPreferredAudioLanguage = null,
+                deviceLanguages = emptyList()
+            )
+        )
+    }
+
+    @Test
     fun `steps run safe audio, then forced PCM, then audio disabled`() {
         assertEquals(
             PlayerAudioFallbackPolicy.Step.SAFE_AUDIO,

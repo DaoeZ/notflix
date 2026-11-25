@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Ljud och undertexter</string>
+    <string name="notflix_player_more">Mer</string>
+    <string name="notflix_player_speed_value">Hastighet (%1$s×)</string>
+    <string name="notflix_player_remaining">%1$s kvar</string>
+    <string name="notflix_player_buttons">Spelarknappar</string>
+    <string name="notflix_player_buttons_help">Välj upp till %1$d åtgärder. Mer är alltid sist och innehåller resten.</string>
+    <string name="notflix_player_row_order">Knapparnas ordning</string>
+</resources>
+

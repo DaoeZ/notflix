@@ -19,7 +19,9 @@ class NotflixKeysConfigServer(
     private val currentProvider: () -> NotflixIntegrationCredentials,
     private val onSave: (NotflixIntegrationCredentials) -> Unit,
     private val labels: () -> Map<String, String>,
-    port: Int
+    port: Int,
+    /** M68: which providers are running on Notflix's own build-time key when the user has none. */
+    private val builtInInUse: () -> Map<String, Boolean> = { emptyMap() }
 ) : NanoHTTPD(port) {
     private val gson = Gson()
     private val bodyType = object : TypeToken<Map<String, Any?>>() {}.type
@@ -43,11 +45,17 @@ class NotflixKeysConfigServer(
     /** Only hints are sent back to the phone, never the stored secrets. */
     private fun status(): Response {
         val current = currentProvider()
+        val builtIn = builtInInUse()
         val body = mapOf(
-            "tmdb" to mapOf("configured" to current.tmdbApiKey.isNotBlank(), "hint" to hint(current.tmdbApiKey)),
+            "tmdb" to mapOf(
+                "configured" to current.tmdbApiKey.isNotBlank(),
+                "hint" to hint(current.tmdbApiKey),
+                "builtIn" to (builtIn["tmdb"] == true)
+            ),
             "trakt" to mapOf(
                 "configured" to current.traktClientId.isNotBlank(),
-                "hint" to hint(current.traktClientId)
+                "hint" to hint(current.traktClientId),
+                "builtIn" to (builtIn["trakt"] == true)
             ),
             "introDb" to mapOf("value" to current.introDbBaseUrl)
         )
@@ -137,12 +145,13 @@ class NotflixKeysConfigServer(
             currentProvider: () -> NotflixIntegrationCredentials,
             onSave: (NotflixIntegrationCredentials) -> Unit,
             labels: () -> Map<String, String>,
+            builtInInUse: () -> Map<String, Boolean> = { emptyMap() },
             startPort: Int = DEFAULT_PORT,
             maxAttempts: Int = 10
         ): NotflixKeysConfigServer? {
             for (port in startPort until startPort + maxAttempts) {
                 try {
-                    val server = NotflixKeysConfigServer(token, currentProvider, onSave, labels, port)
+                    val server = NotflixKeysConfigServer(token, currentProvider, onSave, labels, port, builtInInUse)
                     server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
                     return server
                 } catch (_: IOException) {

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Изтегляния</string>
+    <string name="notflix_offline_receive">Получаване от телефона</string>
+    <string name="notflix_offline_pairing">Ръчно въвеждане: %1$s · %2$s. Кодът е валиден 5 минути.</string>
+    <string name="notflix_offline_scan">Сканирайте с камерата на телефона, за да отворите Изтегляния в Notflix.</string>
+    <string name="notflix_offline_expired">Сесията изтече. Изберете „Получаване от телефона“, за да се свържете отново.</string>
+    <string name="notflix_offline_empty">Изтеглете видео от „Източници“ или го изпратете от телефона си.</string>
+    <string name="notflix_offline_profile">Изтеглянията не са налични за този профил.</string>
+    <string name="notflix_offline_unavailable">Файлът не е наличен</string>
+    <string name="notflix_offline_confirm_remove">Потвърдете премахването</string>
+    <string name="notflix_offline_choose_source">Изберете източник за изтегляне</string>
+    <string name="notflix_offline_started">Изтеглянето е в опашката</string>
+    <string name="notflix_offline_failed">Този файл не можа да бъде отворен или изтеглен. Опитайте с директен видеофайл.</string>
+</resources>

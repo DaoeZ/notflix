@@ -431,7 +431,18 @@ internal fun HomeViewModel.loadContinueWatchingPipeline() {
                 }
                 val inProgressOnly = buildList {
                     val liveInProgress = deduplicateInProgress(
-                        recentItems.filter { shouldTreatAsInProgressForContinueWatching(it) }
+                        recentItems.filter { progress ->
+                            if (!shouldTreatAsInProgressForContinueWatching(progress)) return@filter false
+                            val removedAt = pendingCwExplicitRemovals[progress.contentId]
+                            if (removedAt != null) {
+                                if (progress.lastWatched > removedAt) {
+                                    pendingCwExplicitRemovals.remove(progress.contentId)
+                                } else {
+                                    return@filter false
+                                }
+                            }
+                            true
+                        }
                     )
                     if (liveInProgress.isNotEmpty()) {
                         liveInProgress.forEach { progress ->
@@ -463,16 +474,20 @@ internal fun HomeViewModel.loadContinueWatchingPipeline() {
                             )
                         }
                     }
+                    val activeCachedInProgress = cachedInProgress.filterNot { cached ->
+                        val removedAt = pendingCwExplicitRemovals[cached.contentId]
+                        removedAt != null && cached.lastWatched <= removedAt
+                    }
                     if (
                         shouldRestoreCachedInProgress(
                             hasLiveInProgress = liveInProgress.isNotEmpty(),
                             hasActiveTrackingProvider = useTrackingProvider,
-                            hasCachedInProgress = cachedInProgress.isNotEmpty(),
+                            hasCachedInProgress = activeCachedInProgress.isNotEmpty(),
                             hasProviderItems = items.isNotEmpty(),
                             hasLoadedRemoteProgress = snapshot.hasLoadedRemoteProgress
                         )
                     ) {
-                        cachedInProgress.forEach { cached ->
+                        activeCachedInProgress.forEach { cached ->
                             add(
                                 ContinueWatchingItem.InProgress(
                                     progress = WatchProgress(
@@ -1129,8 +1144,13 @@ internal fun HomeViewModel.loadContinueWatchingPipeline() {
                     } else {
                         state.copy(continueWatchingItems = normalMain, upcomingItems = normalUpcoming)
                     }
-                    next.copy(notflixCwPhase = if (snapshot.hasLoadedRemoteProgress)
-                        NotflixRowPhase.READY else NotflixRowPhase.PENDING)
+                    // Do not leave the CW row stuck in "updating..." indefinitely when a remote tracker
+                    // (e.g. Trakt) fails or backs off; local progress and explicit user deletions are valid.
+                    val cwReady = snapshot.hasLoadedRemoteProgress ||
+                        !useTrackingProvider ||
+                        !shouldProtectCache ||
+                        pendingCwExplicitRemovals.isNotEmpty()
+                    next.copy(notflixCwPhase = if (cwReady) NotflixRowPhase.READY else NotflixRowPhase.PENDING)
                 }
                 SimklContinueWatchingDisplayLogger.log(
                     buildSimklCwDisplayDiagnosticReport(
@@ -3325,13 +3345,21 @@ internal fun HomeViewModel.removeContinueWatchingPipeline(
                             ) == dismissKey
                         is ContinueWatchingItem.InProgress -> false
                     }
-                }
+                },
+                notflixCwPhase = NotflixRowPhase.READY
             )
         }
         viewModelScope.launch {
             traktSettingsDataStore.addDismissedNextUpKey(dismissKey)
+            cwEnrichmentCache.removeContentId(contentId)
         }
         return
+    }
+    pendingCwExplicitRemovals[contentId] = System.currentTimeMillis()
+    cwEnrichedInProgressOverlay.keys.removeAll { it == contentId || it.startsWith("$contentId:") }
+    cwEnrichedNextUpOverlay.remove(contentId)
+    synchronized(discoveredOlderNextUpItems) {
+        discoveredOlderNextUpItems.removeAll { it.info.contentId == contentId }
     }
     viewModelScope.launch {
         // Optimistic UI: remove the item from the CW list immediately
@@ -3349,9 +3377,11 @@ internal fun HomeViewModel.removeContinueWatchingPipeline(
                         is ContinueWatchingItem.InProgress -> item.progress.contentId == contentId
                         is ContinueWatchingItem.NextUp -> item.info.contentId == contentId
                     }
-                }
+                },
+                notflixCwPhase = NotflixRowPhase.READY
             )
         }
+        cwEnrichmentCache.removeContentId(contentId)
         val targetSeason = if (isNextUp) season else null
         val targetEpisode = if (isNextUp) episode else null
         watchProgressRepository.removeProgress(

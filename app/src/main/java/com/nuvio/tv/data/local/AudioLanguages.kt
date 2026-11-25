@@ -2,8 +2,8 @@ package com.nuvio.tv.data.local
 
 /**
  * M59: one row of the audio-language table. The same entry feeds the settings list (names) and the
- * selector (codes, dub marks and flags). Tokens are matched as whole words, so "It (2017)" never
- * matches Italian and "de" is never used for German.
+ * selector (codes, dub marks and flags). Short codes are matched separately in audio labels
+ * and release names, so ordinary words such as "It" and "de" do not count as languages.
  *
  * [dubMarks] only matter when the source also shows an [originalVersionMarkers] marker (VOSTFR...):
  * a subtitle-only language label must not pass as audio, while an explicit dub code still does.
@@ -23,13 +23,13 @@ internal data class AudioLanguageEntry(
     private val originalPattern = tokenPattern(originalVersionMarkers)
     private val explicitDubPattern = explicitDubPattern(codes + englishName + nativeName + names)
 
-    fun matches(text: String, raw: String): Boolean {
+    fun matches(text: String, raw: String, hasShortCode: Boolean = false): Boolean {
         // A separately named dub remains audio even on a line that also lists subtitles.
         if (explicitDubPattern?.containsMatchIn(raw) == true) return true
         if (originalPattern?.containsMatchIn(raw) == true) {
             return dubPattern?.containsMatchIn(text) == true
         }
-        if (markPattern?.containsMatchIn(text) == true) return true
+        if (hasShortCode || markPattern?.containsMatchIn(text) == true) return true
         return flags.any { text.contains(it) }
     }
 }

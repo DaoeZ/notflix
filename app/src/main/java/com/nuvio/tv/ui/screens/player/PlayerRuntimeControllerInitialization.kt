@@ -191,7 +191,9 @@ internal fun PlayerRuntimeController.initializePlayer(
             if (!applyPcmFallbackOnStartup) {
                 hasTriedAudioPcmFallback = false
             }
-            hasTriedDv7HevcFallback = false
+            if (!applyDv7FallbackOnStartup) {
+                hasTriedDv7HevcFallback = false
+            }
             forceDv7ToHevc = false
             mpvDelayStartAfterAfrSwitch = false
             playerInitializationStartedAtMs = System.currentTimeMillis()
@@ -213,24 +215,21 @@ internal fun PlayerRuntimeController.initializePlayer(
             // Re-apply on every (re)initialization without dropping the user's tweak on the current stream.
             applyEffectiveAudioDelay()
             cachedDecoderPriority = playerSettings.decoderPriority
-            val preferredAudioLanguages = resolvePreferredAudioLanguages(
-                preferredAudioLanguage = playerSettings.preferredAudioLanguage,
-                secondaryPreferredAudioLanguage = playerSettings.secondaryPreferredAudioLanguage,
-                deviceLanguages = resolveDeviceAudioLanguages(),
-                contentOriginalLanguage = contentLanguage
-            )
+            val preferredAudioLanguages = resolvePlaybackAudioLanguages(playerSettings)
             mpvPreferredAudioLanguages = preferredAudioLanguages
             mpvHi10pGnextSoftwareFallbackEnabledSetting =
                 playerSettings.mpvHi10pGnextSoftwareFallbackEnabled
             mpvHardwareDecodeModeSetting = playerSettings.mpvHardwareDecodeMode
-            var effectiveInternalPlayerEngine = overrideInternalPlayerEngine ?: playerSettings.internalPlayerEngine
+            // SAF and DownloadManager return content URIs with Android-granted access.
+            val engineOverride = if (url.startsWith("content://")) InternalPlayerEngine.EXOPLAYER else overrideInternalPlayerEngine
+            var effectiveInternalPlayerEngine = engineOverride ?: playerSettings.internalPlayerEngine
             if (effectiveInternalPlayerEngine == InternalPlayerEngine.AUTO) {
                 effectiveInternalPlayerEngine = resolveAutoInternalPlayerEngine()
             }
-            runtimeInternalPlayerEngineOverride = overrideInternalPlayerEngine
-            if (overrideInternalPlayerEngine == null && playerSettings.internalPlayerEngine == InternalPlayerEngine.AUTO) {
+            runtimeInternalPlayerEngineOverride = engineOverride
+            if (engineOverride == null && playerSettings.internalPlayerEngine == InternalPlayerEngine.AUTO) {
                 resolvedAutoPlayerEngine = effectiveInternalPlayerEngine
-            } else if (overrideInternalPlayerEngine != null) {
+            } else if (engineOverride != null) {
                 resolvedAutoPlayerEngine = null
             }
             currentInternalPlayerEngine = effectiveInternalPlayerEngine
@@ -909,6 +908,7 @@ internal fun PlayerRuntimeController.initializePlayer(
                     if (pv != null) pv.videoBoundsFraction(videoAspectRatio) else null
                 },
                 gainAudioProcessor = gainAudioProcessor,
+                nightModeAudioProcessor = nightModeAudioProcessor,
                 downmixEnabled = effectiveDownmixEnabled,
                 audioOutputChannels = effectiveAudioOutputChannels,
                 downmixNormalizationEnabled = !playerSettings.maintainOriginalAudioOnDownmix,
@@ -1946,11 +1946,21 @@ internal suspend fun PlayerRuntimeController.resolveAutoInternalPlayerEngine(): 
     }
 }
 
+internal fun PlayerRuntimeController.resolvePlaybackAudioLanguages(settings: PlayerSettings): List<String> =
+    resolvePreferredAudioLanguages(
+        preferredAudioLanguage = settings.preferredAudioLanguage,
+        secondaryPreferredAudioLanguage = settings.secondaryPreferredAudioLanguage,
+        deviceLanguages = resolveDeviceAudioLanguages(),
+        contentOriginalLanguage = contentLanguage,
+        autoPlayAudioLanguage = autoPlayAudioLanguage
+    )
+
 internal fun resolvePreferredAudioLanguages(
     preferredAudioLanguage: String,
     secondaryPreferredAudioLanguage: String?,
     deviceLanguages: List<String>,
-    contentOriginalLanguage: String? = null
+    contentOriginalLanguage: String? = null,
+    autoPlayAudioLanguage: String? = null
 ): List<String> {
     fun normalize(language: String?): String? {
         val normalized = language?.trim()?.lowercase()?.takeIf { it.isNotBlank() } ?: return null
@@ -1963,7 +1973,7 @@ internal fun resolvePreferredAudioLanguages(
         }
     }
 
-    return when (preferredAudioLanguage.trim().lowercase()) {
+    val configuredLanguages = when (preferredAudioLanguage.trim().lowercase()) {
         AudioLanguageOption.DEFAULT -> listOfNotNull(
             normalize(secondaryPreferredAudioLanguage)
         ).distinct()
@@ -1992,6 +2002,10 @@ internal fun resolvePreferredAudioLanguages(
             normalize(secondaryPreferredAudioLanguage)
         ).distinct()
     }
+    val selectedLanguage = normalize(autoPlayAudioLanguage) ?: return configuredLanguages
+    val iso3 = runCatching { java.util.Locale.forLanguageTag(selectedLanguage).isO3Language }
+        .getOrNull()?.takeIf(String::isNotBlank)
+    return (listOfNotNull(selectedLanguage, iso3) + configuredLanguages).distinct()
 }
 
 internal fun resolveDeviceAudioLanguages(): List<String> {
@@ -2129,6 +2143,7 @@ private class SubtitleOffsetRenderersFactory(
     private val isSidecarAddonSubtitleActiveProvider: () -> Boolean = { false },
     private val videoBoundsFractionProvider: () -> RectF?,
     private val gainAudioProcessor: GainAudioProcessor,
+    private val nightModeAudioProcessor: NightModeDrcAudioProcessor,
     private val downmixEnabled: Boolean,
     private val audioOutputChannels: com.nuvio.tv.data.local.AudioOutputChannels,
     private val downmixNormalizationEnabled: Boolean,
@@ -2213,12 +2228,15 @@ private class SubtitleOffsetRenderersFactory(
         }
             .setEnableFloatOutput(enableFloatOutput)
             .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-            .setAudioProcessors(arrayOf(gainAudioProcessor))
+            .setAudioProcessors(arrayOf(nightModeAudioProcessor, gainAudioProcessor))
         val baseAudioSink = builder.build()
         val playbackSpeedAwareAudioSink = PlaybackSpeedAwareAudioSink(
             sink = baseAudioSink,
             initialForcePcm = initialForcePcm,
-            forcePcmForBluetooth = bluetoothForcePcm
+            forcePcmForBluetooth = bluetoothForcePcm,
+            forcePcmForAudioProcessing = {
+                nightModeAudioProcessor.isNightModeEnabled() || gainAudioProcessor.isActive()
+            }
         )
         playbackSpeedAwareAudioSink.setInitialPlaybackSpeed(playbackSpeedProvider())
         onPlaybackSpeedAwareAudioSinkCreated(playbackSpeedAwareAudioSink)

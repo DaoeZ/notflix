@@ -18,6 +18,21 @@ import org.junit.Test
 import retrofit2.Response
 
 class TrailerServiceCandidateRankingTest {
+    @Test
+    fun `Notflix looks for another Spanish region before giving up and rejects English and unknown language`() = runTest {
+        val requests = mutableListOf<String>()
+        val spanish = TmdbVideoResult(site = "YouTube", type = "Teaser", key = "spanish1234", iso6391 = "es")
+        val english = TmdbVideoResult(site = "YouTube", type = "Trailer", key = "english1234", iso6391 = "en")
+        val unknown = TmdbVideoResult(site = "YouTube", type = "Trailer", key = "unknown1234")
+
+        val videos = findNotflixTrailerCandidates("es-ES") {
+            requests.add(it)
+            if (it == "es-MX") listOf(english, unknown, spanish) else listOf(english)
+        }
+        assertEquals(listOf("es-ES", "es-MX"), requests)
+        assertEquals(listOf(spanish), videos)
+        assertEquals(emptyList<TmdbVideoResult>(), findNotflixTrailerCandidates("es-419") { listOf(english) })
+    }
 
     @Test
     fun `video type remains higher priority than resolution`() {

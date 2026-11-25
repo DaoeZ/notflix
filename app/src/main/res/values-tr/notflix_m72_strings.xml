@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Profil ve hesap</string>
+    <string name="notflix_settings_home">Ana ekran</string>
+    <string name="notflix_settings_connected_accounts">Bağlı hesaplar</string>
+    <string name="notflix_settings_system">Sistem</string>
+    <string name="notflix_settings_advanced_options">Gelişmiş seçenekler</string>
+    <string name="notflix_settings_trailers">Fragmanlar</string>
+    <string name="notflix_settings_updates">Güncellemeler</string>
+    <string name="notflix_settings_home_collection">Notflix ana koleksiyonu</string>
+    <string name="notflix_settings_ratings">Puanlar</string>
+    <string name="notflix_settings_metadata">Bilgiler ve kataloglar</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

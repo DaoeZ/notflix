@@ -48,9 +48,31 @@ class AgeRatingScaleTest {
         assertEquals(AgeLevel.A18, level("R18"))
     }
 
+    // M68: more countries, with conservative equivalences (when in doubt, the higher level).
+    @Test
+    fun `german french italian brazilian and dutch certificates`() {
+        assertEquals(AgeLevel.TP, level("FSK 0"))
+        assertEquals(AgeLevel.A7, level("FSK 6"))
+        assertEquals(AgeLevel.A12, level("FSK 12"))
+        assertEquals(AgeLevel.A16, level("FSK 16"))
+        assertEquals(AgeLevel.A18, level("FSK 18"))
+        assertEquals(AgeLevel.TP, level("U"))
+        assertEquals(AgeLevel.A12, level("10"))
+        assertEquals(AgeLevel.A16, level("16"))
+        assertEquals(AgeLevel.TP, level("T"))
+        assertEquals(AgeLevel.A16, level("VM14"))
+        assertEquals(AgeLevel.A18, level("VM18"))
+        assertEquals(AgeLevel.TP, level("L"))
+        assertEquals(AgeLevel.TP, level("AL"))
+        assertEquals(AgeLevel.A12, level("9"))
+        // Spain's own all-ages certificate used by TMDB.
+        assertEquals(AgeLevel.TP, level("Ai"))
+    }
+
     @Test
     fun `numeric fallback`() {
         assertEquals(AgeLevel.TP, level("0"))
+        assertEquals(null, level("-1"))
         assertEquals(AgeLevel.A7, level("3"))
         assertEquals(AgeLevel.A7, level("7"))
         assertEquals(AgeLevel.A12, level("8"))

@@ -111,13 +111,17 @@ fun ThemeSettingsContent(
     viewModel: ThemeSettingsViewModel = hiltViewModel(),
     initialFocusRequester: FocusRequester? = null,
     collectionManagerReturnToken: Int = 0,
-    onNavigateToCollections: () -> Unit = {}
+    onNavigateToCollections: () -> Unit = {},
+    embedded: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val appearanceController = LocalAppearanceViewModel.current
     val showAppearanceSelector = AppearancePolicy.NOTFLIX_AVAILABLE && appearanceController != null
     val appearanceState = appearanceController?.state?.collectAsStateWithLifecycle()?.value
     val notflix = notflixSettingsActive()
+    val unifiedSound = LocalNotflixSettingsFrame.current &&
+        notflixSettingsGroupVisible("AppearanceSelectionContent.notflix_preview_sound")
+    val soundLayoutViewModel = if (unifiedSound) hiltViewModel<LayoutSettingsViewModel>() else null
     val themeChoiceFocus = remember { FocusRequester() }
     val styleChoiceFocus = remember { FocusRequester() }
     val ownCollectionManageFocus = remember { FocusRequester() }
@@ -207,11 +211,9 @@ fun ThemeSettingsContent(
             if (firstLoad) selectorInitialFocus?.requestFocusAfterFrames()
         }
     }
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = if (embedded) Modifier.fillMaxWidth() else Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(themeScrollState),
+            modifier = if (embedded) Modifier.fillMaxWidth() else Modifier.fillMaxSize().verticalScroll(themeScrollState),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             SettingsDetailHeader(
@@ -219,7 +221,8 @@ fun ThemeSettingsContent(
                 subtitle = stringResource(R.string.appearance_subtitle)
             )
 
-            if (showAppearanceSelector && appearanceController != null && appearanceState != null) {
+            if (showAppearanceSelector && appearanceController != null && appearanceState != null &&
+                notflixSettingsGroupVisible("AppearanceSelectionContent.")) {
                 LaunchedEffect(collectionManagerReturnToken, screenLifecycle, appearanceState.context, appearanceState.effective) {
                     if (collectionManagerReturnToken != handledCollectionReturn &&
                         screenLifecycle == androidx.lifecycle.Lifecycle.State.RESUMED && appearanceState.context != null) {
@@ -234,7 +237,17 @@ fun ThemeSettingsContent(
                         onSelectIntroEnabled = appearanceController::selectIntroEnabled,
                         onSelectIntroSoundEnabled = appearanceController::selectIntroSoundEnabled,
                 onSelectPreviewEnabled = appearanceController::selectPreviewEnabled,
-                onSelectPreviewSoundEnabled = appearanceController::selectPreviewSoundEnabled,
+                onSelectPreviewSoundEnabled = { enabled ->
+                    val context = appearanceState.context
+                    if (unifiedSound && soundLayoutViewModel != null && context != null) {
+                        val profileId = soundLayoutViewModel.trailerSoundProfileId()
+                        if (appearanceController.authorizesCollectionCreation(context, appearanceState.selectionGeneration)) {
+                            appearanceController.selectPreviewSoundEnabled(enabled) { authorized ->
+                                soundLayoutViewModel.synchronizeNotflixTrailerSound(enabled, profileId, authorized)
+                            }
+                        }
+                    } else appearanceController.selectPreviewSoundEnabled(enabled)
+                },
                         onSelectUiSoundsEnabled = appearanceController::selectUiSoundsEnabled,
                         onSelectWikipediaEnabled = appearanceController::selectWikipediaEnabled,
                         collectionCreator = {
@@ -258,13 +271,14 @@ fun ThemeSettingsContent(
                         onSelect = appearanceController::select)
                 }
             }
-            SettingsGroupCard(
+            if (notflixSettingsGroupVisible("ThemeSettingsScreen.appearance_color_theme", "ThemeSettingsScreen.appearance_amoled")) SettingsGroupCard(
                 modifier = Modifier.fillMaxWidth(),
                 title = stringResource(R.string.appearance_color_theme),
                 subtitle = stringResource(R.string.appearance_color_theme_subtitle)
             ) {
                 if (notflix) {
                     SettingsSingleChoiceRow(
+                        settingId = "ThemeSettingsScreen.appearance_color_theme",
                         title = stringResource(R.string.appearance_color_theme),
                         value = uiState.selectedTheme.localizedName(),
                         options = uiState.availableThemes.map { SettingsPickerOption(it, it.localizedName()) },
@@ -333,6 +347,7 @@ fun ThemeSettingsContent(
                     }
                 }
                 SettingsToggleRow(
+                    settingId = "ThemeSettingsScreen.appearance_amoled_mode",
                     title = stringResource(R.string.appearance_amoled_mode),
                     subtitle = stringResource(R.string.appearance_amoled_mode_subtitle),
                     checked = uiState.amoledMode,
@@ -342,6 +357,7 @@ fun ThemeSettingsContent(
                 )
                 if (uiState.amoledMode) {
                     SettingsToggleRow(
+                        settingId = "ThemeSettingsScreen.appearance_amoled_surfaces_mode",
                         title = stringResource(R.string.appearance_amoled_surfaces_mode),
                         subtitle = stringResource(R.string.appearance_amoled_surfaces_mode_subtitle),
                         checked = uiState.amoledSurfacesMode,
@@ -354,13 +370,14 @@ fun ThemeSettingsContent(
                 }
             }
 
-            SettingsGroupCard(
+            if (notflixSettingsGroupVisible("ThemeSettingsScreen.appearance_settings_style")) SettingsGroupCard(
                 modifier = Modifier.fillMaxWidth(),
                 title = stringResource(R.string.appearance_settings_style),
                 subtitle = stringResource(R.string.appearance_settings_style_subtitle)
             ) {
                 if (notflix) {
                     SettingsSingleChoiceRow(
+                        settingId = "ThemeSettingsScreen.appearance_settings_style",
                         title = stringResource(R.string.appearance_settings_style),
                         value = uiState.settingsUiStyle.localizedName(),
                         options = uiState.availableSettingsUiStyles.map {
@@ -399,12 +416,13 @@ fun ThemeSettingsContent(
                 }
             }
 
-            SettingsGroupCard(
+            if (notflixSettingsGroupVisible("ThemeSettingsScreen.appearance_app_icon_and_banner")) SettingsGroupCard(
                 modifier = Modifier.fillMaxWidth(),
                 title = stringResource(R.string.appearance_launcher_artwork),
                 subtitle = stringResource(R.string.appearance_launcher_artwork_subtitle)
             ) {
                 SettingsActionRow(
+                    settingId = "ThemeSettingsScreen.appearance_app_icon_and_banner",
                     title = stringResource(R.string.appearance_app_icon_and_banner),
                     subtitle = stringResource(R.string.appearance_app_icon_and_banner_subtitle),
                     value = appIconState.selected.localizedName(),
@@ -416,20 +434,22 @@ fun ThemeSettingsContent(
                 )
             }
 
-            AmbientModeSettingsCard()
+            if (notflixSettingsGroupVisible("AmbientModeSettings.")) AmbientModeSettingsCard()
 
-            SettingsGroupCard(
+            if (notflixSettingsGroupVisible("ThemeSettingsScreen.appearance_font", "ThemeSettingsScreen.appearance_language")) SettingsGroupCard(
                 modifier = Modifier.fillMaxWidth(),
                 title = stringResource(R.string.appearance_font_and_language),
                 subtitle = stringResource(R.string.appearance_font_and_language_subtitle)
             ) {
                 SettingsActionRow(
+                    settingId = "ThemeSettingsScreen.appearance_font",
                     title = stringResource(R.string.appearance_font),
                     subtitle = stringResource(R.string.appearance_font_subtitle),
                     value = uiState.selectedFont.displayName,
                     onClick = { showFontDialog = true }
                 )
                 SettingsActionRow(
+                    settingId = "ThemeSettingsScreen.appearance_language",
                     title = stringResource(R.string.appearance_language),
                     subtitle = stringResource(R.string.appearance_language_subtitle),
                     value = currentLocaleName,
@@ -437,7 +457,7 @@ fun ThemeSettingsContent(
                 )
             }
         }
-        SettingsVerticalScrollIndicators(state = themeScrollState)
+        if (!embedded) SettingsVerticalScrollIndicators(state = themeScrollState)
     }
 
     if (showCustomThemeDialog && AppTheme.CUSTOM in uiState.availableThemes) {

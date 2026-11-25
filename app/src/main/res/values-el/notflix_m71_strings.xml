@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Ήχος και υπότιτλοι</string>
+    <string name="notflix_player_more">Περισσότερα</string>
+    <string name="notflix_player_speed_value">Ταχύτητα (%1$s×)</string>
+    <string name="notflix_player_remaining">Απομένουν %1$s</string>
+    <string name="notflix_player_buttons">Κουμπιά αναπαραγωγής</string>
+    <string name="notflix_player_buttons_help">Επιλέξτε έως %1$d ενέργειες. Τα Περισσότερα μένουν στο τέλος και περιέχουν τις υπόλοιπες.</string>
+    <string name="notflix_player_row_order">Σειρά κουμπιών</string>
+</resources>
+

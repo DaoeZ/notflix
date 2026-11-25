@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Profili dhe llogaria</string>
+    <string name="notflix_settings_home">Ekrani kryesor</string>
+    <string name="notflix_settings_connected_accounts">Llogaritë e lidhura</string>
+    <string name="notflix_settings_system">Sistemi</string>
+    <string name="notflix_settings_advanced_options">Opsione të avancuara</string>
+    <string name="notflix_settings_trailers">Paraqitje</string>
+    <string name="notflix_settings_updates">Përditësime</string>
+    <string name="notflix_settings_home_collection">Koleksioni kryesor Notflix</string>
+    <string name="notflix_settings_ratings">Vlerësime</string>
+    <string name="notflix_settings_metadata">Të dhëna dhe katalogë</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

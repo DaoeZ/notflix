@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Downloads</string>
+    <string name="notflix_offline_receive">Ontvangen van telefoon</string>
+    <string name="notflix_offline_pairing">Handmatige invoer: %1$s · %2$s. De code is 5 minuten geldig.</string>
+    <string name="notflix_offline_scan">Scan met de camera van je telefoon om Notflix Downloads te openen.</string>
+    <string name="notflix_offline_expired">De sessie is verlopen. Kies Ontvangen van telefoon om opnieuw te verbinden.</string>
+    <string name="notflix_offline_empty">Download een video via Bronnen of stuur er een vanaf je telefoon.</string>
+    <string name="notflix_offline_profile">Downloads zijn niet beschikbaar op dit profiel.</string>
+    <string name="notflix_offline_unavailable">Bestand niet beschikbaar</string>
+    <string name="notflix_offline_confirm_remove">Verwijderen bevestigen</string>
+    <string name="notflix_offline_choose_source">Kies een bron om te downloaden</string>
+    <string name="notflix_offline_started">Download in de wachtrij</string>
+    <string name="notflix_offline_failed">Dit bestand kon niet worden geopend of gedownload. Probeer een direct videobestand.</string>
+</resources>

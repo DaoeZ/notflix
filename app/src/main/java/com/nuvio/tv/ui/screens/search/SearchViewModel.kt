@@ -8,6 +8,7 @@ import com.nuvio.tv.R
 import com.nuvio.tv.core.network.NetworkResult
 import com.nuvio.tv.core.profile.ActiveProfileAgeGate
 import com.nuvio.tv.core.profile.AgeGateSnapshot
+import com.nuvio.tv.core.profile.isKidsAgeLimit
 import com.nuvio.tv.data.local.DiscoverSelectionDataStore
 import com.nuvio.tv.data.local.hiddenTitleKey
 import com.nuvio.tv.data.local.LayoutPreferenceDataStore
@@ -15,6 +16,7 @@ import com.nuvio.tv.data.local.SearchHistoryDataStore
 import com.nuvio.tv.data.local.TmdbSettingsDataStore
 import com.nuvio.tv.core.tmdb.TmdbMetadataService
 import com.nuvio.tv.core.tmdb.TmdbService
+import com.nuvio.tv.core.tmdb.searchImageUrl
 import com.nuvio.tv.data.mediaserver.ServerCatalog
 import com.nuvio.tv.domain.model.Addon
 import com.nuvio.tv.domain.model.CatalogDescriptor
@@ -42,6 +44,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,6 +60,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -80,11 +88,25 @@ class SearchViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
+    @Inject
+    lateinit var companionBus: com.nuvio.tv.core.server.NotflixCompanionBus
+
+    fun companionUrl(): String? = if (::companionBus.isInitialized) companionBus.activeUrl else null
+    fun companionPairCode(): String? = if (::companionBus.isInitialized) companionBus.activePairCode else null
+    val companionPendingSearchQuery: StateFlow<String?>
+        get() = if (::companionBus.isInitialized) companionBus.pendingSearchQuery else emptyCompanionSearchFlow
+    fun consumeCompanionSearchQuery(): String? =
+        if (::companionBus.isInitialized) companionBus.consumePendingSearchQuery() else null
+
+    private val emptyCompanionSearchFlow = MutableStateFlow<String?>(null).asStateFlow()
+
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     /** Snapshot del límite y las clasificaciones resueltas del perfil activo. */
     val ageGateState: StateFlow<AgeGateSnapshot> = ageGate.snapshot
+    private val _checkingKidsSearch = MutableStateFlow(false)
+    val checkingKidsSearch = _checkingKidsSearch.asStateFlow()
     private val _hiddenTitleKeys = MutableStateFlow<Set<String>>(emptySet())
     val hiddenTitleKeys: StateFlow<Set<String>> = _hiddenTitleKeys.asStateFlow()
 
@@ -113,6 +135,34 @@ class SearchViewModel @Inject constructor(
     private var activeSearchQuery: String? = null
     private var searchGeneration = 0L
     private var discoverJob: Job? = null
+    private var discoverInitJob: Job? = null
+    private var discoverGeneration = 0L
+    private val notflixSearchActive = MutableStateFlow(false)
+    private var notflixSearchLanguage = "en-US"
+    fun setNotflixSearchActive(active: Boolean, language: String = "en-US") {
+        val wasActive = notflixSearchActive.value
+        notflixSearchActive.value = active
+        if (active && notflixSearchLanguage != language) {
+            localizedTitlesJob?.cancel()
+            notflixSearchLanguage = language
+            _localizedTitles.value = emptyMap()
+            _localizedPosters.value = emptyMap()
+            lastCompletedRequestKey = null
+            if (uiState.value.query.isNotBlank()) {
+                cancelSearchRun()
+                performSearch(uiState.value.query)
+            }
+        }
+        if (!active && wasActive) {
+            discoverGeneration++
+            discoverInitJob?.cancel()
+            discoverJob?.cancel()
+        }
+    }
+
+    fun clearNotflixQuery() {
+        onQueryChanged("")
+    }
     private var catalogRowsUpdateJob: Job? = null
     private var suggestionJob: Job? = null
     private var liveSearchJob: Job? = null
@@ -142,6 +192,26 @@ class SearchViewModel @Inject constructor(
 
     init {
         posterOptions.bind(viewModelScope)
+        // Re-evaluate the start page when the actual addon flow arrives, rather than treating
+        // its first (possibly empty) snapshot as a permanently initialized catalog list.
+        viewModelScope.launch {
+            notflixSearchActive.flatMapLatest { active ->
+                if (!active) kotlinx.coroutines.flow.emptyFlow() else combine(
+                    addonRepository.getInstalledAddons(), serverCatalog.searchAddons,
+                    layoutPreferenceDataStore.discoverLocation, profileManager.activeProfileId
+                ) { addons, servers, location, profile ->
+                    NotflixDiscoverInput(addons.enabledAddons() + servers, location, profile)
+                }
+            }.distinctUntilChanged().collectLatest { input ->
+                discoverGeneration++
+                discoverInitJob?.cancel(); discoverJob?.cancel()
+                _uiState.update { it.copy(discoverLocation = input.location, discoverInitialized = false, discoverLoading = false,
+                    discoverResults = emptyList(), pendingDiscoverResults = emptyList()) }
+                if (input.location != DiscoverLocation.OFF) {
+                    discoverInitJob = viewModelScope.launch { loadDiscoverCatalogs(input.addons) }
+                }
+            }
+        }
         viewModelScope.launch {
             profileManager.activeProfileId
                 .flatMapLatest { hiddenTitlesRepository.observe(it) }
@@ -151,12 +221,41 @@ class SearchViewModel @Inject constructor(
         // vuelve a filtrar en cuanto llegan.
         viewModelScope.launch {
             _uiState.debounce(250L).collect { state ->
-                if (ageGate.currentLimit() != null) {
+                if (ageGate.currentLimit() != null &&
+                    !(notflixSearchActive.value && isKidsAgeLimit(ageGate.currentLimit()))) {
                     ageGate.prefetch(
                         state.catalogRows.flatMap { it.items } +
                             state.discoverResults +
                             state.pendingDiscoverResults
                     )
+                }
+            }
+        }
+        viewModelScope.launch {
+            val candidates = _uiState.map { state ->
+                val query = state.query.trim()
+                if (query.isBlank() || query != state.catalogRowsQuery) null else query to state.catalogRows
+            }.distinctUntilChanged()
+            combine(candidates, notflixSearchActive, ageGate.limit, profileManager.activeProfileId, hiddenTitleKeys) {
+                current, active, limit, profile, hidden ->
+                if (active && isKidsAgeLimit(limit) && current != null) Triple(current, profile, hidden) else null
+            }.distinctUntilChanged().collectLatest { request ->
+                val (search, _, hidden) = request ?: return@collectLatest
+                val (query, rows) = search
+                _checkingKidsSearch.value = true
+                try {
+                    val items = withContext(Dispatchers.Default) {
+                        rows.asSequence().flatMap { it.items.asSequence() }
+                            .filterNot {
+                                it.id.startsWith("__placeholder_") ||
+                                    com.nuvio.tv.data.local.hiddenTitleKey(it.apiType, it.id) in hidden
+                            }
+                            .sortedBy { minOf(notflixTitleMatchRank(it.name, query), notflixTitleMatchRank(it.originalTitle.orEmpty(), query)) }
+                            .toList()
+                    }
+                    ageGate.prefetchForActiveSearch(items)
+                } finally {
+                    _checkingKidsSearch.value = false
                 }
             }
         }
@@ -238,6 +337,7 @@ class SearchViewModel @Inject constructor(
     )
 
     fun ensureDiscoverLoaded() {
+        if (notflixSearchActive.value) return // the scoped addon observer owns this initialization
         val state = _uiState.value
         if (state.discoverLocation == DiscoverLocation.OFF) return
         if (state.discoverInitialized || state.discoverLoading) return
@@ -277,33 +377,45 @@ class SearchViewModel @Inject constructor(
     /** M61: translated titles keyed by `apiType:id`, from the TMDB enrichments already in memory. */
     val localizedTitles: StateFlow<Map<String, String>> = _localizedTitles.asStateFlow()
     private var localizedTitlesJob: Job? = null
+    private val _localizedPosters = MutableStateFlow<Map<String, String>>(emptyMap())
+    val localizedPosters: StateFlow<Map<String, String>> = _localizedPosters.asStateFlow()
 
-    /**
-     * M61: Notflix search only draws a title when a poster fails, so translating the whole grid
-     * cannot justify a request per result. This reads what the app already asked TMDB for (home
-     * cards, banner, detail) and never issues one of its own; an unknown title stays as the addon
-     * sent it.
-     */
     fun requestLocalizedTitles(items: List<MetaPreview>) {
         localizedTitlesJob?.cancel()
-        _localizedTitles.value = emptyMap()
-        val offered = items.asSequence().distinctBy { "${it.apiType}:${it.id}" }.take(96).toList()
+        val offered = items.distinctBy(::notflixDiscoverKey)
         if (offered.isEmpty()) return
+        val language = notflixSearchLanguage
         localizedTitlesJob = viewModelScope.launch {
-            combine(tmdbSettingsDataStore.settings, tmdbMetadataService.enrichmentVersion) { settings, _ ->
-                if (!settings.enabled || !settings.useBasicInfo) return@combine emptyMap<String, String>()
-                buildMap {
-                    offered.forEach { item ->
-                        val key = "${item.apiType}:${item.id}"
-                        val tmdbId = tmdbIdOf(item.id) ?: return@forEach
-                        val title = cachedLocalizedTitle(tmdbId, item.apiType, settings.language)
-                            ?.takeIf { it.isNotBlank() } ?: return@forEach
-                        put(key, title)
+            if (!tmdbSettingsDataStore.settings.first().enabled) return@launch
+            for (batch in offered.chunked(3)) {
+                val resolved = batch.map { item ->
+                    async {
+                        val artwork = try {
+                            val id = item.imdbId ?: item.id
+                            val translated = tmdbService.searchArtwork(id, item.apiType, language)
+                            translated ?: tmdbIdOf(id)?.let { tmdbId ->
+                                TmdbService.SearchArtwork(cachedLocalizedTitle(tmdbId, item.apiType, language), null)
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            null
+                        }
+                        notflixDiscoverKey(item) to artwork
                     }
+                }.awaitAll()
+                _localizedTitles.update { previous ->
+                    (previous + resolved.mapNotNull { (key, art) -> art?.title?.let { key to it } }).entries.takeLastEntries()
                 }
-            }.flowOn(Dispatchers.Default).collect { _localizedTitles.value = it }
+                _localizedPosters.update { previous ->
+                    (previous + resolved.mapNotNull { (key, art) -> art?.poster?.let { key to it } }).entries.takeLastEntries()
+                }
+            }
         }
     }
+
+    private fun Set<Map.Entry<String, String>>.takeLastEntries(): Map<String, String> =
+        toList().takeLast(160).associate { it.key to it.value }
 
     /** TMDB-addon items already carry their numeric id; the rest need the IMDb mapping in memory. */
     private fun tmdbIdOf(itemId: String): Int? =
@@ -388,7 +500,7 @@ class SearchViewModel @Inject constructor(
             performSearch(query)
         }
 
-        fetchSuggestions(trimmed)
+        if (!(notflixSearchActive.value && isKidsAgeLimit(ageGate.currentLimit()))) fetchSuggestions(trimmed)
     }
 
     /** Match rank for [title], lower being better, or null when it does not match [queryLower]. */
@@ -708,7 +820,8 @@ class SearchViewModel @Inject constructor(
             // results and the placeholders below, which is the flash this screen used to show.
             _uiState.update { it.copy(isSearching = true, error = null, installedAddons = addons) }
 
-            if (searchTargets.isEmpty()) {
+            val searchTmdb = notflixSearchActive.value
+            if (searchTargets.isEmpty() && !searchTmdb) {
                 _uiState.update {
                     it.copy(
                         isSearching = false,
@@ -788,7 +901,7 @@ class SearchViewModel @Inject constructor(
                 launch {
                     loadCatalog(addon, catalog, query, generation)
                 }
-            }
+            } + if (searchTmdb) listOf(launch { loadNotflixTmdbResults(query, generation) }) else emptyList()
             pendingCatalogResponses = jobs.size
             activeSearchJobs = jobs
 
@@ -816,6 +929,64 @@ class SearchViewModel @Inject constructor(
             }
         }
         searchRunJob = job
+    }
+
+    private suspend fun loadNotflixTmdbResults(query: String, generation: Long) {
+        if (!tmdbSettingsDataStore.settings.first().enabled) return
+        val items = try {
+            withTimeoutOrNull(4_000) {
+                val results = tmdbService.searchTitles(query, notflixSearchLanguage)
+                    .filter { it.mediaType == "movie" || it.mediaType == "tv" }
+                    .sortedWith(compareBy<com.nuvio.tv.data.remote.api.TmdbRecommendationResult> {
+                        minOf(
+                            notflixTitleMatchRank(it.title ?: it.name.orEmpty(), query),
+                            notflixTitleMatchRank(it.originalTitle ?: it.originalName.orEmpty(), query)
+                        )
+                    }.thenByDescending { it.popularity ?: 0.0 })
+                    .take(6)
+                coroutineScope {
+                    results.map { hit ->
+                        async {
+                            val mediaType = hit.mediaType ?: return@async null
+                            val id = tmdbService.tmdbToImdb(hit.id, mediaType) ?: return@async null
+                            val title = hit.title ?: hit.name ?: return@async null
+                            MetaPreview(
+                                id = id,
+                                type = if (mediaType == "movie") ContentType.MOVIE else ContentType.SERIES,
+                                name = title,
+                                poster = searchImageUrl(hit.posterPath),
+                                posterShape = PosterShape.POSTER,
+                                background = searchImageUrl(hit.backdropPath),
+                                logo = null,
+                                description = hit.overview,
+                                releaseInfo = hit.releaseDate ?: hit.firstAirDate,
+                                imdbRating = null,
+                                imdbId = id,
+                                genres = emptyList(),
+                                released = hit.releaseDate ?: hit.firstAirDate,
+                                originalTitle = hit.originalTitle ?: hit.originalName ?: title
+                            )
+                        }
+                    }.awaitAll().filterNotNull()
+                }
+            }.orEmpty()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            emptyList()
+        }
+        if (!isCurrentSearch(generation, query)) return
+        pendingCatalogResponses = (pendingCatalogResponses - 1).coerceAtLeast(0)
+        if (items.isEmpty()) return
+        val row = CatalogRow(
+            addonId = "notflix-tmdb-search", addonName = "", addonBaseUrl = "",
+            catalogId = "titles", catalogName = "", type = ContentType.MOVIE,
+            items = items, hasMore = false
+        )
+        val key = row.stableKey()
+        catalogOrder.add(key)
+        catalogsMap[key] = row
+        scheduleCatalogRowsUpdate()
     }
 
     private suspend fun loadCatalog(
@@ -988,7 +1159,8 @@ class SearchViewModel @Inject constructor(
                 orderedRows
             }
             state.copy(
-                catalogRows = filteredRows
+                catalogRows = filteredRows,
+                catalogRowsQuery = activeSearchQuery.orEmpty()
             )
         }
     }
@@ -996,11 +1168,13 @@ class SearchViewModel @Inject constructor(
     private suspend fun searchAddons(): List<Addon> =
         addonRepository.getInstalledAddons().first().enabledAddons() + serverCatalog.searchAddons.first()
 
-    private suspend fun loadDiscoverCatalogs() {
+    private suspend fun loadDiscoverCatalogs(addonsSnapshot: List<Addon>? = null) {
+        val generation = discoverGeneration
         if (_uiState.value.discoverLocation == DiscoverLocation.OFF) return
         _uiState.update { it.copy(discoverLoading = true) }
         val addons = try {
-            searchAddons()
+            addonsSnapshot ?: searchAddons()
+        } catch (cancelled: CancellationException) { throw cancelled
         } catch (_: Exception) {
             _uiState.update { it.copy(discoverInitialized = true, discoverLoading = false) }
             return
@@ -1039,6 +1213,8 @@ class SearchViewModel @Inject constructor(
         )
         val selectedType = selectedCatalog?.type ?: "movie"
         val selectedGenre: String? = null
+
+        if (generation != discoverGeneration) return
 
         _uiState.update {
             it.copy(
@@ -1123,6 +1299,7 @@ class SearchViewModel @Inject constructor(
     }
 
     private fun loadNextDiscoverResults() {
+        if (_uiState.value.discoverLoadingMore) return
         if (_uiState.value.pendingDiscoverResults.isNotEmpty()) {
             showMoreDiscoverResults()
         } else {
@@ -1152,10 +1329,15 @@ class SearchViewModel @Inject constructor(
     }
 
     private fun fetchDiscoverContent(reset: Boolean) {
+        val generation = discoverGeneration
+        val requestProfile = profileManager.activeProfileId.value
+        val notflix = notflixSearchActive.value
         discoverJob?.cancel()
         discoverJob = viewModelScope.launch {
             val state = _uiState.value
-            if (state.query.trim().isNotEmpty()) return@launch
+            // Keep Notflix's start page warm even if the first remote key arrives before addons.
+            // Its UI shows only search results while typing; clearing the field can reuse Explore.
+            if (!notflix && state.query.trim().isNotEmpty()) return@launch
             val selectedCatalog = state.discoverCatalogs.firstOrNull { it.key == state.selectedDiscoverCatalogKey }
                 ?: return@launch
 
@@ -1194,52 +1376,58 @@ class SearchViewModel @Inject constructor(
                 supportsSkip = selectedCatalog.supportsSkip,
                 posterScreen = com.nuvio.tv.core.poster.CustomPosterScreen.SEARCH
             ).collect { result ->
-                if (_uiState.value.discoverLocation == DiscoverLocation.OFF) return@collect
+                if (generation != discoverGeneration || _uiState.value.discoverLocation == DiscoverLocation.OFF ||
+                    (notflix && profileManager.activeProfileId.value != requestProfile)) return@collect
                 when (result) {
                     is NetworkResult.Success -> {
-                        val incoming = result.data.items
-                        val existing = if (reset) {
-                            emptyList()
+                        val limit = if (notflix) ageGate.currentLimitFromStore() else null
+                        val existing = if (reset) emptyList() else state.discoverResults + state.pendingDiscoverResults
+                        val existingKeys = existing.mapTo(hashSetOf()) { "${it.apiType}:${it.id}" }
+                        fun publish(incoming: List<MetaPreview>, complete: Boolean) {
+                            if (generation != discoverGeneration ||
+                                (notflix && profileManager.activeProfileId.value != requestProfile)) return
+                            val hasNewUniqueIncoming = incoming.any { item ->
+                                "${item.apiType}:${item.id}" !in existingKeys
+                            }
+                            val merged = if (reset) incoming else (existing + incoming)
+                            val rawDeduped = merged.distinctBy { "${it.apiType}:${it.id}" }
+                            val deduped = if (hideUnreleasedContent) {
+                                val today = LocalDate.now()
+                                rawDeduped.filterNot { it.isUnreleased(today) }
+                            } else {
+                                rawDeduped
+                            }
+                            val shouldRevealBatch = !reset && revealBatchAfterNextDiscoverFetch
+                            val visibleLimit = if (reset) {
+                                DISCOVER_INITIAL_LIMIT
+                            } else if (shouldRevealBatch) {
+                                (visibleCountBeforeRequest + DISCOVER_SHOW_MORE_BATCH)
+                                    .coerceAtLeast(DISCOVER_INITIAL_LIMIT)
+                            } else {
+                                visibleCountBeforeRequest.coerceAtLeast(DISCOVER_INITIAL_LIMIT)
+                            }
+                            val visible = deduped.take(visibleLimit)
+                            val pending = deduped.drop(visibleLimit)
+                            val shouldStopPagination = complete && !reset && !hasNewUniqueIncoming
+                            _uiState.update {
+                                it.copy(
+                                    discoverLoading = false,
+                                    discoverLoadingMore = !complete,
+                                    discoverResults = visible,
+                                    discoverProfileId = if (notflix) requestProfile else it.discoverProfileId,
+                                    pendingDiscoverResults = pending,
+                                    discoverHasMore = if (shouldStopPagination) false else result.data.hasMore,
+                                    discoverPage = if (!complete || shouldStopPagination) it.discoverPage else currentPage
+                                )
+                            }
+                            if (complete) revealBatchAfterNextDiscoverFetch = false
+                        }
+                        if (limit != null && isKidsAgeLimit(limit)) {
+                            ageGate.filterKidsProgressively(result.data.items, limit, ::publish)
                         } else {
-                            _uiState.value.discoverResults + _uiState.value.pendingDiscoverResults
+                            val incoming = if (limit != null) ageGate.filterForLimit(result.data.items, limit) else result.data.items
+                            publish(incoming, true)
                         }
-                        val existingKeys = existing.asSequence()
-                            .map { "${it.apiType}:${it.id}" }
-                            .toSet()
-                        val hasNewUniqueIncoming = incoming.any { item ->
-                            "${item.apiType}:${item.id}" !in existingKeys
-                        }
-                        val merged = if (reset) incoming else (existing + incoming)
-                        val rawDeduped = merged.distinctBy { "${it.apiType}:${it.id}" }
-                        val deduped = if (hideUnreleasedContent) {
-                            val today = LocalDate.now()
-                            rawDeduped.filterNot { it.isUnreleased(today) }
-                        } else {
-                            rawDeduped
-                        }
-                        val shouldRevealBatch = !reset && revealBatchAfterNextDiscoverFetch
-                        val visibleLimit = if (reset) {
-                            DISCOVER_INITIAL_LIMIT
-                        } else if (shouldRevealBatch) {
-                            (visibleCountBeforeRequest + DISCOVER_SHOW_MORE_BATCH)
-                                .coerceAtLeast(DISCOVER_INITIAL_LIMIT)
-                        } else {
-                            visibleCountBeforeRequest.coerceAtLeast(DISCOVER_INITIAL_LIMIT)
-                        }
-                        val visible = deduped.take(visibleLimit)
-                        val pending = deduped.drop(visibleLimit)
-                        val shouldStopPagination = !reset && !hasNewUniqueIncoming
-                        _uiState.update {
-                            it.copy(
-                                discoverLoading = false,
-                                discoverLoadingMore = false,
-                                discoverResults = visible,
-                                pendingDiscoverResults = pending,
-                                discoverHasMore = if (shouldStopPagination) false else result.data.hasMore,
-                                discoverPage = if (shouldStopPagination) it.discoverPage else currentPage
-                            )
-                        }
-                        revealBatchAfterNextDiscoverFetch = false
                     }
                     is NetworkResult.Error -> {
                         revealBatchAfterNextDiscoverFetch = false

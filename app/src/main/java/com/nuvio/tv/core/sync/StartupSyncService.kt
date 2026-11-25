@@ -58,6 +58,7 @@ class StartupSyncService @Inject constructor(
     private val librarySyncService: LibrarySyncService,
     private val watchedItemsSyncService: WatchedItemsSyncService,
     private val profileSettingsSyncService: ProfileSettingsSyncService,
+    private val notflixSettingsSyncService: NotflixSettingsSyncService,
     private val providerCredentialSyncService: ProviderCredentialSyncService,
     private val profileSyncService: ProfileSyncService,
     private val pluginManager: PluginManager,
@@ -221,6 +222,7 @@ class StartupSyncService @Inject constructor(
                     }
                 }
                 "profile_settings" -> {
+                    notflixSettingsSyncService.pullCurrentProfileFromRemote()
                     profileSettingsSyncService.pullCurrentProfileFromRemote()
                         .onSuccess { applied ->
                             Log.d(TAG, "Realtime profile settings pull completed profile=$profileId applied=$applied")
@@ -539,6 +541,8 @@ class StartupSyncService @Inject constructor(
                 .onFailure { e ->
                     Log.e(TAG, "Failed to pull profile settings blob, keeping local settings", e)
                 }
+            // Notflix: its own settings blob (hidden titles, age limit, appearance).
+            notflixSettingsSyncService.pullCurrentProfileFromRemote()
         }
 
         providerCredentialSyncService.syncFromRemote(profileId)

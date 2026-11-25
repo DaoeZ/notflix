@@ -175,6 +175,17 @@ class LayoutSettingsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(LayoutSettingsUiState())
     val uiState: StateFlow<LayoutSettingsUiState> = _uiState.asStateFlow()
+
+    fun trailerSoundProfileId(): Int = layoutPreferenceDataStore.activeProfileId()
+
+    suspend fun synchronizeNotflixTrailerSound(enabled: Boolean, profileId: Int, authorized: () -> Boolean): Result<Unit> = try {
+        if (layoutPreferenceDataStore.setFocusedPosterBackdropTrailerMuted(!enabled, profileId, authorized)) Result.success(Unit)
+        else Result.failure(IllegalStateException("Appearance session changed"))
+    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        Result.failure(error)
+    }
     private var streamBadgeServer: StreamBadgeConfigServer? = null
     private var logoBytes: ByteArray? = null
 

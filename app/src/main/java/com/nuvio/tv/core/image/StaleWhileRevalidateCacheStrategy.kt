@@ -39,6 +39,7 @@ class StaleWhileRevalidateCacheStrategy(
         private const val TAG = "NuvioSWR"
         private const val REVALIDATION_COOLDOWN_MS = 10L * 60 * 1000 // 10 min
         private const val REVALIDATION_MAX_REQUESTS = 8
+        private const val MAX_REVALIDATED_ENTRIES = 1000
         private val revalidatingUrls = ConcurrentHashMap.newKeySet<String>()
         private val revalidatedAt = ConcurrentHashMap<String, Long>()
     }
@@ -139,6 +140,9 @@ class StaleWhileRevalidateCacheStrategy(
                 }
             } finally {
                 revalidatingUrls.remove(url)
+                if (revalidatedAt.size >= MAX_REVALIDATED_ENTRIES) {
+                    revalidatedAt.clear()
+                }
                 revalidatedAt[url] = System.currentTimeMillis()
             }
         }

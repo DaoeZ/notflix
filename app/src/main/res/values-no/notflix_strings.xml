@@ -201,4 +201,6 @@
         <item>Simkl kan nå kobles til.</item>
         <item>Trakt: koble til med bare en kode, uten oppsett.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Notflix-nøkkel</string>
+    <string name="notflix_tmdb_attribution">Dette produktet bruker TMDB API, men er ikke godkjent eller sertifisert av TMDB.</string>
 </resources>

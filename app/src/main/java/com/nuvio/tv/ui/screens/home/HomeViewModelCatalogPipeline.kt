@@ -511,7 +511,7 @@ internal fun HomeViewModel.loadCatalogPipeline(
                         // eager catalogs have completed, or let the debounce
                         // in scheduleUpdateCatalogRows coalesce intermediate
                         // arrivals.  When pending == 0 we always flush.
-                        if (pendingCatalogLoads == 0) {
+                        if (_uiState.value.notflixPresentationActive || pendingCatalogLoads == 0) {
                             scheduleUpdateCatalogRows()
                         } else if (!hasRenderedFirstCatalog) {
                             // First content arriving — show it quickly so the
@@ -544,7 +544,7 @@ internal fun HomeViewModel.loadCatalogPipeline(
                             catalogsLoadInProgress = false
                         }
                         // Same batching logic as success path.
-                        if (pendingCatalogLoads == 0 || !hasRenderedFirstCatalog) {
+                        if (_uiState.value.notflixPresentationActive || pendingCatalogLoads == 0 || !hasRenderedFirstCatalog) {
                             scheduleUpdateCatalogRows()
                         }
                     }
@@ -573,14 +573,11 @@ internal fun HomeViewModel.loadMoreCatalogItemsPipeline(catalogId: String, addon
         return
     }
 
+    val addon = addonsCache.find { it.id == addonId } ?: return
     updateCatalogRow(key) { it.copy(isLoading = true) }
     _loadingCatalogs.update { it + key }
 
     viewModelScope.launch {
-        val addon = addonsCache.find { it.id == addonId }
-        if (addon == null) {
-            return@launch
-        }
 
         val nextSkip = currentRow.nextCatalogSkip()
         catalogRepository.getCatalog(
@@ -617,6 +614,11 @@ internal fun HomeViewModel.loadMoreCatalogItemsPipeline(catalogId: String, addon
 
 internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
     val generation = catalogLoadGeneration
+    val notflixVisit = notflixCollectionVisit.takeIf { _uiState.value.notflixPresentationActive }
+    val profile = profileManager.activeProfileId.value
+    fun stillCurrent() = notflixVisit == null ||
+        (_uiState.value.notflixPresentationActive && notflixCollectionVisit == notflixVisit &&
+            generation == catalogLoadGeneration && profileManager.activeProfileId.value == profile)
     val tmdbAvailable = tmdbAvailability.isEnabled()
     if (_uiState.value.ageTmdbKeyAvailable != tmdbAvailable) {
         _uiState.update { it.copy(ageTmdbKeyAvailable = tmdbAvailable) }
@@ -633,11 +635,16 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
     val heroSectionEnabled = _uiState.value.heroSectionEnabled
     val hideUnreleased = _uiState.value.hideUnreleasedContent
     val ageLimit = ageGate.currentLimit()
+    val notflixKidsFastPath = _uiState.value.notflixPresentationActive &&
+        com.nuvio.tv.core.profile.isKidsAgeLimit(ageLimit)
     val hiddenKeys = _uiState.value.hiddenTitleKeys
     val titlesSnapshot = customCatalogTitles
 
     val (displayRows, baseHeroItems, baseGridItems, fullRowsFiltered) = withContext(Dispatchers.Default) {
         suspend fun filterRowsForPresentation(rows: List<CatalogRow>): List<CatalogRow> {
+            // Notflix Kids Home projects only its own TMDB Kids rows; skip filtering adult addon rows
+            // so they never starve the shared AgeRatingResolver semaphore.
+            if (notflixKidsFastPath) return emptyList()
             val ageFiltered = if (ageLimit == null) rows else rows.map { ageGate.filterRow(it) }
             return if (hiddenKeys.isEmpty()) ageFiltered else ageFiltered.map { it.filteredForHiddenTitles(hiddenKeys) }
         }
@@ -683,12 +690,16 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
             )
         }
         fun slotShuffled(rows: List<CatalogRow>, filter: (MetaPreview) -> Boolean, currentOrder: List<String>): List<MetaPreview> {
-            val totalCatalogs = rows.size.coerceAtLeast(1)
-            val baseSlot = 7 / totalCatalogs
-            val remainder = 7 % totalCatalogs
+            val targetCount = 7
+            val eligibleRows = rows.filter { row -> row.items.any(filter) }
+            if (eligibleRows.isEmpty()) return emptyList()
+            val totalCatalogs = eligibleRows.size
+            val baseSlot = targetCount / totalCatalogs
+            val remainder = targetCount % totalCatalogs
             val seen = mutableSetOf<String>()
             val result = mutableListOf<MetaPreview>()
-            rows.forEachIndexed { index, row ->
+            val leftovers = mutableListOf<ArrayDeque<MetaPreview>>()
+            eligibleRows.forEachIndexed { index, row ->
                 val slot = baseSlot + if (index < remainder) 1 else 0
                 val existing = currentOrder.filter { id -> row.items.any { it.id == id } }
                 val byId = row.items.filter(filter).associateBy { it.id }
@@ -697,9 +708,32 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
                     row = row,
                     candidates = byId.values.filter { it.id !in existing }
                 )
-                // Filter out duplicates but keep taking until slot is filled
-                val unique = (ordered + new).filter { seen.add(it.id) }
-                result += unique.take(slot)
+                val candidates = (ordered + new).distinctBy { it.id }
+                var taken = 0
+                val remaining = ArrayDeque<MetaPreview>()
+                for (item in candidates) {
+                    if (taken < slot && seen.add(item.id)) {
+                        result += item
+                        taken++
+                    } else if (item.id !in seen) {
+                        remaining.addLast(item)
+                    }
+                }
+                if (remaining.isNotEmpty()) leftovers += remaining
+            }
+            // Redistribute any unfilled slots round-robin so sparse/empty catalogs never shrink the carousel.
+            while (result.size < targetCount && leftovers.isNotEmpty()) {
+                val iterator = leftovers.iterator()
+                while (iterator.hasNext() && result.size < targetCount) {
+                    val queue = iterator.next()
+                    var picked: MetaPreview? = null
+                    while (queue.isNotEmpty() && picked == null) {
+                        val candidate = queue.removeFirst()
+                        if (seen.add(candidate.id)) picked = candidate
+                    }
+                    if (picked != null) result += picked
+                    if (queue.isEmpty()) iterator.remove()
+                }
             }
             return result
         }
@@ -771,13 +805,14 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
         CatalogUpdateResult(computedDisplayRows, computedHeroItems, emptyList(), orderedRows)
     }
 
+    if (!stillCurrent()) return
     _fullCatalogRows.update { rows ->
         if (rows == fullRowsFiltered) rows else fullRowsFiltered
     }
 
     heroItemOrder = baseHeroItems.map { it.id }
 
-    val (computedHomeRows, nextGridItems) = withContext(Dispatchers.Default) {
+    val computedPresentation = withContext(Dispatchers.Default) {
         val computedHomeRows = buildList {
             val displayRowsByKey = displayRows.associateBy { it.legacyKey() }
             // Build a lookup of placeholder descriptors by key for lazy catalogs
@@ -933,25 +968,45 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
         currentGridItems
     }
 
-        computedHomeRows to nextGridItems
+        val projected = notflixSnapshot(
+            notflixCaptured,
+            orderedKeys,
+            fullRowsFiltered,
+            collectionsSnapshot.values.toList()
+        )
+        val notflixHeroSource = if (projected.heroItems.isNotEmpty() && notflixKidsFastPath) {
+            projected.heroItems
+        } else {
+            val combined = LinkedHashMap<String, MetaPreview>()
+            baseHeroItems.forEach { combined.putIfAbsent("${it.apiType.lowercase()}:${it.id.lowercase()}", it) }
+            if (combined.size < 6) {
+                projected.rows.asSequence()
+                    .flatMap { it.catalog?.items.orEmpty().asSequence() }
+                    .filter { !it.background.isNullOrBlank() || !it.poster.isNullOrBlank() }
+                    .forEach { item ->
+                        if (combined.size < 6) {
+                            combined.putIfAbsent("${item.apiType.lowercase()}:${item.id.lowercase()}", item)
+                        }
+                    }
+            }
+            combined.values.toList()
+        }
+        val computedNotflixRows = projected.copy(heroItems = notflixHeroSource)
+
+        Triple(computedHomeRows, nextGridItems, computedNotflixRows)
     }
 
+    if (!stillCurrent()) return
+    val (computedHomeRows, nextGridItems, notflixRows) = computedPresentation
     // Clear any stale error when content is now available (e.g., hero
     // catalogs loaded after the initial startup race set an error).
     val hasContent = computedHomeRows.isNotEmpty() || baseHeroItems.isNotEmpty() || displayRows.isNotEmpty()
-
-    val notflixRows = notflixSnapshot(notflixCaptured, orderedKeys, fullRowsFiltered, collectionsSnapshot.values.toList())
-        .copy(heroItems = baseHeroItems)
-    _uiState.update { state ->
-        state.copy(
-            notflixCatalog = if (generation == catalogLoadGeneration) notflixRows else state.notflixCatalog,
-            catalogRows = if (state.catalogRows == displayRows) state.catalogRows else displayRows,
-            heroItems = if (state.heroItems == baseHeroItems) state.heroItems else baseHeroItems,
-            gridItems = if (state.gridItems == nextGridItems) state.gridItems else nextGridItems,
-            homeRows = if (state.homeRows == computedHomeRows) state.homeRows else computedHomeRows,
-            isLoading = false,
-            error = if (hasContent) null else state.error
-        )
+    if (hasContent && startupGracePeriodActive) {
+        startupGracePeriodActive = false
+        deferredEnrichItem?.let { item ->
+            deferredEnrichItem = null
+            onItemFocusPipeline(item)
+        }
     }
 
     val tmdbSettings = currentTmdbSettings
@@ -959,16 +1014,48 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
         (_uiState.value.notflixPresentationActive || currentLayout != HomeLayout.MODERN || tmdbSettings.modernHomeEnabled)
     val shouldUseEnrichedHeroItems = tmdbEnabledForCurrentLayout &&
         (tmdbSettings.useArtwork || tmdbSettings.useBasicInfo || tmdbSettings.useDetails)
+    val heroItemsToEnrich = if (_uiState.value.notflixPresentationActive && notflixRows.heroItems.isNotEmpty()) {
+        notflixRows.heroItems
+    } else {
+        baseHeroItems
+    }
+    val initialHeroSignature = if (shouldUseEnrichedHeroItems && heroItemsToEnrich.isNotEmpty()) {
+        heroEnrichmentSignaturePipeline(heroItemsToEnrich, tmdbSettings)
+    } else null
+    val initialHeroItems = if (initialHeroSignature != null && lastHeroEnrichmentSignature == initialHeroSignature && lastHeroEnrichedItems.isNotEmpty()) {
+        lastHeroEnrichedItems
+    } else {
+        heroItemsToEnrich
+    }
+    val initialNotflixRows = if (_uiState.value.notflixPresentationActive && initialHeroItems.isNotEmpty()) {
+        notflixRows.copy(heroItems = initialHeroItems)
+    } else {
+        notflixRows
+    }
 
-    if (shouldUseEnrichedHeroItems && baseHeroItems.isNotEmpty()) {
+    _uiState.update { state ->
+        state.copy(
+            notflixCatalog = if (generation == catalogLoadGeneration) initialNotflixRows else state.notflixCatalog,
+            catalogRows = if (state.catalogRows == displayRows) state.catalogRows else displayRows,
+            heroItems = if (state.heroItems == initialHeroItems) state.heroItems else initialHeroItems,
+            gridItems = if (state.gridItems == nextGridItems) state.gridItems else nextGridItems,
+            homeRows = if (state.homeRows == computedHomeRows) state.homeRows else computedHomeRows,
+            isLoading = false,
+            error = if (hasContent) null else state.error
+        )
+    }
+
+    if (shouldUseEnrichedHeroItems && heroItemsToEnrich.isNotEmpty()) {
         heroEnrichmentJob?.cancel()
         heroEnrichmentJob = viewModelScope.launch {
-            val enrichmentSignature = heroEnrichmentSignaturePipeline(baseHeroItems, tmdbSettings)
-            if (lastHeroEnrichmentSignature == enrichmentSignature) {
+            val enrichmentSignature = initialHeroSignature ?: heroEnrichmentSignaturePipeline(heroItemsToEnrich, tmdbSettings)
+            if (lastHeroEnrichmentSignature == enrichmentSignature && lastHeroEnrichedItems.isNotEmpty()) {
                 val cached = lastHeroEnrichedItems
                 _uiState.update { state ->
                     state.copy(
                         heroItems = if (state.heroItems == cached) state.heroItems else cached,
+                        notflixCatalog = if (state.notflixCatalog.heroItems == cached) state.notflixCatalog
+                            else state.notflixCatalog.copy(heroItems = cached),
                         gridItems = if (currentLayout == HomeLayout.GRID) {
                             val enrichedGrid = replaceGridHeroItemsPipeline(state.gridItems, cached)
                             if (state.gridItems == enrichedGrid) state.gridItems else enrichedGrid
@@ -976,12 +1063,15 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
                     )
                 }
             } else {
-                val enrichedItems = enrichHeroItemsPipeline(baseHeroItems, tmdbSettings)
+                val enrichedItems = enrichHeroItemsPipeline(heroItemsToEnrich, tmdbSettings)
+                if (!stillCurrent()) return@launch
                 lastHeroEnrichmentSignature = enrichmentSignature
                 lastHeroEnrichedItems = enrichedItems
                 _uiState.update { state ->
                     state.copy(
                         heroItems = if (state.heroItems == enrichedItems) state.heroItems else enrichedItems,
+                        notflixCatalog = if (state.notflixCatalog.heroItems == enrichedItems) state.notflixCatalog
+                            else state.notflixCatalog.copy(heroItems = enrichedItems),
                         gridItems = if (currentLayout == HomeLayout.GRID) {
                             val enrichedGrid = replaceGridHeroItemsPipeline(state.gridItems, enrichedItems)
                             if (state.gridItems == enrichedGrid) state.gridItems else enrichedGrid

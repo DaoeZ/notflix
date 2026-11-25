@@ -318,7 +318,13 @@ class CollectionsDataStore @Inject constructor(
         val year: Int? = null,
         val watchRegion: String? = null,
         val withWatchProviders: String? = null,
-        val withoutWatchProviders: String? = null
+        val withoutWatchProviders: String? = null,
+        // M68: server-side age certificate filter for the built-in KIDS Discover rows.
+        val certificationCountry: String? = null,
+        val certification: String? = null,
+        val certificationLte: String? = null,
+        val runtimeLte: Int? = null,
+        val runtimeGte: Int? = null
     )
 
     @androidx.annotation.Keep
@@ -410,7 +416,12 @@ class CollectionsDataStore @Inject constructor(
         year = year,
         watchRegion = watchRegion,
         withWatchProviders = withWatchProviders,
-        withoutWatchProviders = withoutWatchProviders
+        withoutWatchProviders = withoutWatchProviders,
+        certificationCountry = certificationCountry,
+        certification = certification,
+        certificationLte = certificationLte,
+        runtimeLte = runtimeLte,
+        runtimeGte = runtimeGte
     )
 
     private fun SerializableCollection.toDomain() = Collection(
@@ -518,6 +529,11 @@ class CollectionsDataStore @Inject constructor(
         year = year,
         watchRegion = watchRegion,
         withWatchProviders = withWatchProviders,
-        withoutWatchProviders = withoutWatchProviders
+        withoutWatchProviders = withoutWatchProviders,
+        certificationCountry = certificationCountry,
+        certification = certification,
+        certificationLte = certificationLte,
+        runtimeLte = runtimeLte,
+        runtimeGte = runtimeGte
     )
 }

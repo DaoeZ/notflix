@@ -657,6 +657,22 @@ class LayoutPreferenceDataStore @Inject constructor(
         }
     }
 
+    fun activeProfileId(): Int = profileManager.activeProfileId.value
+
+    /** Presentation unification: same key, captured profile, authorization checked inside edit. */
+    suspend fun setFocusedPosterBackdropTrailerMuted(
+        muted: Boolean, profileId: Int, authorized: () -> Boolean
+    ): Boolean {
+        var written = false
+        store(profileId).edit { prefs ->
+            if (authorized()) {
+                prefs[focusedPosterBackdropTrailerMutedKey] = muted
+                written = true
+            }
+        }
+        return written
+    }
+
     suspend fun setFocusedPosterBackdropTrailerPlaybackTarget(
         target: FocusedPosterTrailerPlaybackTarget
     ) {

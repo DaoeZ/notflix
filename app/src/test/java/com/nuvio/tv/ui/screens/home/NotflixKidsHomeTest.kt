@@ -115,7 +115,11 @@ class NotflixKidsHomeTest {
             notflixCatalog = project(emptyList(), folders, true))
         assertTrue(notflixRows(state, false, "CW", "S%1\$s:E%2\$s", "See all").isEmpty())
         // The key transition must allow the same page's rows again.
-        assertTrue(notflixRows(state.copy(ageTmdbKeyAvailable = true), false, "CW", "S%1\$s:E%2\$s", "See all").isNotEmpty())
+        val healthy = state.notflixCatalog.copy(rows = state.notflixCatalog.rows.map {
+            it.copy(catalog = it.catalog?.copy(addonId = "tmdb"))
+        })
+        assertTrue(notflixRows(state.copy(ageTmdbKeyAvailable = true, notflixCatalog = healthy), false,
+            "CW", "S%1\$s:E%2\$s", "See all").isNotEmpty())
     }
 
     @Test fun kidsBuiltinRowsCannotBeRemovedByTheAccountsDisabledRowPreference() {

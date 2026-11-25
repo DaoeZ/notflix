@@ -23,6 +23,7 @@ internal fun PlaybackAudioSection(
     SettingsNote(text = stringResource(R.string.audio_passthrough_info))
 
     SettingsActionRow(
+        settingId = "PlaybackAudioSettings.audio_preferred_lang",
         title = stringResource(R.string.audio_preferred_lang),
         subtitle = null,
         value = audioLanguageLabel(settings.preferredAudioLanguage),
@@ -30,6 +31,7 @@ internal fun PlaybackAudioSection(
         onClick = { onOpenDialog(PlaybackDialog.AUDIO_LANGUAGE) }
     )
     SettingsActionRow(
+        settingId = "PlaybackAudioSettings.sub_secondary_lang",
         title = stringResource(R.string.sub_secondary_lang),
         subtitle = null,
         value = secondaryAudioLanguageLabel(settings.secondaryPreferredAudioLanguage),
@@ -39,6 +41,7 @@ internal fun PlaybackAudioSection(
 
     if (isExoEngine) {
         SettingsToggleRow(
+            settingId = "PlaybackAudioSettings.audio_skip_silence",
             title = stringResource(R.string.audio_skip_silence),
             subtitle = stringResource(R.string.audio_skip_silence_sub),
             checked = settings.skipSilence,
@@ -48,6 +51,7 @@ internal fun PlaybackAudioSection(
     }
 
     SettingsToggleRow(
+        settingId = "PlaybackAudioSettings.audio_remember_delay_per_device",
         title = stringResource(R.string.audio_remember_delay_per_device),
         subtitle = stringResource(R.string.audio_remember_delay_per_device_sub),
         checked = settings.rememberAudioDelayPerDevice,
@@ -61,6 +65,7 @@ internal fun PlaybackAudioSection(
     SettingsNote(text = stringResource(R.string.audio_advanced_warning), tone = SettingsNoteTone.Warning)
 
     SettingsActionRow(
+        settingId = "PlaybackAudioSettings.audio_decoder_priority",
         title = stringResource(R.string.audio_decoder_priority),
         subtitle = null,
         value = decoderPriorityLabel(settings.decoderPriority),
@@ -68,6 +73,7 @@ internal fun PlaybackAudioSection(
         onClick = { onOpenDialog(PlaybackDialog.DECODER_PRIORITY) }
     )
     SettingsToggleRow(
+        settingId = "PlaybackAudioSettings.audio_enable_downmix_title",
         title = stringResource(R.string.audio_enable_downmix_title),
         subtitle = stringResource(R.string.audio_enable_downmix_subtitle),
         checked = settings.effectiveDownmixEnabled,
@@ -76,6 +82,7 @@ internal fun PlaybackAudioSection(
     )
     if (settings.effectiveDownmixEnabled) {
         SettingsActionRow(
+            settingId = "PlaybackAudioSettings.audio_number_of_channels",
             title = stringResource(R.string.audio_number_of_channels),
             subtitle = null,
             value = settings.audioOutputChannels.displayLabel,
@@ -83,6 +90,7 @@ internal fun PlaybackAudioSection(
             onClick = { onOpenDialog(PlaybackDialog.AUDIO_OUTPUT_CHANNELS) }
         )
         SettingsToggleRow(
+            settingId = "PlaybackAudioSettings.audio_maintain_original_audio_on_downmix_title",
             title = stringResource(R.string.audio_maintain_original_audio_on_downmix_title),
             subtitle = stringResource(R.string.audio_maintain_original_audio_on_downmix_subtitle),
             checked = settings.maintainOriginalAudioOnDownmix,
@@ -91,6 +99,7 @@ internal fun PlaybackAudioSection(
         )
     }
     SettingsToggleRow(
+        settingId = "PlaybackAudioSettings.audio_tunneled",
         title = stringResource(R.string.audio_tunneled),
         subtitle = stringResource(R.string.audio_tunneled_sub),
         checked = settings.effectiveTunnelingEnabled,
@@ -98,6 +107,7 @@ internal fun PlaybackAudioSection(
         enabled = enabled && settings.isTunnelingCompatible
     )
     SettingsToggleRow(
+        settingId = "PlaybackAudioSettings.audio_force_optical_passthrough",
         title = stringResource(R.string.audio_force_optical_passthrough),
         subtitle = stringResource(R.string.audio_force_optical_passthrough_sub),
         checked = settings.forceOpticalPassthrough && settings.decoderPriority != 0,

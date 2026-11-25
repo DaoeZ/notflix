@@ -49,9 +49,14 @@ fun rememberNotflixNavigationShell(
     longPressBackHeld: MutableState<Boolean>
 ): PresentationShell {
     val root = currentRoute in rootRoutes
+    val quickPickLabel = if (currentRoute == homeRoute && navigation.homeQuickPick != null) {
+        navigation.homeQuickPickLabel?.takeIf { it.isNotBlank() }
+    } else null
     SideEffect {
         navigation.selectedRoute = selectedRoute
-        navigation.topOrder = destinations.map { it.route } + (if (profileName != null) listOf("profile") else emptyList())
+        navigation.topOrder = destinations.map { it.route } +
+            (if (quickPickLabel != null) listOf("quick_pick") else emptyList()) +
+            (if (profileName != null) listOf("profile") else emptyList())
     }
     BackHandler(root) {
         if (longPressBackHeld.value) return@BackHandler
@@ -96,6 +101,10 @@ fun rememberNotflixNavigationShell(
                         }
                     }
                     Spacer(Modifier.weight(1f))
+                    if (quickPickLabel != null) {
+                        TopDestination("quick_pick", quickPickLabel, false, navigation, contentFocusRequester,
+                            currentRoute == homeRoute) { navigation.homeQuickPick?.invoke() }
+                    }
                     if (profileName != null) {
                         TopDestination("profile", profileName, false, navigation, contentFocusRequester,
                             currentRoute == homeRoute, onSwitchProfile)

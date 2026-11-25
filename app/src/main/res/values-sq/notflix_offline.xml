@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Shkarkimet</string>
+    <string name="notflix_offline_receive">Merr nga telefoni</string>
+    <string name="notflix_offline_pairing">Futje manuale: %1$s · %2$s. Kodi është i vlefshëm për 5 minuta.</string>
+    <string name="notflix_offline_scan">Skano me kamerën e telefonit për të hapur Shkarkimet e Notflix.</string>
+    <string name="notflix_offline_expired">Sesioni skadoi. Zgjidh Merr nga telefoni për t\'u rilidhur.</string>
+    <string name="notflix_offline_empty">Shkarko një video nga Burimet ose dërgo një nga telefoni.</string>
+    <string name="notflix_offline_profile">Shkarkimet nuk janë të disponueshme në këtë profil.</string>
+    <string name="notflix_offline_unavailable">Skedari nuk është i disponueshëm</string>
+    <string name="notflix_offline_confirm_remove">Konfirmo heqjen</string>
+    <string name="notflix_offline_choose_source">Zgjidh një burim për shkarkim</string>
+    <string name="notflix_offline_started">Shkarkimi u vendos në radhë</string>
+    <string name="notflix_offline_failed">Ky skedar nuk mund të hapej ose të shkarkohej. Provo një skedar video të drejtpërdrejtë.</string>
+</resources>

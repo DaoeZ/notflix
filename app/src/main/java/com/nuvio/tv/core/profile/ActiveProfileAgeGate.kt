@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -104,6 +105,51 @@ class ActiveProfileAgeGate @Inject constructor(
         return if (filtered.size == row.items.size) row else row.copy(items = filtered)
     }
 
+    /**
+     * Show already verified titles immediately, then add safe titles in bounded batches.
+     * Each snapshot preserves catalog order and only the final one can be empty.
+     */
+    internal suspend fun filterKidsProgressively(
+        items: List<MetaPreview>,
+        limit: AgeLevel,
+        publish: (items: List<MetaPreview>, complete: Boolean) -> Unit
+    ) {
+        withContext(Dispatchers.IO) { resolver.ensureCacheLoaded() }
+        val verified = withContext(Dispatchers.Default) {
+            val known = items.associateWith(::knownRating).toMutableMap()
+            val pending = known.filter { (item, rating) ->
+                rating == null && !resolver.contains(resolver.keyFor(item))
+            }.keys
+            known to pending.chunked(10)
+        }
+        val (known, batches) = verified
+        var previous: List<MetaPreview>? = null
+        for (index in 0..batches.size) {
+            val complete = index == batches.size
+            val allowed = items.filter { isAllowed(limit, known[it]) }
+            if (complete || (allowed.isNotEmpty() && allowed != previous)) publish(allowed, complete)
+            previous = allowed
+            if (!complete) {
+                known.putAll(coroutineScope {
+                    batches[index].map { item -> async { item to resolver.resolve(item) } }.awaitAll()
+                })
+            }
+        }
+    }
+
+    /** Runs with the caller's lifetime so searches can cancel checks for obsolete queries. */
+    internal suspend fun prefetchForActiveSearch(items: List<MetaPreview>) {
+        if (_limit.value == null || !resolver.canResolve()) return
+        withContext(Dispatchers.Default) {
+            resolver.ensureCacheLoaded()
+            items.asSequence()
+                .filter { knownRating(it) == null && !resolver.contains(resolver.keyFor(it)) }
+                .distinctBy { resolver.keyFor(it) }
+                .chunked(10)
+                .forEach { batch -> coroutineScope { batch.map { async { resolver.resolve(it) } }.awaitAll() } }
+        }
+    }
+
     /** Lanza la resolución en segundo plano; las filas se refrescan al llegar el resultado. */
     fun prefetch(items: List<MetaPreview>) {
         if (_limit.value == null || !resolver.canResolve()) return
@@ -114,7 +160,9 @@ class ActiveProfileAgeGate @Inject constructor(
             .toList()
         if (pending.isEmpty()) return
         scope.launch {
-            pending.forEach { resolver.resolve(it) }
+            pending.chunked(10).forEach { batch ->
+                coroutineScope { batch.map { async { resolver.resolve(it) } }.awaitAll() }
+            }
         }
     }
 }

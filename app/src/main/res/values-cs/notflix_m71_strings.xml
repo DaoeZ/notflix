@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Zvuk a titulky</string>
+    <string name="notflix_player_more">Další</string>
+    <string name="notflix_player_speed_value">Rychlost (%1$s×)</string>
+    <string name="notflix_player_remaining">Zbývá %1$s</string>
+    <string name="notflix_player_buttons">Tlačítka přehrávače</string>
+    <string name="notflix_player_buttons_help">Vyberte až %1$d akcí. Další zůstane na konci a obsahuje ostatní.</string>
+    <string name="notflix_player_row_order">Pořadí tlačítek</string>
+</resources>
+

@@ -11,6 +11,8 @@ import com.nuvio.tv.core.poster.patternForScreen
 import com.nuvio.tv.core.poster.withCustomPosterUrls
 import com.nuvio.tv.core.tmdb.TmdbEnrichment
 import com.nuvio.tv.core.tmdb.withLocalizedTmdbText
+import com.nuvio.tv.core.util.withAppLocale
+import com.nuvio.tv.data.trailer.matchesNotflixTrailerLanguage
 import com.nuvio.tv.data.mediaserver.ServerItemRef
 import com.nuvio.tv.domain.model.FocusedPosterTrailerPlaybackTarget
 import com.nuvio.tv.domain.model.HomeImdbRatingsVisibility
@@ -187,6 +189,7 @@ internal fun HomeViewModel.observeLayoutPreferencesPipeline() {
     }
 
     viewModelScope.launch {
+        var initialPrefsEmitted = false
         combine(
             baseLayoutUiPrefsFlow,
             modernLayoutPrefsFlow
@@ -200,7 +203,14 @@ internal fun HomeViewModel.observeLayoutPreferencesPipeline() {
             )
         }
             .distinctUntilChanged()
-            .debounce(300)
+            .debounce {
+                if (!initialPrefsEmitted) {
+                    initialPrefsEmitted = true
+                    0L
+                } else {
+                    300L
+                }
+            }
             .collectLatest { prefs ->
                 val effectivePosterLabelsEnabled = if (prefs.layout == HomeLayout.MODERN) {
                     false
@@ -356,6 +366,8 @@ internal fun HomeViewModel.observeModernHomePresentationPipeline() {
                 if (catalogsLoadInProgress) 300L else 80L
             }
             .collectLatest { input ->
+                // Skip building duplicate Modern Home rows/lookups while Notflix Home is active.
+                if (_uiState.value.notflixPresentationActive) return@collectLatest
                 val shouldWarmStart = _modernHomePresentation.value.rows.list.isEmpty()
                 val visibleCatalogRowCount = input.catalogRows.count { it.items.isNotEmpty() }
                 val warmStartCatalogRowCount = if (input.continueWatchingItems.isNotEmpty()) 2 else 3
@@ -424,7 +436,24 @@ internal fun HomeViewModel.requestTrailerPreviewPipeline(
     if (ServerItemRef.isServerId(itemId)) return
 
     // Resolve fallbackYtId from catalog item if not provided
-    val resolvedFallbackYtId = fallbackYtId ?: findCatalogItemById(itemId)?.trailerYtIds?.firstOrNull()
+    val appLanguage = if (_uiState.value.notflixPresentationActive) {
+        appContext.withAppLocale().resources.configuration.locales[0].toLanguageTag()
+    } else null
+    if (trailerPreviewAppLanguage != appLanguage) {
+        trailerPreviewJob?.cancel()
+        trailerPreviewLoadingIds.clear()
+        trailerPreviewNegativeCache.clear()
+        trailerPreviewUrlsState.clear()
+        trailerPreviewAudioUrlsState.clear()
+        trailerPreviewAppLanguage = appLanguage
+    }
+    val resolvedFallbackYtId = if (appLanguage == null) {
+        fallbackYtId ?: findCatalogItemById(itemId)?.trailerYtIds?.firstOrNull()
+    } else {
+        findCatalogItemById(itemId)?.trailers?.firstNotNullOfOrNull {
+            it.ytId?.takeIf { id -> id.isNotBlank() && matchesNotflixTrailerLanguage(it.lang, appLanguage) }
+        }
+    }
 
     // Always bump version — only the latest request (highest version) will proceed after debounce
     activeTrailerPreviewItemId = itemId
@@ -448,6 +477,8 @@ internal fun HomeViewModel.requestTrailerPreviewPipeline(
 
             val tmdbId = try {
                 tmdbService.ensureTmdbId(itemId, apiType)
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
                 null
             }
@@ -456,10 +487,12 @@ internal fun HomeViewModel.requestTrailerPreviewPipeline(
                 title = title,
                 year = extractYear(releaseInfo),
                 tmdbId = tmdbId,
-                type = apiType
+                type = apiType,
+                appLanguage = appLanguage
             )
 
             withContext(Dispatchers.Main) {
+                if (trailerPreviewRequestVersion != requestVersion) return@withContext
                 if (trailerSource?.videoUrl.isNullOrBlank()) {
                     val fallbackSource = resolvedFallbackYtId?.let { ytId ->
                         trailerService.getTrailerPlaybackSourceFromYouTubeUrl(
@@ -468,6 +501,7 @@ internal fun HomeViewModel.requestTrailerPreviewPipeline(
                             year = extractYear(releaseInfo)
                         )
                     }
+                    if (trailerPreviewRequestVersion != requestVersion) return@withContext
                     if (fallbackSource?.videoUrl != null) {
                         if (trailerPreviewUrlsState[itemId] != fallbackSource.videoUrl) {
                             trailerPreviewUrlsState[itemId] = fallbackSource.videoUrl
@@ -501,7 +535,7 @@ internal fun HomeViewModel.requestTrailerPreviewPipeline(
                 }
             }
         } finally {
-            trailerPreviewLoadingIds.remove(itemId)
+            if (trailerPreviewAppLanguage == appLanguage) trailerPreviewLoadingIds.remove(itemId)
         }
     }
 }

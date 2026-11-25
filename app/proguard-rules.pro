@@ -41,6 +41,19 @@
 # Keep all DTO classes used with Moshi/Retrofit
 -keep class com.nuvio.tv.data.remote.dto.** { *; }
 -keep class com.nuvio.tv.domain.model.** { *; }
+# M70: hidden-title names and S3 sync changes are stored as Gson JSON; R8 must keep classes, fields and constructors.
+-keep class com.nuvio.tv.domain.repository.HiddenTitleMetadata { *; }
+-keep class com.nuvio.tv.data.local.HiddenTitleChange { *; }
+# Keep Gson-serialized caches and offline mutation queues against R8 field obfuscation.
+-keep class com.nuvio.tv.data.local.ContinueWatchingEnrichmentCache$** { *; }
+-keep class com.nuvio.tv.data.local.CachedNextUpItem { *; }
+-keep class com.nuvio.tv.data.local.CachedInProgressItem { *; }
+-keep class com.nuvio.tv.core.sync.WatchStateMutationStore$** { *; }
+-keep class com.nuvio.tv.core.sync.PendingProgressUpsert { *; }
+-keep class com.nuvio.tv.core.sync.PendingWatchedUpsert { *; }
+-keep class com.nuvio.tv.data.wikipedia.WikipediaExtract { *; }
+-keep class com.nuvio.tv.data.wikipedia.WikipediaExtractCache$** { *; }
+-keep class com.nuvio.tv.data.wikipedia.WikipediaLabBudget$** { *; }
 
 # ── Kotlin ─────────────────────────────────────────────────────────────────────
 -keepattributes *Annotation*

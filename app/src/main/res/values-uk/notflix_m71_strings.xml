@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Аудіо й субтитри</string>
+    <string name="notflix_player_more">Ще</string>
+    <string name="notflix_player_speed_value">Швидкість (%1$s×)</string>
+    <string name="notflix_player_remaining">Залишилося %1$s</string>
+    <string name="notflix_player_buttons">Кнопки програвача</string>
+    <string name="notflix_player_buttons_help">Виберіть до %1$d дій. Ще залишається в кінці та містить решту.</string>
+    <string name="notflix_player_row_order">Порядок кнопок</string>
+</resources>
+

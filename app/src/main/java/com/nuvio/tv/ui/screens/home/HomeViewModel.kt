@@ -92,6 +92,11 @@ class HomeViewModel @Inject constructor(
     internal val tmdbAvailability: com.nuvio.tv.core.profile.TmdbAvailability,
     internal val tvRecommendationManager: TvRecommendationManager,
     internal val serverCatalog: ServerCatalog,
+    /**
+     * M68: loads the KIDS rows from TMDB Discover. Optional with a default so tests that build the
+     * ViewModel by hand keep working; Hilt always injects it in the app.
+     */
+    internal val tmdbCollectionSourceResolver: com.nuvio.tv.core.tmdb.TmdbCollectionSourceResolver? = null,
     internal val metaPreviewEnricher: MetaPreviewEnricher = MetaPreviewEnricher(
         tmdbService,
         tmdbMetadataService,
@@ -136,7 +141,13 @@ class HomeViewModel @Inject constructor(
     internal var notflixCollectionsProfile: Int? = null
     internal val notflixCollectionRows = NotflixCollectionRows(viewModelScope,
         { loadNotflixCollectionRequest(it) }, { collectionRequestStillCurrent(it) }, { scheduleUpdateCatalogRows() },
-        { row -> ageGate.filterRow(row) })
+        { row -> ageGate.filterRow(row) },
+        loadTmdb = { source, fallback -> loadNotflixTmdbRow(source, fallback) },
+        filterKidsRow = { row, limit, publish ->
+            ageGate.filterKidsProgressively(row.items, limit) { items, complete ->
+                publish(row.copy(items = items), complete)
+            }
+        })
 
     fun releaseNotflixCollectionRow(key: String) = notflixCollectionRows.release(key)
     fun retryNotflixCollectionRow(key: String) {
@@ -271,6 +282,7 @@ class HomeViewModel @Inject constructor(
     internal var customCatalogTitles: Map<String, String> = emptyMap()
     internal var currentHeroCatalogKeys: List<String> = emptyList()
     internal var catalogUpdateJob: Job? = null
+    private val notflixCatalogUpdates = NotflixCatalogUpdates(viewModelScope) { updateCatalogRows() }
     internal var hasRenderedFirstCatalog = false
     internal val catalogLoadSemaphore = Semaphore(MAX_CATALOG_LOAD_CONCURRENCY)
     internal var pendingCatalogLoads = 0
@@ -285,12 +297,26 @@ class HomeViewModel @Inject constructor(
     internal val truncatedRowCache = mutableMapOf<String, TruncatedRowCacheEntry>()
     internal val trailerPreviewLoadingIds = mutableSetOf<String>()
     internal val trailerPreviewNegativeCache = mutableSetOf<String>()
+    internal var trailerPreviewAppLanguage: String? = null
     internal val trailerPreviewUrlsState = mutableStateMapOf<String, String>()
     internal val trailerPreviewAudioUrlsState = mutableStateMapOf<String, String>()
     internal var activeTrailerPreviewItemId: String? = null
     internal var trailerPreviewRequestVersion: Long = 0L
     internal var trailerPreviewJob: Job? = null
     @Volatile internal var currentTmdbSettings: TmdbSettings = TmdbSettings()
+
+    internal suspend fun loadNotflixPoster(item: MetaPreview, language: String): String? {
+        if (!currentTmdbSettings.enabled || !currentTmdbSettings.useArtwork) return null
+        return try {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                tmdbService.localizedPosterForItem(item.imdbId ?: item.id, item.apiType, language)
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+    }
     internal var currentMdbListSettings: MDBListSettings = MDBListSettings()
     internal var heroEnrichmentJob: Job? = null
     internal var lastHeroEnrichmentSignature: String? = null
@@ -331,6 +357,8 @@ class HomeViewModel @Inject constructor(
     internal val cwEnrichedNextUpOverlay = ConcurrentHashMap<String, NextUpInfo>()
     /** In-memory cache of enriched InProgress items per contentId+episode key. */
     internal val cwEnrichedInProgressOverlay = ConcurrentHashMap<String, ContinueWatchingItem.InProgress>()
+    /** Tombstones for items the user explicitly removed from Continue Watching (contentId -> removedAtMs). */
+    internal val pendingCwExplicitRemovals = ConcurrentHashMap<String, Long>()
     /** Bumped to force the CW pipeline to re-run (e.g. after cache clear). */
     internal val cwPipelineRefreshTrigger = kotlinx.coroutines.flow.MutableStateFlow(0)
     /** Tracks the active CW pipeline coroutine so it can be cancelled on profile switch. */
@@ -429,6 +457,8 @@ class HomeViewModel @Inject constructor(
                     // Cancel old pipeline — prevents racing writes from stale coroutines.
                     cwPipelineJob?.cancel()
                     cwPipelineJob = null
+                    cwDiskRestoreJob?.cancel()
+                    cwDiskRestoreJob = null
                     // Clear all in-memory CW caches so data from the previous
                     // profile doesn't leak into the new one.
                     cwMetaCache.clear()
@@ -443,6 +473,7 @@ class HomeViewModel @Inject constructor(
                     cwProcessedOlderSeedContentIds.clear()
                     cwEnrichedNextUpOverlay.clear()
                     cwEnrichedInProgressOverlay.clear()
+                    pendingCwExplicitRemovals.clear()
                     cwLastBadgeEpisodeKeys = emptySet()
                     cwLastShowIdSiblings = emptyMap()
                     _uiState.update {
@@ -516,7 +547,8 @@ class HomeViewModel @Inject constructor(
                     if (!changed) return@collect
                     notflixCollectionVisit++
                     notflixCollectionRows.clear()
-                    notflixMemory.clear()
+                    // Keep Home's focus memory: hiding is done from the focused card, and its record lets
+                    // focus move to the neighbour. The rows already drop hidden titles while reloading.
                     _uiState.update {
                         it.copy(
                             hiddenTitleKeys = keys,
@@ -792,28 +824,30 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private var hiddenUndoJob: Job? = null
+    private var hiddenWriteJob: Job? = null
+    private val hiddenUndoTimeout = HiddenTitleUndoTimeout(viewModelScope) { undo ->
+        _uiState.update { if (it.hiddenTitleUndo == undo) it.copy(hiddenTitleUndo = null) else it }
+    }
+    fun setHiddenUndoFocused(undo: HiddenTitleUndo, focused: Boolean) = hiddenUndoTimeout.focus(undo, focused)
 
     /** Oculta el título en el perfil activo y ofrece deshacer durante 5 s. */
     fun hideTitle(item: MetaPreview) {
         val profileId = profileManager.activeProfileId.value
         val key = com.nuvio.tv.data.local.hiddenTitleKey(item.apiType, item.id)
-        viewModelScope.launch { hiddenTitlesRepository.hide(profileId, key) }
-        _uiState.update { it.copy(hiddenTitleUndo = HiddenTitleUndo(profileId, key, item.name)) }
-        hiddenUndoJob?.cancel()
-        hiddenUndoJob = viewModelScope.launch {
-            delay(5_000)
-            _uiState.update { state ->
-                if (state.hiddenTitleUndo?.key == key) state.copy(hiddenTitleUndo = null) else state
-            }
-        }
+        hiddenWriteJob = viewModelScope.launch { hiddenTitlesRepository.hide(profileId, key, item.name, item.poster) }
+        val undo = HiddenTitleUndo(profileId, key, item.name)
+        _uiState.update { it.copy(hiddenTitleUndo = undo) }
+        hiddenUndoTimeout.start(undo)
     }
 
     fun undoHideTitle() {
         val undo = _uiState.value.hiddenTitleUndo ?: return
-        hiddenUndoJob?.cancel()
-        hiddenUndoJob = null
-        viewModelScope.launch { hiddenTitlesRepository.show(undo.profileId, undo.key) }
+        val write = hiddenWriteJob
+        hiddenUndoTimeout.cancel()
+        if (undo.profileId != profileManager.activeProfileId.value) {
+            _uiState.update { it.copy(hiddenTitleUndo = null) }; return
+        }
+        viewModelScope.launch { write?.join(); hiddenTitlesRepository.show(undo.profileId, undo.key) }
         _uiState.update { it.copy(hiddenTitleUndo = null) }
     }
 
@@ -831,12 +865,18 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private var cwDiskRestoreJob: kotlinx.coroutines.Job? = null
+
     private fun loadContinueWatching() {
+        val expectedProfileId = profileManager.activeProfileId.value
+        cwDiskRestoreJob?.cancel()
         // Immediately restore last known CW from disk cache for instant display.
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        cwDiskRestoreJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            if (profileManager.activeProfileId.value != expectedProfileId) return@launch
             val cachedInProgress = runCatching { cwEnrichmentCache.getInProgressSnapshot() }.getOrDefault(emptyList())
             val cachedNextUp = runCatching { cwEnrichmentCache.getNextUpSnapshot() }.getOrDefault(emptyList())
             if (cachedInProgress.isEmpty() && cachedNextUp.isEmpty()) return@launch
+            if (profileManager.activeProfileId.value != expectedProfileId) return@launch
             val dismissedNextUp = traktSettingsDataStore.dismissedNextUpKeys.first()
             // Render cached items immediately — don't wait for Trakt/allProgress.
             // The pipeline will replace these with live data once it completes.
@@ -910,11 +950,12 @@ class HomeViewModel @Inject constructor(
                 nextUpItems = nextUpItems,
                 mode = sortMode
             )
-            if (items.isNotEmpty()) {
+            if (items.isNotEmpty() && profileManager.activeProfileId.value == expectedProfileId) {
                 val (mainItems, upcomingOnly) = splitUpcomingItems(
                     filterContinueWatchingForAge(items),
                     sortMode
                 )
+                if (profileManager.activeProfileId.value != expectedProfileId) return@launch
                 _uiState.update { it.copy(continueWatchingItems = mainItems, upcomingItems = upcomingOnly) }
                 _initialCwResolved.value = true
             }
@@ -1002,6 +1043,12 @@ class HomeViewModel @Inject constructor(
         loadMoreCatalogItemsPipeline(catalogId, addonId, type)
 
     internal fun scheduleUpdateCatalogRows() {
+        if (_uiState.value.notflixPresentationActive) {
+            catalogUpdateJob?.cancel()
+            notflixCatalogUpdates.request()
+            return
+        }
+        notflixCatalogUpdates.cancel()
         catalogUpdateJob?.cancel()
         catalogUpdateJob = viewModelScope.launch {
             val debounceMs = when {

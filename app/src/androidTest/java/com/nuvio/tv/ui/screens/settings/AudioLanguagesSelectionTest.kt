@@ -9,6 +9,8 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -46,11 +48,11 @@ class AudioLanguagesSelectionTest {
         restoration.setContent {
             AudioLanguagesSelectionDialog(emptyList(), { saved = it }, {})
         }
-        compose.onNodeWithText(first.nativeName).performClick()
+        click(compose.onNodeWithTag("autoplay-audio-language-${first.code}"))
         restoration.emulateSavedInstanceStateRestore()
         val anyLabel = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
             .targetContext.getString(com.nuvio.tv.R.string.autoplay_priority_audio_languages_any)
-        compose.onNodeWithText(anyLabel).performKeyInput { pressKey(Key.Back) }
+        back()
         compose.runOnIdle { assertEquals(listOf(first.code), saved) }
     }
 
@@ -72,12 +74,12 @@ class AudioLanguagesSelectionTest {
         restoration.setContent { PriorityDialog(true, config) { saved = it } }
         compose.onNodeWithTag("autoplay-priority-entries")
             .performScrollToNode(hasTestTag("autoplay-priority-audio-languages"))
-        compose.onNodeWithTag("autoplay-priority-audio-languages").performClick()
-        compose.onNodeWithTag("autoplay-audio-language-${last.code}").assertIsFocused().performClick()
-        compose.onNodeWithTag("autoplay-audio-language-${last.code}").performKeyInput { pressKey(Key.Back) }
+        click(compose.onNodeWithTag("autoplay-priority-audio-languages"))
+        click(compose.onNodeWithTag("autoplay-audio-language-${last.code}").assertIsFocused())
+        back()
         compose.onNodeWithTag("autoplay-priority-audio-languages").assertIsFocused()
         restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithTag("autoplay-priority-audio-languages").performKeyInput { pressKey(Key.Back) }
+        back()
         compose.runOnIdle { assertEquals(emptyList<String>(), saved?.audioLanguages) }
     }
 
@@ -89,14 +91,14 @@ class AudioLanguagesSelectionTest {
         }
         compose.onNodeWithTag("autoplay-priority-entries")
             .performScrollToNode(hasTestTag("autoplay-priority-priority"))
-        compose.onNodeWithTag("autoplay-priority-priority").performClick()
+        click(compose.onNodeWithTag("autoplay-priority-priority"))
         restoration.emulateSavedInstanceStateRestore()
         val language = resource(com.nuvio.tv.R.string.autoplay_priority_priority_language)
-        compose.onNodeWithText(language).performClick()
-        compose.onNodeWithTag("autoplay-priority-priority").assertIsFocused().performClick()
-        compose.onNodeWithText(language).performKeyInput { pressKey(Key.Back) }
+        click(compose.onNode(hasText(language) and hasClickAction()))
+        click(compose.onNodeWithTag("autoplay-priority-priority").assertIsFocused())
+        back()
         compose.onNodeWithTag("autoplay-priority-priority").assertIsFocused()
-            .performKeyInput { pressKey(Key.Back) }
+        back()
         compose.runOnIdle { assertEquals(StreamAutoPlayPriority.IDIOMA, saved?.priority) }
     }
 
@@ -127,8 +129,20 @@ class AudioLanguagesSelectionTest {
         orderButton("en", com.nuvio.tv.R.string.autoplay_priority_remove).assertIsFocused().performClick()
         orderButton("it", com.nuvio.tv.R.string.autoplay_priority_remove).assertIsFocused()
         restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithTag("autoplay-audio-language-it").performKeyInput { pressKey(Key.Back) }
+        back()
         compose.runOnIdle { assertEquals(listOf("es", "it"), saved) }
+    }
+
+    // tv-material Cards ignore injected touches and Back must reach the Dialog window, as on the remote.
+    // The remote presses OK on the focused row, so focus it first; focus restoration depends on it.
+    private fun click(node: androidx.compose.ui.test.SemanticsNodeInteraction) {
+        node.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus); compose.waitForIdle()
+        node.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); compose.waitForIdle()
+    }
+
+    private fun back() {
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+            .sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK); compose.waitForIdle()
     }
 
     private fun orderButton(code: String, label: Int) = compose.onNode(

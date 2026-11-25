@@ -60,7 +60,8 @@ data class NotflixPanelChoice(
     val key: String,
     val label: String,
     val selected: Boolean = false,
-    val testTag: String? = null
+    val testTag: String? = null,
+    val enabled: Boolean = true
 )
 
 /**
@@ -132,16 +133,19 @@ fun NotflixSidePanel(
 fun NotflixPanelChoices(
     choices: List<NotflixPanelChoice>,
     onSelect: (NotflixPanelChoice) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialFocusKey: String? = null
 ) {
     val keys = remember(choices) { choices.map { it.key } }
+    val enabledKeys = remember(choices) { choices.filter { it.enabled }.map { it.key } }
     val requesters = remember(keys) { keys.associateWith { FocusRequester() } }
-    val initialKey = remember(keys) {
-        choices.firstOrNull { it.selected }?.key ?: choices.firstOrNull()?.key
+    val initialKey = remember(keys, enabledKeys, initialFocusKey) {
+        initialFocusKey?.takeIf { key -> choices.any { it.key == key && it.enabled } }
+            ?: choices.firstOrNull { it.selected && it.enabled }?.key ?: choices.firstOrNull { it.enabled }?.key
     }
     val initialIndex = keys.indexOf(initialKey).coerceAtLeast(0)
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
-    LaunchedEffect(keys) {
+    LaunchedEffect(keys, enabledKeys) {
         listState.scrollToItem(initialIndex)
         initialKey?.let { key -> requesters[key]?.requestFocusAfterFrames(frames = 2) }
     }
@@ -182,7 +186,7 @@ fun NotflixPanelChoiceRow(
                 shape = RoundedCornerShape(2.dp)
             )
             .onFocusChanged { focused = it.isFocused }
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(enabled = choice.enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .then(
                 choice.testTag?.let { Modifier.testTag(it) }

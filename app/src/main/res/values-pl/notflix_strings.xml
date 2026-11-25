@@ -205,4 +205,6 @@
         <item>Simkl można teraz połączyć.</item>
         <item>Trakt: połączenie samym kodem, bez konfiguracji.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Klucz Notflix</string>
+    <string name="notflix_tmdb_attribution">Ten produkt korzysta z interfejsu API TMDB, ale nie jest zatwierdzony ani certyfikowany przez TMDB.</string>
 </resources>

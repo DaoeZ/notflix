@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">Ses ve altyazılar</string>
+    <string name="notflix_player_more">Diğer</string>
+    <string name="notflix_player_speed_value">Hız (%1$s×)</string>
+    <string name="notflix_player_remaining">Kalan %1$s</string>
+    <string name="notflix_player_buttons">Oynatıcı düğmeleri</string>
+    <string name="notflix_player_buttons_help">En fazla %1$d işlem seçin. Diğer en sonda kalır ve kalanları içerir.</string>
+    <string name="notflix_player_row_order">Düğme sırası</string>
+</resources>
+

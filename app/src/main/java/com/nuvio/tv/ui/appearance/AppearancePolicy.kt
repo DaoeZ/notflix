@@ -15,7 +15,7 @@ object AppearancePolicy {
     /** The full lab build and the public Notflix release; never Nuvio's own packages or other variants. */
     fun laboratoryAvailable(flavor: String, buildType: String, applicationId: String, rendererReady: Boolean): Boolean =
         rendererReady && flavor == "full" && (
-            (buildType == "debug" && applicationId == "com.nuviodebug.com") ||
+            (buildType == "debug" && (applicationId == "com.notflix.tv" || applicationId == "com.nuviodebug.com")) ||
                 (buildType == "release" && applicationId == "com.notflix.tv"))
 
     fun effective(requested: AppAppearance, available: Boolean = NOTFLIX_AVAILABLE): AppAppearance =

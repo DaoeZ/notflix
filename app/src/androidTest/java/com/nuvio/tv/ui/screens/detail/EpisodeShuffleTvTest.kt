@@ -350,6 +350,29 @@ class EpisodeShuffleTvTest {
         capture("shuffle-home-cards")
     }
 
+    @Test
+    fun notflixDownloadIsReachableFromPlayWithTheRemote() {
+        var downloads = 0
+        val play = androidx.compose.ui.focus.FocusRequester()
+        setContent {
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.nuvio.tv.ui.appearance.LocalNotflixPresentation provides
+                    com.nuvio.tv.ui.appearance.NotflixPresentation(active = true)
+            ) {
+                HeroContentSection(meta, null, null, onPlayClick = {}, onDownload = { downloads++ },
+                    isInLibrary = false, onToggleLibrary = {}, onLibraryLongPress = {},
+                    isMovieWatched = false, isMovieWatchedPending = false, onToggleMovieWatched = {},
+                    playButtonFocusRequester = play)
+            }
+        }
+        compose.onNodeWithText("Download").assertIsDisplayed()
+        compose.runOnIdle { play.requestFocus() }
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_RIGHT)
+        compose.onNodeWithText("Download").assertIsFocused()
+        instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_DPAD_CENTER)
+        compose.runOnIdle { assertEquals(1, downloads) }
+    }
+
     private fun setContent(content: @Composable () -> Unit) {
         compose.setContent {
             NuvioTheme {

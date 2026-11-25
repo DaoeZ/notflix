@@ -6,8 +6,12 @@ import com.nuvio.tv.data.remote.api.TraktApi
 import com.nuvio.tv.domain.model.Meta
 import com.nuvio.tv.domain.model.Video
 import com.nuvio.tv.domain.repository.MetaRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -16,6 +20,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -214,119 +219,155 @@ class TraktEpisodeMappingService @Inject constructor(
         }
 
         // Dedup: if another coroutine is already fetching this show, await its result.
-        val existingDeferred = cacheMutex.withLock { addonEpisodesInFlight[cacheKey] }
-        if (existingDeferred != null) {
-            return try { existingDeferred.await() } catch (_: Exception) { emptyList() }
-        }
-
-        // Register ourselves as the in-flight fetcher.
-        val deferred = kotlinx.coroutines.CompletableDeferred<List<EpisodeMappingEntry>>()
-        val weOwn = cacheMutex.withLock {
-            // Double-check: cache or another flight may have appeared while we waited.
-            addonEpisodesCache[cacheKey]?.let { return it }
-            if (addonEpisodesInFlight.containsKey(cacheKey)) {
-                false
-            } else {
-                addonEpisodesInFlight[cacheKey] = deferred
-                true
+        while (true) {
+            val existingDeferred = cacheMutex.withLock {
+                addonEpisodesCache[cacheKey]?.let { return it }
+                addonEpisodesInFlight[cacheKey]
             }
-        }
-        if (!weOwn) {
-            val other = cacheMutex.withLock { addonEpisodesInFlight[cacheKey] }
-            return try { other?.await() ?: emptyList() } catch (_: Exception) { emptyList() }
-        }
-
-        return try {
-            val meta = fetchSeriesMeta(contentId, contentType)
-            val addonEpisodes = meta?.videos?.toEpisodeMappingEntries() ?: emptyList()
-            if (addonEpisodes.isNotEmpty()) {
-                cacheMutex.withLock { addonEpisodesCache[cacheKey] = addonEpisodes }
+            if (existingDeferred != null) {
+                try {
+                    return existingDeferred.await()
+                } catch (e: CancellationException) {
+                    currentCoroutineContext().ensureActive()
+                    continue
+                } catch (_: Exception) {
+                    return emptyList()
+                }
             }
-            deferred.complete(addonEpisodes)
-            addonEpisodes
-        } catch (e: Exception) {
-            deferred.completeExceptionally(e)
-            emptyList()
-        } finally {
-            cacheMutex.withLock { addonEpisodesInFlight.remove(cacheKey) }
+
+            // Register ourselves as the in-flight fetcher.
+            val deferred = CompletableDeferred<List<EpisodeMappingEntry>>()
+            val weOwn = cacheMutex.withLock {
+                addonEpisodesCache[cacheKey]?.let { return it }
+                if (addonEpisodesInFlight.containsKey(cacheKey)) {
+                    false
+                } else {
+                    addonEpisodesInFlight[cacheKey] = deferred
+                    true
+                }
+            }
+            if (!weOwn) continue
+
+            return try {
+                val meta = fetchSeriesMeta(contentId, contentType)
+                val addonEpisodes = meta?.videos?.toEpisodeMappingEntries() ?: emptyList()
+                if (addonEpisodes.isNotEmpty()) {
+                    cacheMutex.withLock { addonEpisodesCache[cacheKey] = addonEpisodes }
+                }
+                deferred.complete(addonEpisodes)
+                addonEpisodes
+            } catch (e: CancellationException) {
+                deferred.cancel(e)
+                throw e
+            } catch (e: Exception) {
+                deferred.complete(emptyList())
+                emptyList()
+            } finally {
+                if (!deferred.isCompleted) deferred.complete(emptyList())
+                withContext(NonCancellable) {
+                    cacheMutex.withLock {
+                        if (addonEpisodesInFlight[cacheKey] === deferred) {
+                            addonEpisodesInFlight.remove(cacheKey)
+                        }
+                    }
+                }
+            }
         }
     }
 
     private suspend fun getTraktEpisodes(showLookupId: String): List<EpisodeMappingEntry> {
-        cacheMutex.withLock {
-            traktEpisodesCache[showLookupId]?.let { return it }
-        }
-
-        val existingDeferred = cacheMutex.withLock { traktEpisodesInFlight[showLookupId] }
-        if (existingDeferred != null) {
-            return try { existingDeferred.await() } catch (_: Exception) { emptyList() }
-        }
-
-        val deferred = CompletableDeferred<List<EpisodeMappingEntry>>()
-        val weOwn = cacheMutex.withLock {
-            traktEpisodesCache[showLookupId]?.let { return it }
-            if (traktEpisodesInFlight.containsKey(showLookupId)) {
-                false
-            } else {
-                traktEpisodesInFlight[showLookupId] = deferred
-                true
+        while (true) {
+            val existingDeferred = cacheMutex.withLock {
+                traktEpisodesCache[showLookupId]?.let { return it }
+                traktEpisodesInFlight[showLookupId]
             }
-        }
-        if (!weOwn) {
-            val other = cacheMutex.withLock { traktEpisodesInFlight[showLookupId] }
-            return try { other?.await() ?: emptyList() } catch (_: Exception) { emptyList() }
-        }
+            if (existingDeferred != null) {
+                try {
+                    return existingDeferred.await()
+                } catch (e: CancellationException) {
+                    currentCoroutineContext().ensureActive()
+                    continue
+                } catch (_: Exception) {
+                    return emptyList()
+                }
+            }
 
-        val seasonsResponse = traktAuthService.executeAuthorizedRequest { authHeader ->
-            traktApi.getShowSeasons(
-                authorization = authHeader,
-                id = showLookupId,
-                extended = "episodes"
-            )
-        } ?: run {
-            cleanupTraktFlight(showLookupId)
-            return emptyList()
-        }
-        if (!seasonsResponse.isSuccessful) {
-            Log.w(
-                TAG,
-                "getTraktEpisodes: seasons request failed code=${seasonsResponse.code()} id=$showLookupId"
-            )
-            cleanupTraktFlight(showLookupId)
-            return emptyList()
-        }
+            val deferred = CompletableDeferred<List<EpisodeMappingEntry>>()
+            val weOwn = cacheMutex.withLock {
+                traktEpisodesCache[showLookupId]?.let { return it }
+                if (traktEpisodesInFlight.containsKey(showLookupId)) {
+                    false
+                } else {
+                    traktEpisodesInFlight[showLookupId] = deferred
+                    true
+                }
+            }
+            if (!weOwn) continue
 
-        val traktEpisodes = seasonsResponse.body()
-            .orEmpty()
-            .asSequence()
-            .filter { (it.number ?: 0) > 0 }
-            .sortedBy { it.number }
-            .flatMap { seasonDto ->
-                seasonDto.episodes.orEmpty().asSequence()
-                    .mapNotNull { episodeDto ->
-                        val seasonNumber = episodeDto.season ?: seasonDto.number ?: return@mapNotNull null
-                        val episodeNumber = episodeDto.number ?: return@mapNotNull null
-                        EpisodeMappingEntry(
-                            season = seasonNumber,
-                            episode = episodeNumber,
-                            title = episodeDto.title
-                        )
+            return try {
+                val seasonsResponse = traktAuthService.executeAuthorizedRequest { authHeader ->
+                    traktApi.getShowSeasons(
+                        authorization = authHeader,
+                        id = showLookupId,
+                        extended = "episodes"
+                    )
+                }
+                if (seasonsResponse == null) {
+                    deferred.complete(emptyList())
+                    emptyList()
+                } else if (!seasonsResponse.isSuccessful) {
+                    Log.w(
+                        TAG,
+                        "getTraktEpisodes: seasons request failed code=${seasonsResponse.code()} id=$showLookupId"
+                    )
+                    deferred.complete(emptyList())
+                    emptyList()
+                } else {
+                    val traktEpisodes = seasonsResponse.body()
+                        .orEmpty()
+                        .asSequence()
+                        .filter { (it.number ?: 0) > 0 }
+                        .sortedBy { it.number }
+                        .flatMap { seasonDto ->
+                            seasonDto.episodes.orEmpty().asSequence()
+                                .mapNotNull { episodeDto ->
+                                    val seasonNumber = episodeDto.season ?: seasonDto.number ?: return@mapNotNull null
+                                    val episodeNumber = episodeDto.number ?: return@mapNotNull null
+                                    EpisodeMappingEntry(
+                                        season = seasonNumber,
+                                        episode = episodeNumber,
+                                        title = episodeDto.title
+                                    )
+                                }
+                        }
+                        .toList()
+
+                    if (traktEpisodes.isNotEmpty()) {
+                        cacheMutex.withLock {
+                            traktEpisodesCache[showLookupId] = traktEpisodes
+                        }
                     }
-            }
-            .toList()
-
-        if (traktEpisodes.isNotEmpty()) {
-            cacheMutex.withLock {
-                traktEpisodesCache[showLookupId] = traktEpisodes
+                    deferred.complete(traktEpisodes)
+                    traktEpisodes
+                }
+            } catch (e: CancellationException) {
+                deferred.cancel(e)
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "getTraktEpisodes: failed id=$showLookupId: ${e.message}")
+                deferred.complete(emptyList())
+                emptyList()
+            } finally {
+                if (!deferred.isCompleted) deferred.complete(emptyList())
+                withContext(NonCancellable) {
+                    cacheMutex.withLock {
+                        if (traktEpisodesInFlight[showLookupId] === deferred) {
+                            traktEpisodesInFlight.remove(showLookupId)
+                        }
+                    }
+                }
             }
         }
-        deferred.complete(traktEpisodes)
-        cleanupTraktFlight(showLookupId)
-        return traktEpisodes
-    }
-
-    private suspend fun cleanupTraktFlight(showLookupId: String) {
-        cacheMutex.withLock { traktEpisodesInFlight.remove(showLookupId) }
     }
 
     private fun cacheKey(

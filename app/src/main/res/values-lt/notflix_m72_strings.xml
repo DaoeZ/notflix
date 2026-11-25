@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Profilis ir paskyra</string>
+    <string name="notflix_settings_home">Pradžios ekranas</string>
+    <string name="notflix_settings_connected_accounts">Susietos paskyros</string>
+    <string name="notflix_settings_system">Sistema</string>
+    <string name="notflix_settings_advanced_options">Išplėstinės parinktys</string>
+    <string name="notflix_settings_trailers">Anonsai</string>
+    <string name="notflix_settings_updates">Atnaujinimai</string>
+    <string name="notflix_settings_home_collection">Notflix pradžios kolekcija</string>
+    <string name="notflix_settings_ratings">Įvertinimai</string>
+    <string name="notflix_settings_metadata">Informacija ir katalogai</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

@@ -80,6 +80,7 @@ internal fun LayoutContinueWatchingSection(
     var showSortModeDialog by rememberSaveable { mutableStateOf(false) }
 
     SettingsToggleRow(
+        settingId = "LayoutCardSettings.layout_cw_enabled",
         title = stringResource(R.string.layout_cw_enabled),
         subtitle = stringResource(R.string.layout_cw_enabled_sub),
         checked = uiState.continueWatchingEnabled,
@@ -91,6 +92,7 @@ internal fun LayoutContinueWatchingSection(
             // M60 PARTE 3 (promotor 11-11): the card style is one row with the current value that
             // opens a list, not three buttons side by side.
             SettingsSingleChoiceRow(
+                settingId = "LayoutCardSettings.layout_cw_card_style_title",
                 title = stringResource(R.string.layout_cw_card_style_title),
                 subtitle = null,
                 value = continueWatchingStyleLabel(uiState.continueWatchingCardStyle),
@@ -140,6 +142,7 @@ internal fun LayoutContinueWatchingSection(
         val episodeThumbnailsApply = uiState.continueWatchingCardStyle != ContinueWatchingCardStyle.POSTER
         if (episodeThumbnailsApply) {
             SettingsToggleRow(
+                settingId = "LayoutCardSettings.layout_use_episode_thumbnails_cw",
                 title = stringResource(R.string.layout_use_episode_thumbnails_cw),
                 subtitle = stringResource(R.string.layout_use_episode_thumbnails_cw_sub),
                 checked = uiState.useEpisodeThumbnailsInCw,
@@ -148,6 +151,7 @@ internal fun LayoutContinueWatchingSection(
         }
         if (episodeThumbnailsApply && uiState.useEpisodeThumbnailsInCw) {
             SettingsToggleRow(
+                settingId = "LayoutCardSettings.layout_blur_cw_next_up",
                 title = stringResource(R.string.layout_blur_cw_next_up),
                 subtitle = stringResource(R.string.layout_blur_cw_next_up_sub),
                 checked = uiState.blurContinueWatchingNextUp,
@@ -155,18 +159,21 @@ internal fun LayoutContinueWatchingSection(
             )
         }
         SettingsToggleRow(
+            settingId = "LayoutCardSettings.layout_next_up_furthest_episode",
             title = stringResource(R.string.layout_next_up_furthest_episode),
             subtitle = stringResource(R.string.layout_next_up_furthest_episode_sub),
             checked = uiState.nextUpFromFurthestEpisode,
             onToggle = { onEvent(LayoutSettingsEvent.SetNextUpFromFurthestEpisode(!uiState.nextUpFromFurthestEpisode)) }
         )
         SettingsToggleRow(
+            settingId = "LayoutCardSettings.layout_show_unaired_next_up",
             title = stringResource(R.string.layout_show_unaired_next_up),
             subtitle = stringResource(R.string.layout_show_unaired_next_up_sub),
             checked = uiState.showUnairedNextUp,
             onToggle = { onEvent(LayoutSettingsEvent.SetShowUnairedNextUp(!uiState.showUnairedNextUp)) }
         )
         SettingsActionRow(
+            settingId = "LayoutCardSettings.layout_cw_sort_mode",
             title = stringResource(R.string.layout_cw_sort_mode),
             subtitle = stringResource(R.string.layout_cw_sort_mode_sub),
             value = when (uiState.continueWatchingSortMode) {
@@ -217,6 +224,7 @@ internal fun LayoutFocusedPosterSection(
 
     if (!isModernLandscape) {
         SettingsToggleRow(
+            settingId = "LayoutCardSettings.layout_expand_poster",
             title = stringResource(R.string.layout_expand_poster),
             subtitle = stringResource(R.string.layout_expand_poster_sub),
             checked = uiState.focusedPosterBackdropExpandEnabled,
@@ -226,6 +234,7 @@ internal fun LayoutFocusedPosterSection(
         )
         if (uiState.focusedPosterBackdropExpandEnabled) {
             SliderSettingsItem(
+                settingId = "LayoutCardSettings.layout_expand_delay",
                 title = stringResource(R.string.layout_expand_delay),
                 subtitle = stringResource(R.string.layout_expand_delay_sub),
                 value = uiState.focusedPosterBackdropExpandDelaySeconds,
@@ -255,6 +264,7 @@ internal fun LayoutFocusedPosterSection(
         )
         if (uiState.focusedPosterBackdropTrailerEnabled) {
             SettingsToggleRow(
+                settingId = "LayoutCardSettings.layout_trailer_muted",
                 title = stringResource(R.string.layout_trailer_muted),
                 subtitle = stringResource(
                     if (isModern) R.string.layout_trailer_muted_sub_preview else R.string.layout_trailer_muted_sub_expanded
@@ -310,6 +320,7 @@ internal fun LayoutPosterCardSection(
         onSelected = { radius -> onEvent(LayoutSettingsEvent.SetPosterCardCornerRadius(radius)) }
     )
     SettingsToggleRow(
+        settingId = "LayoutCardSettings.layout_landscape_posters",
         title = stringResource(R.string.layout_landscape_posters),
         subtitle = stringResource(R.string.layout_landscape_posters_sub),
         checked = uiState.modernLandscapePostersEnabled,
@@ -318,6 +329,7 @@ internal fun LayoutPosterCardSection(
         }
     )
     SettingsToggleRow(
+        settingId = "LayoutCardSettings.layout_always_show_landscape_clearlogo",
         title = stringResource(R.string.layout_always_show_landscape_clearlogo),
         subtitle = stringResource(R.string.layout_always_show_landscape_clearlogo_sub),
         checked = uiState.alwaysShowLandscapeClearlogo,
@@ -389,12 +401,14 @@ internal fun LayoutCustomPosterSection(
         )
     }
     SettingsActionRow(
+        settingId = "LayoutCardSettings.layout_custom_poster_qr",
         title = stringResource(R.string.layout_custom_poster_qr),
         subtitle = if (isActive) stringResource(R.string.layout_custom_poster_active) else null,
         onClick = onConfigureViaPhone
     )
     if (isActive) {
         SettingsActionRow(
+            settingId = "LayoutCardSettings.layout_custom_poster_clear",
             title = stringResource(R.string.layout_custom_poster_clear),
             subtitle = null,
             onClick = { onEvent(LayoutSettingsEvent.ClearCustomPosterSettings) }
@@ -619,6 +633,7 @@ private fun CardDepthStyleControls(
         verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.sm)
     ) {
         SettingsToggleRow(
+            settingId = "LayoutCardSettings.settings_card_depth_enabled",
             title = stringResource(R.string.settings_card_depth_enabled),
             subtitle = stringResource(R.string.settings_card_depth_description),
             checked = style.enabled,
@@ -645,6 +660,7 @@ private fun CardDepthStyleControls(
                 onSelected = onEdgeCoverageChange
             )
             SettingsActionRow(
+                settingId = "LayoutCardSettings.settings_card_depth_fine_tune",
                 title = stringResource(R.string.settings_card_depth_fine_tune),
                 subtitle = stringResource(R.string.settings_card_depth_fine_tune_hint_tv),
                 onClick = onFineTune,
@@ -709,6 +725,7 @@ private fun CardDepthFineTuneDialog(
                 verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.sm)
             ) {
                 SliderSettingsItem(
+                    settingId = "LayoutCardSettings.settings_card_depth_edge_value",
                     title = stringResource(R.string.settings_card_depth_edge_value),
                     value = style.edgeStrength.coerceAtMost(70),
                     valueText = "${style.edgeStrength}%",
@@ -719,6 +736,7 @@ private fun CardDepthFineTuneDialog(
                     modifier = Modifier.focusRequester(initialFocusRequester)
                 )
                 SliderSettingsItem(
+                    settingId = "LayoutCardSettings.settings_card_depth_sheen_value",
                     title = stringResource(R.string.settings_card_depth_sheen_value),
                     value = style.sheenStrength.coerceAtMost(25),
                     valueText = "${style.sheenStrength}%",
@@ -728,6 +746,7 @@ private fun CardDepthFineTuneDialog(
                     onValueChange = onSheenStrengthChange
                 )
                 SliderSettingsItem(
+                    settingId = "LayoutCardSettings.settings_card_depth_coverage_value",
                     title = stringResource(R.string.settings_card_depth_coverage_value),
                     value = style.edgeCoverage,
                     valueText = "${style.edgeCoverage}%",

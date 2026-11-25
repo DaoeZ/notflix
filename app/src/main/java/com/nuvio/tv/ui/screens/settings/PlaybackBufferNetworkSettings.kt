@@ -44,6 +44,7 @@ internal fun PlaybackBufferNetworkSection(
     var showPerformanceModeWarning by remember { mutableStateOf(false) }
 
     SettingsToggleRow(
+        settingId = "PlaybackBufferNetworkSettings.playback_net_nuvio_performance_mode",
         title = stringResource(R.string.playback_net_nuvio_performance_mode),
         subtitle = stringResource(R.string.playback_net_nuvio_performance_mode_sub),
         checked = isSupported && settings.nuvioPerformanceModeEnabled,
@@ -71,6 +72,7 @@ internal fun PlaybackBufferNetworkSection(
     }
 
     SettingsToggleRow(
+        settingId = "PlaybackBufferNetworkSettings.playback_buffer_custom",
         title = stringResource(R.string.playback_buffer_custom),
         subtitle = stringResource(R.string.playback_buffer_custom_sub),
         checked = settings.bufferEngineEnabled,
@@ -93,6 +95,7 @@ internal fun PlaybackBufferNetworkSection(
 
     SettingsSectionLabel(text = stringResource(R.string.playback_network_label))
     SettingsToggleRow(
+        settingId = "PlaybackBufferNetworkSettings.playback_net_custom",
         title = stringResource(R.string.playback_net_custom),
         subtitle = stringResource(R.string.playback_net_custom_sub),
         checked = settings.parallelNetworkEnabled,
@@ -120,6 +123,7 @@ private fun CustomBufferControls(
     SettingsNote(text = stringResource(R.string.playback_buffer_warning), tone = SettingsNoteTone.Warning)
 
     SliderSettingsItem(
+        settingId = "PlaybackBufferNetworkSettings.playback_buffer_min",
         title = stringResource(R.string.playback_buffer_min),
         subtitle = stringResource(R.string.playback_buffer_min_sub),
         value = buffer.minBufferMs / 1000,
@@ -133,6 +137,7 @@ private fun CustomBufferControls(
     val minBufferSeconds = buffer.minBufferMs / 1000
     val maxBufferSeconds = buffer.maxBufferMs / 1000
     SliderSettingsItem(
+        settingId = "PlaybackBufferNetworkSettings.playback_buffer_max",
         title = stringResource(R.string.playback_buffer_max),
         subtitle = stringResource(R.string.playback_buffer_max_sub),
         value = maxBufferSeconds,
@@ -148,6 +153,7 @@ private fun CustomBufferControls(
     )
 
     SliderSettingsItem(
+        settingId = "PlaybackBufferNetworkSettings.playback_buffer_initial",
         title = stringResource(R.string.playback_buffer_initial),
         subtitle = stringResource(R.string.playback_buffer_initial_sub),
         value = buffer.bufferForPlaybackMs / 1000,
@@ -159,6 +165,7 @@ private fun CustomBufferControls(
     )
 
     SliderSettingsItem(
+        settingId = "PlaybackBufferNetworkSettings.playback_buffer_after_rebuffer",
         title = stringResource(R.string.playback_buffer_after_rebuffer),
         subtitle = stringResource(R.string.playback_buffer_after_rebuffer_sub),
         value = buffer.bufferForPlaybackAfterRebufferMs / 1000,
@@ -170,6 +177,7 @@ private fun CustomBufferControls(
     )
 
     SliderSettingsItem(
+        settingId = "PlaybackBufferNetworkSettings.playback_buffer_back",
         title = stringResource(R.string.playback_buffer_back),
         subtitle = stringResource(R.string.playback_buffer_back_sub),
         value = buffer.backBufferDurationMs / 1000,
@@ -188,6 +196,7 @@ private fun CustomBufferControls(
     }
 
     SettingsToggleRow(
+        settingId = "PlaybackBufferNetworkSettings.playback_buffer_managed",
         title = stringResource(R.string.playback_buffer_managed),
         subtitle = stringResource(R.string.playback_buffer_managed_sub),
         checked = settings.bufferBudgetManaged,
@@ -228,6 +237,7 @@ private fun CustomBufferControls(
     }
     val effectiveExoMb = (bufferSizeMb - parallelOverheadMb).coerceAtLeast(MemoryBudget.MIN_BUFFER_MB)
     SliderSettingsItem(
+        settingId = "PlaybackBufferNetworkSettings.playback_buffer_target",
         title = stringResource(R.string.playback_buffer_target),
         subtitle = stringResource(R.string.playback_buffer_target_sub),
         value = bufferSizeMb,
@@ -260,6 +270,7 @@ private fun CustomBufferControls(
     }
 
     SettingsToggleRow(
+        settingId = "PlaybackBufferNetworkSettings.playback_buffer_allow_large",
         title = stringResource(R.string.playback_buffer_allow_large),
         subtitle = stringResource(R.string.playback_buffer_allow_large_sub),
         checked = settings.allowLargeTargetBuffer,
@@ -281,6 +292,7 @@ private fun DiskCacheControls(
     val context = LocalContext.current
 
     SettingsToggleRow(
+        settingId = "PlaybackBufferNetworkSettings.playback_cache_vod",
         title = stringResource(R.string.playback_cache_vod),
         subtitle = stringResource(R.string.playback_cache_vod_sub),
         checked = settings.vodCacheEnabled,
@@ -292,6 +304,7 @@ private fun DiskCacheControls(
 
     val autoMode = settings.vodCacheSizeMode == VodCacheSizeMode.AUTO
     SettingsToggleRow(
+        settingId = "PlaybackBufferNetworkSettings.playback_cache_auto_size",
         title = stringResource(R.string.playback_cache_auto_size),
         subtitle = stringResource(R.string.playback_cache_auto_size_sub),
         checked = autoMode,
@@ -306,6 +319,7 @@ private fun DiskCacheControls(
     if (!autoMode) {
         val manualCacheMb = settings.vodCacheSizeMb.coerceIn(PlayerSettings.MIN_VOD_CACHE_SIZE_MB, maxManualCacheMb)
         SliderSettingsItem(
+            settingId = "PlaybackBufferNetworkSettings.playback_cache_vod_size",
             title = stringResource(R.string.playback_cache_vod_size),
             subtitle = stringResource(R.string.playback_cache_vod_size_sub),
             value = manualCacheMb,
@@ -346,6 +360,7 @@ private fun ParallelNetworkControls(
     updateMemory: PlaybackSettingsUpdate
 ) {
     SettingsToggleRow(
+        settingId = "PlaybackBufferNetworkSettings.playback_net_parallel",
         title = stringResource(R.string.playback_net_parallel),
         subtitle = stringResource(R.string.playback_net_parallel_sub),
         checked = settings.useParallelConnections,
@@ -354,6 +369,7 @@ private fun ParallelNetworkControls(
 
     if (settings.useParallelConnections) {
         SliderSettingsItem(
+            settingId = "PlaybackBufferNetworkSettings.playback_net_connection_count",
             title = stringResource(R.string.playback_net_connection_count),
             subtitle = stringResource(R.string.playback_net_connection_count_sub),
             value = settings.parallelConnectionCount,
@@ -376,6 +392,7 @@ private fun ParallelNetworkControls(
         val currentKb = settings.parallelChunkSizeKb
         val currentIndex = chunkSizes.indexOfFirst { it.first == currentKb }.coerceAtLeast(0)
         SliderSettingsItem(
+            settingId = "PlaybackBufferNetworkSettings.playback_net_chunk_size",
             title = stringResource(R.string.playback_net_chunk_size),
             subtitle = stringResource(R.string.playback_net_chunk_size_sub),
             value = currentIndex,
@@ -383,6 +400,7 @@ private fun ParallelNetworkControls(
             minValue = 0,
             maxValue = (chunkSizes.size - 1).coerceAtLeast(0),
             step = 1,
+            notflixValueLabel = { index -> chunkSizes.getOrNull(index)?.second ?: "${currentKb / 1024} MB" },
             onValueChange = { index ->
                 chunkSizes.getOrNull(index)?.let { (kb, _) -> updateMemory { setParallelChunkSizeKb(kb) } }
             }

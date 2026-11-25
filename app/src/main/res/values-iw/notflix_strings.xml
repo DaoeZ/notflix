@@ -203,4 +203,6 @@
         <item>כעת אפשר לחבר את Simkl.</item>
         <item>Trakt: התחברות עם קוד בלבד, בלי הגדרות.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">מפתח Notflix</string>
+    <string name="notflix_tmdb_attribution">מוצר זה משתמש ב-API של TMDB אך אינו מאושר או מוסמך על ידי TMDB.</string>
 </resources>

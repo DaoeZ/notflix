@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">التنزيلات</string>
+    <string name="notflix_offline_receive">استلام من الهاتف</string>
+    <string name="notflix_offline_pairing">إدخال يدوي: %1$s · %2$s. الرمز صالح لمدة 5 دقائق.</string>
+    <string name="notflix_offline_scan">امسح بكاميرا هاتفك لفتح تنزيلات Notflix.</string>
+    <string name="notflix_offline_expired">انتهت الجلسة. اختر «استلام من الهاتف» لإعادة الاتصال.</string>
+    <string name="notflix_offline_empty">نزّل فيديو من «المصادر» أو أرسله من هاتفك.</string>
+    <string name="notflix_offline_profile">التنزيلات غير متاحة في هذا الملف الشخصي.</string>
+    <string name="notflix_offline_unavailable">الملف غير متاح</string>
+    <string name="notflix_offline_confirm_remove">تأكيد الإزالة</string>
+    <string name="notflix_offline_choose_source">اختر مصدرًا للتنزيل</string>
+    <string name="notflix_offline_started">أُضيف التنزيل إلى قائمة الانتظار</string>
+    <string name="notflix_offline_failed">تعذّر فتح هذا الملف أو تنزيله. جرّب ملف فيديو مباشرًا.</string>
+</resources>

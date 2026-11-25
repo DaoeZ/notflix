@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_player_audio_subtitles">ஒலி மற்றும் வசனங்கள்</string>
+    <string name="notflix_player_more">மேலும்</string>
+    <string name="notflix_player_speed_value">வேகம் (%1$s×)</string>
+    <string name="notflix_player_remaining">மீதம் %1$s</string>
+    <string name="notflix_player_buttons">பிளேயர் பொத்தான்கள்</string>
+    <string name="notflix_player_buttons_help">அதிகபட்சம் %1$d செயல்களைத் தேர்ந்தெடுக்கவும். மேலும் இறுதியில் இருந்து மற்றவற்றைக் கொண்டிருக்கும்.</string>
+    <string name="notflix_player_row_order">பொத்தான்களின் வரிசை</string>
+</resources>
+

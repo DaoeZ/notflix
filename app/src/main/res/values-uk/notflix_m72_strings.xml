@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Профіль і обліковий запис</string>
+    <string name="notflix_settings_home">Головний екран</string>
+    <string name="notflix_settings_connected_accounts">Підключені облікові записи</string>
+    <string name="notflix_settings_system">Система</string>
+    <string name="notflix_settings_advanced_options">Додаткові параметри</string>
+    <string name="notflix_settings_trailers">Трейлери</string>
+    <string name="notflix_settings_updates">Оновлення</string>
+    <string name="notflix_settings_home_collection">Головна колекція Notflix</string>
+    <string name="notflix_settings_ratings">Оцінки</string>
+    <string name="notflix_settings_metadata">Дані та каталоги</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

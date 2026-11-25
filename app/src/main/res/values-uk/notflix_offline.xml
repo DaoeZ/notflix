@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">Завантаження</string>
+    <string name="notflix_offline_receive">Отримати з телефона</string>
+    <string name="notflix_offline_pairing">Ручне введення: %1$s · %2$s. Код дійсний 5 хвилин.</string>
+    <string name="notflix_offline_scan">Відскануйте камерою телефона, щоб відкрити завантаження Notflix.</string>
+    <string name="notflix_offline_expired">Сеанс завершився. Виберіть «Отримати з телефона», щоб під’єднатися знову.</string>
+    <string name="notflix_offline_empty">Завантажте відео з розділу «Джерела» або надішліть його з телефона.</string>
+    <string name="notflix_offline_profile">Завантаження недоступні в цьому профілі.</string>
+    <string name="notflix_offline_unavailable">Файл недоступний</string>
+    <string name="notflix_offline_confirm_remove">Підтвердити видалення</string>
+    <string name="notflix_offline_choose_source">Виберіть джерело для завантаження</string>
+    <string name="notflix_offline_started">Завантаження в черзі</string>
+    <string name="notflix_offline_failed">Не вдалося відкрити або завантажити цей файл. Спробуйте прямий відеофайл.</string>
+</resources>

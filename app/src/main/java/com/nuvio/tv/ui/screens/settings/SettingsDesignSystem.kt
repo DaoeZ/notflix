@@ -789,6 +789,7 @@ internal fun SettingsDetailHeader(
     subtitle: String,
     modifier: Modifier = Modifier
 ) {
+    if (LocalNotflixSettingsFrame.current) return
     if (notflixSettingsActive()) {
         Column(
             modifier = modifier
@@ -985,15 +986,17 @@ internal fun SettingsToggleRow(
     enabled: Boolean = true,
     titleTrailingIcon: ImageVector? = null,
     titleTrailingIconTint: Color = NuvioTheme.colors.TextPrimary,
-    expandSubtitleOnFocus: Boolean = false
+    expandSubtitleOnFocus: Boolean = false,
+    settingId: String? = null
 ) {
+    if (!notflixSettingsRowVisible(settingId)) return
     if (notflixSettingsActive()) {
         NotflixSettingsToggleRowLayout(
             title = title,
             subtitle = subtitle,
             checked = checked,
             onToggle = onToggle,
-            modifier = modifier,
+            modifier = modifier.notflixSettingsRowFocus(settingId ?: title, enabled, onToggle),
             onFocused = onFocused,
             enabled = enabled,
             titleTrailingIcon = titleTrailingIcon,
@@ -1093,15 +1096,17 @@ internal fun SettingsActionRow(
     @RawRes leadingRawIconRes: Int? = null,
     leadingArtworkSize: Dp = NuvioTheme.spacing.xl,
     valueColor: Color = NuvioTheme.colors.TextSecondary,
-    subtitleModifier: Modifier = Modifier
+    subtitleModifier: Modifier = Modifier,
+    settingId: String? = null
 ) {
+    if (!notflixSettingsRowVisible(settingId)) return
     if (notflixSettingsActive()) {
         NotflixSettingsActionRowLayout(
             title = title,
             subtitle = subtitle,
             value = value,
             onClick = onClick,
-            modifier = modifier,
+            modifier = modifier.notflixSettingsRowFocus(settingId ?: title, enabled, onClick),
             onFocused = onFocused,
             enabled = enabled,
             trailingIcon = trailingIcon,
@@ -1273,7 +1278,7 @@ private fun NotflixSettingsRowText(
                 fontFamily = Spec.BodyFont,
                 fontSize = NotflixSettingsStyle.RowSubtitleSize,
                 lineHeight = NotflixSettingsStyle.RowSubtitleLineHeight,
-                maxLines = subtitleMaxLines,
+                maxLines = if (LocalNotflixSettingsFrame.current) 1 else subtitleMaxLines,
                 overflow = TextOverflow.Ellipsis,
                 modifier = subtitleModifier
             )
@@ -1526,8 +1531,11 @@ internal fun <T> SettingsSingleChoiceRow(
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester? = null,
     stateKey: Any? = null,
-    optionTestTag: ((T) -> String)? = null
+    optionTestTag: ((T) -> String)? = null,
+    settingId: String? = null,
+    enabled: Boolean = true
 ) {
+    if (!notflixSettingsRowVisible(settingId)) return
     val currentKey = stateKey?.toString().orEmpty()
     // rememberSaveable inputs reset live state, but do not validate a restored value's inputs.
     // Save the binding too so a dialog from another profile cannot reopen after recreation.
@@ -1544,6 +1552,8 @@ internal fun <T> SettingsSingleChoiceRow(
     }
     SettingsActionRow(
         title = title,
+        settingId = settingId,
+        enabled = enabled,
         subtitle = subtitle,
         value = value,
         onClick = { openedKey = currentKey },

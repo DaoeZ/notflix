@@ -62,9 +62,17 @@ class AppearanceCycleIntegrationTest {
         runBlocking {
             val cache = ProfileDataStoreFactory::class.java.getDeclaredField("cache")
                 .apply { isAccessible = true }.get(factory) as MutableMap<*, *>
-            cache.values.toList().forEach { scoped ->
-                val job = scoped!!::class.java.getDeclaredField("job").apply { isAccessible = true }.get(scoped) as Job
-                job.cancelAndJoin()
+            val jobs = cache.values.toList().map { scoped ->
+                scoped!!::class.java.getDeclaredField("job").apply { isAccessible = true }.get(scoped) as Job
+            }
+            jobs.forEach { it.cancel() }
+            // A child can still need one turn of the test Main dispatcher to finish; run it while
+            // waiting, and fail instead of hanging the whole suite.
+            withTimeout(10_000) {
+                while (jobs.any { !it.isCompleted }) {
+                    dispatcher.scheduler.advanceUntilIdle()
+                    kotlinx.coroutines.delay(10)
+                }
             }
             cache.clear()
         }

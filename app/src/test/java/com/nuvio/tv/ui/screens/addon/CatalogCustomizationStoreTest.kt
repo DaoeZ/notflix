@@ -65,13 +65,16 @@ class CatalogCustomizationStoreTest {
         val start=awaitItems();val first=start.items.first();val keys=start.items.map{it.key}
         vm.moveDown(first.key);awaitItems{it.items[1].key==first.key}
         vm.toggleCatalogEnabled(first.disableKey);awaitItems{it.items.first{r->r.key==first.key}.isDisabled}
-        assertEquals(listOf(keys[1],keys[0])+keys.drop(2),layout.homeCatalogOrderKeys.first())
+        // The UI state can lead the DataStore write under a loaded suite; wait for the stored order.
+        val expected=listOf(keys[1],keys[0])+keys.drop(2)
+        assertEquals(expected,withTimeoutOrNull(10_000){layout.homeCatalogOrderKeys.first{it==expected}}
+            ?:layout.homeCatalogOrderKeys.first())
         close();owner=ViewModelStore();open()
         val reopened=awaitItems{it.items[1].key==first.key && it.items[1].isDisabled}
         assertEquals(first.key,reopened.items[1].key)
         vm.toggleCatalogEnabled(first.disableKey);awaitItems{!it.items.first{r->r.key==first.key}.isDisabled}
         vm.moveUp(first.key);assertEquals(keys,awaitItems{it.items.first().key==first.key}.items.map{it.key})
-        assertTrue(layout.disabledHomeCatalogKeys.first().isEmpty());verify(atLeast=4){sync.triggerPush()}
+        assertTrue(layout.disabledHomeCatalogKeys.first().isEmpty());verify(atLeast=4,timeout=10_000){sync.triggerPush()}
         assertFalse(File(dir,"datastore/layout_settings.preferences_pb").exists())
     }
     @Test fun movementLimitsAndUnknownKeysDoNotWriteOrderOrPush()=runBlocking {

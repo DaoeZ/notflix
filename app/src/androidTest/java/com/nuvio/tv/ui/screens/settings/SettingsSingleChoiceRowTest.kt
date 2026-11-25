@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.test.performSemanticsAction
 import com.nuvio.tv.ui.appearance.LocalNotflixPresentation
 import com.nuvio.tv.ui.appearance.NotflixPresentation
 import com.nuvio.tv.ui.appearance.NotflixPresentationTheme
@@ -30,7 +31,7 @@ class SettingsSingleChoiceRowTest {
 
     @Test fun selectionAtTheEndIsComposedAndFocused() {
         compose.setContent { Presentation { Choice(selected = 19) {} } }
-        compose.onNodeWithTag("choice").performClick()
+        click(compose.onNodeWithTag("choice"))
         compose.onNodeWithTag("option-19").assertIsDisplayed().assertIsFocused()
     }
 
@@ -41,11 +42,12 @@ class SettingsSingleChoiceRowTest {
         restoration.setContent {
             Presentation { Choice(selected.value) { selected.value = it; changes++ } }
         }
-        compose.onNodeWithTag("choice").performClick()
+        click(compose.onNodeWithTag("choice"))
         restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithTag("option-1").assertIsFocused().performClick()
-        compose.onNodeWithTag("choice").assertIsFocused().performClick()
-        compose.onNodeWithTag("option-1").performKeyInput { pressKey(Key.Back) }
+        click(compose.onNodeWithTag("option-1").assertIsFocused())
+        click(compose.onNodeWithTag("choice").assertIsFocused())
+        compose.onNodeWithTag("option-1").assertIsFocused()
+        back()
         compose.onNodeWithTag("choice").assertIsFocused()
         compose.runOnIdle { assertEquals(1, changes) }
     }
@@ -54,7 +56,7 @@ class SettingsSingleChoiceRowTest {
         val profile = mutableStateOf(1)
         var changes = 0
         compose.setContent { Presentation { Choice(0, profile.value) { changes++ } } }
-        compose.onNodeWithTag("choice").performClick()
+        click(compose.onNodeWithTag("choice"))
         compose.runOnIdle { profile.value = 2 }
         compose.onNodeWithTag("option-0").assertDoesNotExist()
         compose.runOnIdle { assertEquals(0, changes) }
@@ -64,7 +66,7 @@ class SettingsSingleChoiceRowTest {
         val restoration = StateRestorationTester(compose)
         var profile = 1
         restoration.setContent { Presentation { Choice(0, profile) {} } }
-        compose.onNodeWithTag("choice").performClick()
+        click(compose.onNodeWithTag("choice"))
         profile = 2 // Deliberately read only on recreation: restore the old dialog into a new binding.
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithTag("option-0").assertDoesNotExist()
@@ -105,4 +107,16 @@ class SettingsSingleChoiceRowTest {
             NotflixPresentationTheme(notflix) { Column { content() } }
         }
     }
+
+    // tv-material Cards ignore injected touches and Back must reach the Dialog window, as on the remote.
+    private fun click(node: androidx.compose.ui.test.SemanticsNodeInteraction) {
+        node.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus); compose.waitForIdle()
+        node.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); compose.waitForIdle()
+    }
+
+    private fun back() {
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+            .sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK); compose.waitForIdle()
+    }
+
 }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_settings_profile_account">Profiel en account</string>
+    <string name="notflix_settings_home">Startscherm</string>
+    <string name="notflix_settings_connected_accounts">Gekoppelde accounts</string>
+    <string name="notflix_settings_system">Systeem</string>
+    <string name="notflix_settings_advanced_options">Geavanceerde opties</string>
+    <string name="notflix_settings_trailers">Trailers</string>
+    <string name="notflix_settings_updates">Updates</string>
+    <string name="notflix_settings_home_collection">Notflix-startcollectie</string>
+    <string name="notflix_settings_ratings">Beoordelingen</string>
+    <string name="notflix_settings_metadata">Gegevens en catalogi</string>
+    <string name="notflix_settings_anime_skip">Anime-Skip</string>
+</resources>

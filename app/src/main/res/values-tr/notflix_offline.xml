@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notflix_offline_title">İndirilenler</string>
+    <string name="notflix_offline_receive">Telefondan al</string>
+    <string name="notflix_offline_pairing">Elle giriş: %1$s · %2$s. Kod 5 dakika geçerlidir.</string>
+    <string name="notflix_offline_scan">Notflix İndirilenler\'i açmak için telefonunuzun kamerasıyla tarayın.</string>
+    <string name="notflix_offline_expired">Oturumun süresi doldu. Yeniden bağlanmak için Telefondan al\'ı seçin.</string>
+    <string name="notflix_offline_empty">Kaynaklar\'dan bir video indirin veya telefonunuzdan gönderin.</string>
+    <string name="notflix_offline_profile">İndirmeler bu profilde kullanılamaz.</string>
+    <string name="notflix_offline_unavailable">Dosya kullanılamıyor</string>
+    <string name="notflix_offline_confirm_remove">Kaldırmayı onayla</string>
+    <string name="notflix_offline_choose_source">İndirmek için bir kaynak seçin</string>
+    <string name="notflix_offline_started">İndirme sıraya alındı</string>
+    <string name="notflix_offline_failed">Bu dosya açılamadı veya indirilemedi. Doğrudan bir video dosyası deneyin.</string>
+</resources>

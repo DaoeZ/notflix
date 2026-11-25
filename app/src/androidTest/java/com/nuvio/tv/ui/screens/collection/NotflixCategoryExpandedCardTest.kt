@@ -156,10 +156,14 @@ class NotflixCategoryExpandedCardTest {
         val identity = notflixCategoryCardIdentity(tabKey, "movie:6")
         val art = bounds("notflix-card-art-$identity")
         val opened = bounds("notflix-category-expanded")
-        assertEquals(before.left, art.left, 1f)
-        assertEquals(before.right, art.right, 1f)
+        // beta.4: Home-style card, artwork on top across the card and the panel below it. At the
+        // last column it grows inwards and still covers its poster; the grid itself does not move.
+        assertEquals(opened.left, art.left, 1f)
+        assertEquals(opened.right, art.right, 1f)
+        assertEquals(opened.top, art.top, 1f)
+        assertTrue(opened.left <= before.left + 1f && opened.right >= before.right - 1f)
         assertEquals(before.top, opened.top, 1f)
-        assertEquals(before.height, opened.height, 1f)
+        assertTrue(opened.height >= before.height - 1f)
         assertEquals(neighbour, bounds("notflix-poster-movie:5"))
         if (rtl) assertTrue(opened.right > before.right) else assertTrue(opened.left < before.left)
     }

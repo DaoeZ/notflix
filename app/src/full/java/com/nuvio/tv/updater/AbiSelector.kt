@@ -5,6 +5,15 @@ import com.nuvio.tv.data.remote.dto.GitHubAssetDto
 
 internal object AbiSelector {
 
+    fun chooseNotflixTvApk(
+        assets: List<GitHubAssetDto>,
+        supportedAbis: List<String> = Build.SUPPORTED_ABIS?.toList().orEmpty()
+    ): GitHubAssetDto? {
+        return supportedAbis.firstNotNullOfOrNull { abi ->
+            assets.firstOrNull { it.name.equals("Notflix-$abi.apk", ignoreCase = true) }
+        } ?: assets.firstOrNull { it.name.equals("Notflix-universal.apk", ignoreCase = true) }
+    }
+
     private val knownAbis = listOf(
         "arm64-v8a",
         "armeabi-v7a",

@@ -351,6 +351,7 @@ fun AdvancedSettingsContent(
     }
 
     val networkListState = rememberLazyListState()
+    val redesignedSettings = LocalNotflixSettingsFrame.current
     var showExperienceModeConfirmation by remember { mutableStateOf(false) }
     var showSentryDialog by remember { mutableStateOf(false) }
     Box(modifier = Modifier.fillMaxSize()) {
@@ -380,7 +381,7 @@ fun AdvancedSettingsContent(
             }
         }
 
-        item(key = "experience_mode_settings") {
+        if (!redesignedSettings) item(key = "experience_mode_settings") {
             SettingsGroupCard(
                 modifier = Modifier.fillMaxWidth(),
                 title = stringResource(R.string.experience_mode_group_title)

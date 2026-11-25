@@ -201,4 +201,6 @@
         <item>O Simkl já pode ser ligado.</item>
         <item>Trakt: agora liga-se só com um código, sem configurar nada.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Chave Notflix</string>
+    <string name="notflix_tmdb_attribution">Este produto utiliza a API do TMDB, mas não é apoiado nem certificado pelo TMDB.</string>
 </resources>

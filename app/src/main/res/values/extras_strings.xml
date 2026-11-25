@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Top 10 by country -->
+    <string name="top10_movies_country">Top 10 Movies in %1$s Today</string>
+    <string name="top10_series_country">Top 10 TV Shows in %1$s Today</string>
+    <string name="top10_kids_country">Top 10 Kids in %1$s Today</string>
+
+    <!-- Expanded Kids catalog rows -->
+    <string name="kids_row_adventures">Family Adventures</string>
+    <string name="kids_row_comedy">Kids Comedy</string>
+    <string name="kids_row_fantasy">Fantasy &amp; Magic</string>
+    <string name="kids_row_new_releases">New Family Releases</string>
+    <string name="kids_row_bedtime">Short Bedtime Movies (&lt; 95 min)</string>
+
+    <!-- Quick Pick -->
+    <string name="quick_pick_title">What to watch today?</string>
+    <string name="quick_pick_kids_title">Kids Quick Pick</string>
+    <string name="quick_pick_short">Under 100 min</string>
+    <string name="quick_pick_bedtime">Bedtime (&lt; 90 min)</string>
+    <string name="quick_pick_top_rated">Top rated (7.5+)</string>
+    <string name="quick_pick_my_list">Unwatched in My List</string>
+    <string name="quick_pick_animation">Animation</string>
+    <string name="quick_pick_surprise">Surprise me!</string>
+    <string name="quick_pick_another">Another pick</string>
+    <string name="quick_pick_play">Play now</string>
+    <string name="quick_pick_details">More info</string>
+    <string name="quick_pick_empty">No matching titles loaded yet.</string>
+
+    <!-- TV Companion / Cast & Remote -->
+    <string name="companion_title">Phone Remote &amp; Keyboard</string>
+    <string name="companion_subtitle">Scan with your phone or open the address below on the same Wi-Fi to type searches, control playback or cast from Notflix Mobile.</string>
+    <string name="companion_pair_code">Code: %1$s</string>
+    <string name="companion_no_wifi">Connect the TV to Wi-Fi or Ethernet to pair a phone.</string>
+    <string name="companion_blocked_kids">Blocked by active Kids profile age limit.</string>
+    <string name="companion_button_cd">Phone keyboard &amp; remote</string>
+    <string name="companion_web_placeholder">Search movie or show on TV…</string>
+    <string name="companion_web_search">Search</string>
+    <string name="companion_web_back">Back</string>
+    <string name="companion_web_home">Home</string>
+    <string name="companion_web_sent">Sent</string>
+    <string name="companion_web_error">Error</string>
+    <string name="companion_web_offline">Cannot reach TV</string>
+    <string name="companion_web_enter_code">Enter the 6-character code shown on your TV to connect the remote.</string>
+    <string name="companion_web_code_placeholder">Code (e.g. A1B2C3)</string>
+    <string name="companion_web_connect">Connect</string>
+    <string name="companion_web_invalid_code">Invalid code. Check the code on your TV and try again.</string>
+
+    <!-- Sleep Timer -->
+    <string name="sleep_timer_label">Sleep timer</string>
+    <string name="sleep_timer_off">Off</string>
+    <string name="sleep_timer_end_episode">End of episode</string>
+    <string name="sleep_timer_minutes">%1$d min</string>
+    <string name="sleep_timer_remaining">%1$d min left</string>
+    <string name="sleep_timer_paused">Sleep timer paused playback</string>
+
+    <!-- Night Mode / Clear Dialogue DRC -->
+    <string name="night_mode_label">Night mode</string>
+    <string name="night_mode_subtitle">Clear dialogue &amp; softer explosions</string>
+    <string name="night_mode_on">Night mode ON</string>
+    <string name="night_mode_off">Night mode OFF</string>
+
+    <!-- Season Recap -->
+    <string name="recap_season_button">Season %1$d Recap</string>
+    <string name="recap_searching">Finding Season %1$d recap…</string>
+    <string name="recap_not_found">No recap found for Season %1$d</string>
+
+    <!-- Calendar Reminders -->
+    <string name="calendar_remind_set">Remind me</string>
+    <string name="calendar_remind_active">Reminder set</string>
+    <string name="calendar_remind_added">Reminder added for %1$s</string>
+    <string name="calendar_remind_removed">Reminder removed for %1$s</string>
+    <string name="extras_country_title">Country / Region (Top 10)</string>
+    <string name="extras_country_subtitle">Choose which country\'s Top 10 appears on Home</string>
+    <string name="extras_country_auto">Automatic (%1$s)</string>
+</resources>

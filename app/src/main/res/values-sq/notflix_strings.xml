@@ -201,4 +201,6 @@
         <item>Simkl tani mund të lidhet.</item>
         <item>Trakt: lidhuni vetëm me një kod, pa konfigurim.</item>
     </string-array>
+    <string name="notflix_provider_tmdb_built_in">Çelësi Notflix</string>
+    <string name="notflix_tmdb_attribution">Ky produkt përdor API-n e TMDB, por nuk është miratuar ose certifikuar nga TMDB.</string>
 </resources>
