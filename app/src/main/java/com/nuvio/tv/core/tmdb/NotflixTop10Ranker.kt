@@ -70,7 +70,7 @@ internal object NotflixTop10Ranker {
         "AT" to "austria", "PL" to "poland", "SE" to "sweden", "NO" to "norway",
         "DK" to "denmark", "FI" to "finland", "IE" to "ireland", "GR" to "greece",
         "TR" to "turkey", "RO" to "romania", "CZ" to "czech-republic", "HU" to "hungary",
-        "UA" to "ukraine", "JP" to "japan", "KR" to "south-korea", "IN" to "india",
+        "UA" to "ukraine", "JP" to "japan", "KR" to "south-korea", "IN" to "india", "PH" to "philippines",
         "AU" to "australia", "NZ" to "new-zealand", "ZA" to "south-africa",
         "SA" to "saudi-arabia", "AE" to "united-arab-emirates", "EG" to "egypt"
     )

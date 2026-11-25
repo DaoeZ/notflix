@@ -193,12 +193,11 @@
     <string name="notflix_whats_new_about_title">What\'s new in this version</string>
     <string name="notflix_whats_new_about_subtitle">See the changes in version %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Redesigned multi-platform Top 10 (Movies, TV Shows and Kids) with giant numerals and country selector in Settings.</item>
-        <item>Smarter «For You» recommendations based on your full watch history and My List.</item>
-        <item>«What to watch today?» moved to the top bar for instant access with the remote.</item>
-        <item>Phone remote, keyboard, «Send to TV» and web remote with code entry screen.</item>
-        <item>Downloads: «Refresh code» button and screen kept awake during transfers from your phone.</item>
-        <item>Larger Continue Watching cards, instant removal and 6-title localized Home carousel.</item>
+        <item>Built-in Notflix TMDB key and fixed trailers (button and autoplay now work out of the box, with English and Cinemeta fallback).</item>
+        <item>Expanded cards in non-Notflix collections now show rating, genres and synopsis.</item>
+        <item>Fixed «Playback unavailable» on older My List entries saved with alternative IDs.</item>
+        <item>Voice search in Search now falls back to Google TV\'s native voice dialog when needed.</item>
+        <item>Added Philippines to the Top 10 Country / Region selector in Settings.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix key</string>
     <string name="notflix_tmdb_attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>

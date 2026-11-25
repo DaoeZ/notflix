@@ -147,9 +147,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         minSdk = 24
         targetSdk = 36
-        // Above the published Notflix 1.0.0 (1077) and private 1.0.0 (1078) so every build updates in place.
-        versionCode = 1079
-        versionName = "1.0.1"
+        // Above the published Notflix 1.0.1 (1079) so every build updates in place.
+        versionCode = 1080
+        versionName = "1.0.3"
 
         buildConfigField("String", "PARENTAL_GUIDE_API_URL", "\"${localProperties.getProperty("PARENTAL_GUIDE_API_URL", "")}\"")
         buildConfigField("String", "TRAILER_API_URL", "\"${localProperties.getProperty("TRAILER_API_URL", "")}\"")

@@ -190,12 +190,11 @@
     <string name="notflix_whats_new_about_title">Novedades de esta versión</string>
     <string name="notflix_whats_new_about_subtitle">Consulta los cambios de la versión %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Nuevo Top 10 multiplataforma (películas, series e infantil) con números grandes y selector de país en Ajustes.</item>
-        <item>Recomendaciones «Para ti» mejoradas usando tu historial completo y Mi lista.</item>
-        <item>«¿Qué ver hoy?» integrado en la barra superior para abrirlo al instante con el mando.</item>
-        <item>Mando y teclado desde el móvil, «Enviar a la TV» y mando web con pantalla para introducir el código.</item>
-        <item>Descargas: botón «Refrescar código» y pantalla activa durante las transferencias desde el móvil.</item>
-        <item>Tarjetas de «Continuar viendo» más grandes, borrado inmediato y carrusel principal de 6 títulos en tu idioma.</item>
+        <item>Clave TMDB integrada de Notflix y tráilers corregidos (el botón y el autoavance funcionan de serie, con respaldo en inglés y Cinemeta).</item>
+        <item>Las tarjetas expandidas en colecciones externas ahora muestran nota, géneros y sinopsis.</item>
+        <item>Corregido el aviso «Reproducción no disponible» en títulos antiguos de Mi lista guardados con otro ID.</item>
+        <item>El micrófono en Buscar ahora usa también el diálogo de voz nativo de Google TV cuando hace falta.</item>
+        <item>Añadido Filipinas al selector de País o región del Top 10 en Ajustes.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Clave de Notflix</string>
     <string name="notflix_tmdb_attribution">Este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB.</string>

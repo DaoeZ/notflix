@@ -1416,13 +1416,31 @@ class FolderDetailViewModel @Inject constructor(
         enrichFocusJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             kotlinx.coroutines.delay(350)
 
-            // Background-prefetch meta from addons so detail screen opens instantly.
+            // Background-prefetch meta from addons so detail screen opens instantly,
+            // and backfill missing card metadata (synopsis, genres, rating) for non-TMDB collections.
             if (backgroundMetaPrefetchedIds.add(item.id)) {
                 viewModelScope.launch {
-                    metaRepository.getMetaFromAllAddons(
+                    val result = metaRepository.getMetaFromAllAddons(
                         type = item.apiType,
                         id = item.id
                     ).first { it !is com.nuvio.tv.core.network.NetworkResult.Loading }
+                    val meta = (result as? com.nuvio.tv.core.network.NetworkResult.Success)?.data ?: return@launch
+                    val base = _enrichedPreviews.value[item.id] ?: item
+                    val needsMetadata = base.description.isNullOrBlank() ||
+                        base.genres.isEmpty() ||
+                        base.imdbRating == null ||
+                        base.releaseInfo.isNullOrBlank()
+                    if (needsMetadata) {
+                        val merged = base.copy(
+                            description = base.description?.takeIf { it.isNotBlank() } ?: meta.description,
+                            genres = base.genres.ifEmpty { meta.genres },
+                            imdbRating = base.imdbRating ?: meta.imdbRating,
+                            releaseInfo = base.releaseInfo?.takeIf { it.isNotBlank() } ?: meta.releaseInfo,
+                            background = base.background?.takeIf { it.isNotBlank() } ?: meta.background,
+                            logo = base.logo?.takeIf { it.isNotBlank() } ?: meta.logo
+                        )
+                        publishEnrichedPreview(item.id, merged)
+                    }
                 }
             }
 
@@ -1663,7 +1681,7 @@ class FolderDetailViewModel @Inject constructor(
                         tab.catalogRow?.items?.firstOrNull { it.id == itemId }
                     }.firstOrNull()?.trailers?.firstNotNullOfOrNull {
                         it.ytId?.takeIf { id -> id.isNotBlank() && matchesNotflixTrailerLanguage(it.lang, appLanguage) }
-                    }
+                    } ?: fallbackYtId
                 }
                 val resolvedSource = if (trailerSource?.videoUrl.isNullOrBlank() && !resolvedYtId.isNullOrBlank()) {
                     trailerService.getTrailerPlaybackSourceFromYouTubeUrl(

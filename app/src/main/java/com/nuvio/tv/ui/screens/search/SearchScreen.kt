@@ -198,12 +198,18 @@ fun SearchScreen(
             Toast.makeText(context, strVoiceNoSpeech, Toast.LENGTH_SHORT).show()
         }
     }
-    val isVoiceSearchAvailable = remember(context) { SpeechRecognizer.isRecognitionAvailable(context) }
+    val isSpeechRecognizerAvailable = remember(context) { SpeechRecognizer.isRecognitionAvailable(context) }
+    val isVoiceIntentAvailable = remember(context) {
+        runCatching {
+            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).resolveActivity(context.packageManager) != null
+        }.getOrDefault(false)
+    }
+    val isVoiceSearchAvailable = isSpeechRecognizerAvailable || isVoiceIntentAvailable
     val topInputFocusRequester = remember(isVoiceSearchAvailable) {
         if (isVoiceSearchAvailable) voiceFocusRequester else searchFocusRequester
     }
-    val speechRecognizer = remember(context, isVoiceSearchAvailable) {
-        if (isVoiceSearchAvailable) {
+    val speechRecognizer = remember(context, isSpeechRecognizerAvailable) {
+        if (isSpeechRecognizerAvailable) {
             runCatching { SpeechRecognizer.createSpeechRecognizer(context) }.getOrNull()
         } else {
             null
@@ -215,6 +221,19 @@ fun SearchScreen(
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
+        }
+    }
+    val voiceIntentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        isVoiceListening = false
+        val recognized = result.data
+            ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            ?.firstOrNull()
+            .orEmpty()
+            .trim()
+        if (recognized.isNotEmpty()) {
+            onVoiceQueryResultState.value(recognized)
         }
     }
     val hasRecordAudioPermission by remember(context) {
@@ -299,18 +318,29 @@ fun SearchScreen(
         }
     }
     val launchVoiceSearch: () -> Unit = {
-        if (!isVoiceSearchAvailable || speechRecognizer == null) {
+        if (!isVoiceSearchAvailable) {
             Toast.makeText(context, strVoiceUnavailable, Toast.LENGTH_SHORT).show()
+        } else if (speechRecognizer == null && isVoiceIntentAvailable) {
+            runCatching {
+                voiceIntentLauncher.launch(buildRecognizeIntent())
+            }.onFailure {
+                Toast.makeText(context, strVoiceUnavailable, Toast.LENGTH_SHORT).show()
+            }
         } else if (!recordAudioPermissionGranted) {
             requestAudioPermission.launch(Manifest.permission.RECORD_AUDIO)
         } else {
             isVoiceListening = true
             runCatching {
-                speechRecognizer.cancel()
-                speechRecognizer.startListening(buildRecognizeIntent())
+                speechRecognizer?.cancel()
+                speechRecognizer?.startListening(buildRecognizeIntent())
             }.onFailure {
                 isVoiceListening = false
-                Toast.makeText(context, strVoiceUnavailable, Toast.LENGTH_SHORT).show()
+                if (isVoiceIntentAvailable) {
+                    runCatching { voiceIntentLauncher.launch(buildRecognizeIntent()) }
+                        .onFailure { Toast.makeText(context, strVoiceUnavailable, Toast.LENGTH_SHORT).show() }
+                } else {
+                    Toast.makeText(context, strVoiceUnavailable, Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

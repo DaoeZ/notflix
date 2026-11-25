@@ -756,12 +756,17 @@ fun MetaDetailsScreen(
                     )
                 }
                 val playTitle: (String) -> Unit = playTitle@{ videoId ->
-                    if (!playbackAvailability.canStream(meta.apiType, videoId, meta.id)) {
+                    val resolvedVideoId = if (playbackAvailability.canStream(meta.apiType, videoId, meta.id)) {
+                        videoId
+                    } else {
+                        meta.imdbId?.takeIf { playbackAvailability.canStream(meta.apiType, it, meta.id) } ?: videoId
+                    }
+                    if (!playbackAvailability.canStream(meta.apiType, resolvedVideoId, meta.id)) {
                         Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()
                         return@playTitle
                     }
                     onPlayClick(
-                        videoId,
+                        resolvedVideoId,
                         meta.apiType,
                         meta.id,
                         meta.name,
@@ -778,12 +783,17 @@ fun MetaDetailsScreen(
                     )
                 }
                 val playTitleManually: (String) -> Unit = playTitleManually@{ videoId ->
-                    if (!playbackAvailability.canStream(meta.apiType, videoId, meta.id)) {
+                    val resolvedVideoId = if (playbackAvailability.canStream(meta.apiType, videoId, meta.id)) {
+                        videoId
+                    } else {
+                        meta.imdbId?.takeIf { playbackAvailability.canStream(meta.apiType, it, meta.id) } ?: videoId
+                    }
+                    if (!playbackAvailability.canStream(meta.apiType, resolvedVideoId, meta.id)) {
                         Toast.makeText(context, R.string.playback_unavailable_message, Toast.LENGTH_SHORT).show()
                         return@playTitleManually
                     }
                     onPlayManuallyClick(
-                        videoId,
+                        resolvedVideoId,
                         meta.apiType,
                         meta.id,
                         meta.name,
@@ -1346,7 +1356,13 @@ internal fun MetaDetailsContent(
             episodesForSeason = episodesForSeason
         )
     }
-    val isPlayEnabled = playbackAvailability.canStream(meta.apiType, heroVideo?.id ?: meta.id, meta.id, heroVideo)
+    val isPlayEnabled = playbackAvailability.canStream(
+        type = meta.apiType,
+        videoId = heroVideo?.id ?: meta.id,
+        contentId = meta.id,
+        video = heroVideo,
+        fallbackVideoId = if (heroVideo == null) meta.imdbId else null
+    )
     val canPlayEpisode = remember(playbackAvailability, meta.apiType, meta.id) {
         { video: Video -> playbackAvailability.canStream(meta.apiType, video.id, meta.id, video) }
     }

@@ -21,7 +21,7 @@ object NotflixCountryPreference {
         "US", "GB", "CA", "FR", "DE", "IT", "PT", "BR",
         "NL", "BE", "CH", "AT", "PL", "SE", "NO", "DK", "FI", "IE", "GR",
         "TR", "RO", "CZ", "HU", "UA", "RU",
-        "JP", "KR", "IN", "AU", "NZ", "ZA", "SA", "AE", "EG"
+        "JP", "KR", "IN", "PH", "AU", "NZ", "ZA", "SA", "AE", "EG"
     )
 
     private var prefs: SharedPreferences? = null

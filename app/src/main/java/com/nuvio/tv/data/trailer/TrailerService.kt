@@ -669,6 +669,14 @@ internal suspend fun findNotflixTrailerCandidates(
         )
         if (videos.isNotEmpty()) return videos
     }
+    // Fallback to English TMDB trailers if no trailer exists in the app's language.
+    if (base != "en") {
+        val enVideos = rankTmdbVideoCandidates(
+            fetch(TMDB_TRAILER_FALLBACK_LANGUAGE),
+            preferredLanguageCode = TMDB_TRAILER_FALLBACK_LANGUAGE
+        )
+        if (enVideos.isNotEmpty()) return enVideos
+    }
     return emptyList()
 }
 

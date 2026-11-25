@@ -452,7 +452,7 @@ internal fun HomeViewModel.requestTrailerPreviewPipeline(
     } else {
         findCatalogItemById(itemId)?.trailers?.firstNotNullOfOrNull {
             it.ytId?.takeIf { id -> id.isNotBlank() && matchesNotflixTrailerLanguage(it.lang, appLanguage) }
-        }
+        } ?: fallbackYtId ?: findCatalogItemById(itemId)?.trailerYtIds?.firstOrNull()
     }
 
     // Always bump version — only the latest request (highest version) will proceed after debounce

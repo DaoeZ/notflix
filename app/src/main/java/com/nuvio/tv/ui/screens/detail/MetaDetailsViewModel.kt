@@ -2904,7 +2904,7 @@ class MetaDetailsViewModel @Inject constructor(
             meta.trailers.firstNotNullOfOrNull {
                 it.ytId?.takeIf { id -> id.isNotBlank() &&
                     com.nuvio.tv.data.trailer.matchesNotflixTrailerLanguage(it.lang, appLanguage) }
-            }
+            } ?: meta.trailerYtIds.firstOrNull()
         }
 
         trailerFetchJob?.cancel()
