@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">İndirmek için bir kaynak seçin</string>
     <string name="notflix_offline_started">İndirme sıraya alındı</string>
     <string name="notflix_offline_failed">Bu dosya açılamadı veya indirilemedi. Doğrudan bir video dosyası deneyin.</string>
+    <string name="notflix_offline_new_code">Kodu yenile</string>
 </resources>

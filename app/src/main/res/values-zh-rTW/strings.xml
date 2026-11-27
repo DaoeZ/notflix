@@ -220,7 +220,7 @@
     <string name="detail_marked_previous_watched">已標記為已觀看的先前集數：%1$d</string>
 
     <string name="playback_unavailable">無法播放</string>
-    <string name="playback_unavailable_message">在目前配置下，此標題無法播放。</string>
+    <string name="playback_unavailable_message">沒有來源外掛可以播放此內容。請在 設定 › 外掛 中安裝一個（教學見 r/NotflixTV）。</string>
     <string name="detail_btn_play">播放</string>
     <string name="detail_btn_resume">繼續播放</string>
     <string name="detail_btn_play_episode">播放 S%1$d E%2$d</string>

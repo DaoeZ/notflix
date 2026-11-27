@@ -191,17 +191,12 @@
     <string name="notflix_whats_new_about_title">Noutăți în această versiune</string>
     <string name="notflix_whats_new_about_subtitle">Vezi modificările din versiunea %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Alege dimensiunea cardurilor: mică, medie sau mare.</item>
-        <item>Alege cât de repede se deschid cardurile; butoanele lor se văd mai bine.</item>
-        <item>Cardurile se deschid acum și în colecții și redau trailerul.</item>
-        <item>Evaluările arată dacă sunt de pe IMDb sau TMDB.</item>
-        <item>Redare automată după limbă: alegeți mai multe, ordonați-le și decideți dacă are prioritate calitatea sau limba.</item>
-        <item>Titluri și descrieri în limba aplicației (cu cheie TMDB).</item>
-        <item>Notflix este tradus în toate limbile aplicației.</item>
-        <item>Setări mai clare: alegerile se deschid ca listă, iar opțiunile care nu afectează Notflix sunt ascunse.</item>
-        <item>Profilurile KIDS au propria pagină principală cu desene animate și titluri pentru familie (necesită cheie TMDB).</item>
-        <item>Simkl poate fi acum conectat.</item>
-        <item>Trakt: conectare doar cu un cod, fără configurare.</item>
+        <item>Selector de culoare a temei cu fundal întunecat nuanțat și dimensiune personalizabilă a interfeței TV (60%–130%) în Aspect.</item>
+        <item>Butoane «Îmi place» și «Nu mă interesează» pe detalii și banner pentru recomandări mai bune per profil.</item>
+        <item>Notele episoadelor folosesc acum SeriesGraph și TMDB ca rezervă, astfel încât aproape orice serial afișează note.</item>
+        <item>Sărire automată peste fluxuri false sau fără cache (până la 10 încercări) și redare automată mai rapidă a episoadelor.</item>
+        <item>Redenumește extensiile, activează/dezactivează rândurile Top 10 și alege tastatura Notflix sau de sistem.</item>
+        <item>Afișe localizate îmbunătățite și remedieri de stabilitate.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Cheie Notflix</string>
     <string name="notflix_tmdb_attribution">Acest produs folosește API-ul TMDB, dar nu este aprobat sau certificat de TMDB.</string>

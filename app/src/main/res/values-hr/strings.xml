@@ -223,7 +223,7 @@
     <string name="detail_marked_previous_watched">Prethodnih epizoda označenih kao pogledane: %1$d</string>
 
     <string name="playback_unavailable">Reprodukcija nije dostupna</string>
-    <string name="playback_unavailable_message">Reprodukcija ovog naslova nije dostupna s trenutnim postavkama.</string>
+    <string name="playback_unavailable_message">Nijedan dodatak izvora ne može reproducirati ovaj naslov. Instalirajte jedan u Postavke › Dodaci (vodiči na r/NotflixTV).</string>
     <string name="detail_btn_play">Reproduciraj</string>
     <string name="detail_btn_resume">Nastavi</string>
     <string name="detail_btn_play_episode">Reproduciraj S%1$d E%2$d</string>

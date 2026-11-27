@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Zgjidh një burim për shkarkim</string>
     <string name="notflix_offline_started">Shkarkimi u vendos në radhë</string>
     <string name="notflix_offline_failed">Ky skedar nuk mund të hapej ose të shkarkohej. Provo një skedar video të drejtpërdrejtë.</string>
+    <string name="notflix_offline_new_code">Rifresko kodin</string>
 </resources>

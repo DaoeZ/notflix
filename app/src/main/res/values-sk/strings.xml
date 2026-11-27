@@ -3160,7 +3160,7 @@
     <string name="cd_remove_recent_search">Odstrániť %1$s z nedávnych vyhľadávaní</string>
 
     <string name="playback_unavailable">Prehrávanie nie je k dispozícii</string>
-    <string name="playback_unavailable_message">Prehrávanie tohto titulu nie je s vaším aktuálnym nastavením k dispozícii.</string>
+    <string name="playback_unavailable_message">Žiadny zdrojový doplnok nedokáže prehrať tento titul. Nainštalujte ho v Nastavenia › Doplnky (návody na r/NotflixTV).</string>
     <string name="detail_more_like_this_powered_by_simkl">S podporou Simkl</string>
     <string name="theme_color_custom">Vlastná</string>
     <string name="custom_theme_title">Váš vlastný farebný prechod</string>

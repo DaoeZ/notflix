@@ -16,13 +16,14 @@ object NotflixVisualSpec {
     val RenderedCardWidthDp = SemanticsPropertyKey<Float>("NotflixRenderedCardWidthDp")
     /** M50: a settings row is drawing the inverted (white fill, black text) focus state. */
     val InvertedRowFocus = SemanticsPropertyKey<Boolean>("NotflixInvertedRowFocus")
-    val Accent = Color(0xFFE50914)
-    val Background = Color(0xFF0B0B0D)
-    val Surface = Color(0xFF18181D)
+    /** The theme colour the user picked (red by default); see [NotflixAccent]. */
+    val Accent: Color get() = NotflixAccent.color
+    val Background: Color get() = NotflixAccent.background
+    val Surface: Color get() = NotflixAccent.surface
     val Text = Color(0xFFF4F4F5)
     val Secondary = Color(0xFFC4C4CC)
     /** M50: 1 dp line between settings rows, and the muted copy inside inverted focus. */
-    val Divider = Color(0xFF26262C)
+    val Divider: Color get() = NotflixAccent.divider
     val InvertedSecondary = Color(0xFF3C3C44)
     /** M50: Notflix switch, off state (and its focused variant over the white row). */
     val ToggleOffTrack = Color(0xFF3A3A42)

@@ -2962,4 +2962,5 @@
     <string name="notflix_billboard_play_description">Luaj %1$s</string>
     <string name="notflix_billboard_info_description">Më shumë informacion: %1$s</string>
     <string name="notflix_billboard_select">Zgjidh titullin %1$d nga %2$d</string>
+    <string name="playback_unavailable_message">Asnjë shtojcë burimesh nuk mund ta luajë këtë titull. Instaloni një te Cilësimet › Shtojcat (udhëzues në r/NotflixTV).</string>
 </resources>

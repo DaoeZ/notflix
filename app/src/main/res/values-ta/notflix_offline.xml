@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">பதிவிறக்க ஒரு மூலத்தைத் தேர்ந்தெடுக்கவும்</string>
     <string name="notflix_offline_started">பதிவிறக்கம் வரிசையில் சேர்க்கப்பட்டது</string>
     <string name="notflix_offline_failed">இந்தக் கோப்பைத் திறக்கவோ பதிவிறக்கவோ முடியவில்லை. நேரடி வீடியோ கோப்பை முயற்சிக்கவும்.</string>
+    <string name="notflix_offline_new_code">குறியீட்டைப் புதுப்பி</string>
 </resources>

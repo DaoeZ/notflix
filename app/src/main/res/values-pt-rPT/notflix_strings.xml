@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Novidades desta versão</string>
     <string name="notflix_whats_new_about_subtitle">Veja as alterações da versão %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Escolha o tamanho dos cartões: pequeno, médio ou grande.</item>
-        <item>Escolha em quanto tempo os cartões abrem, e os botões ficam mais visíveis.</item>
-        <item>Os cartões também abrem e mostram o trailer dentro das coleções.</item>
-        <item>As notas indicam se são do IMDb ou do TMDB.</item>
-        <item>Reprodução automática por idioma: escolha vários, ordene-os e decida se a qualidade ou o idioma vem primeiro.</item>
-        <item>Títulos e descrições no idioma da app (com chave do TMDB).</item>
-        <item>O Notflix está traduzido para todos os idiomas da app.</item>
-        <item>Definições mais simples: as escolhas abrem em lista e as opções que não afetam o Notflix ficam ocultas.</item>
-        <item>Os perfis KIDS têm o seu próprio Início com desenhos animados e títulos para a família (requer chave do TMDB).</item>
-        <item>O Simkl já pode ser ligado.</item>
-        <item>Trakt: agora liga-se só com um código, sem configurar nada.</item>
+        <item>Seletor de cor do tema com fundo escuro matizado e tamanho personalizável da interface na TV (60%–130%) em Aspeto.</item>
+        <item>Botões «Gosto» e «Não me interessa» nos detalhes e no banner para afinar recomendações por perfil.</item>
+        <item>As avaliações de episódios usam agora SeriesGraph e TMDB como alternativa para quase todas as séries mostrarem nota.</item>
+        <item>Salto automático de streams falsos ou sem cache (até 10 tentativas) e reprodução automática mais rápida de episódios.</item>
+        <item>Mude o nome dos suplementos, mostre/oculte linhas Top 10 e escolha entre o teclado Notflix ou do sistema.</item>
+        <item>Pósteres localizados melhorados e correções de estabilidade.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Chave Notflix</string>
     <string name="notflix_tmdb_attribution">Este produto utiliza a API do TMDB, mas não é apoiado nem certificado pelo TMDB.</string>

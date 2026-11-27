@@ -652,6 +652,21 @@ class TmdbMetadataService(
             .toList()
     }
 
+    suspend fun fetchEpisodeRatings(
+        tmdbId: Int,
+        seasonNumbers: List<Int>,
+        language: String = "en"
+    ): Map<Pair<Int, Int>, Double> {
+        if (tmdbId <= 0 || seasonNumbers.isEmpty()) return emptyMap()
+        return fetchEpisodeEnrichment(
+            tmdbId = tmdbId.toString(),
+            seasonNumbers = seasonNumbers,
+            language = language
+        ).mapNotNull { (key, info) ->
+            info.voteAverage?.takeIf { it > 0.0 }?.let { key to it }
+        }.toMap()
+    }
+
     suspend fun fetchEpisodeEnrichment(
         tmdbId: String,
         seasonNumbers: List<Int>,
@@ -1783,7 +1798,8 @@ data class TmdbEpisodeEnrichment(
     val overview: String?,
     val thumbnail: String?,
     val airDate: String?,
-    val runtimeMinutes: Int?
+    val runtimeMinutes: Int?,
+    val voteAverage: Double? = null
 )
 
 enum class TmdbEntityKind(val routeValue: String) {
@@ -1848,7 +1864,8 @@ private fun TmdbEpisode.toEnrichment(): TmdbEpisodeEnrichment {
         overview = overview,
         thumbnail = thumbnail,
         airDate = airDate,
-        runtimeMinutes = runtime
+        runtimeMinutes = runtime,
+        voteAverage = voteAverage?.takeIf { it > 0.0 && (voteCount == null || voteCount > 0) }
     )
 }
 

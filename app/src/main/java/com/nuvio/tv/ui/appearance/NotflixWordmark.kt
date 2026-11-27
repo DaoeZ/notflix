@@ -17,7 +17,7 @@ fun NotflixWordmark(height: Dp, modifier: Modifier = Modifier, tint: androidx.co
         painter = painterResource(R.drawable.notflix_wordmark),
         contentDescription = stringResource(R.string.notflix_brand),
         contentScale = ContentScale.FillHeight,
-        colorFilter = tint?.let { androidx.compose.ui.graphics.ColorFilter.tint(it) },
+        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(tint ?: NotflixVisualSpec.Accent),
         modifier = modifier.height(height)
     )
 }

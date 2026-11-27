@@ -1685,4 +1685,5 @@
     <string name="notflix_billboard_play_description">Spela upp %1$s</string>
     <string name="notflix_billboard_info_description">Mer information: %1$s</string>
     <string name="notflix_billboard_select">Välj titel %1$d av %2$d</string>
+    <string name="playback_unavailable_message">Inget källtillägg kan spela upp den här titeln. Installera ett i Inställningar › Tillägg (guider på r/NotflixTV).</string>
 </resources>

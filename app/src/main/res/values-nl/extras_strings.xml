@@ -53,4 +53,26 @@
     <string name="extras_country_title">Land / regio (Top 10)</string>
     <string name="extras_country_subtitle">Kies van welk land de Top 10 op het startscherm wordt getoond</string>
     <string name="extras_country_auto">Automatisch (%1$s)</string>
+    <string name="extras_show_top10_title">Top 10-rijen tonen</string>
+    <string name="extras_show_top10_desc">Top 10 films en series in je land op de startpagina</string>
+    <string name="extras_accent_title">Themakleur</string>
+    <string name="extras_accent_red">Rood</string>
+    <string name="extras_accent_blue">Blauw</string>
+    <string name="extras_accent_green">Groen</string>
+    <string name="extras_accent_purple">Paars</string>
+    <string name="extras_accent_orange">Oranje</string>
+    <string name="extras_accent_pink">Roze</string>
+    <string name="extras_search_keyboard_title">Zoektoetsenbord</string>
+    <string name="extras_search_keyboard_desc">Notflix-toetsenbord op het scherm, of een tekstveld dat het toetsenbord van je tv opent (Gboard en de microfoon)</string>
+    <string name="extras_search_keyboard_notflix">Notflix-toetsenbord</string>
+    <string name="extras_search_keyboard_system">Systeemtoetsenbord</string>
+    <string name="companion_web_enter_code">Voer de 6-tekencode in die op je TV staat om de afstandsbediening te verbinden.</string>
+    <string name="companion_web_code_placeholder">Code (bijv. A1B2C3)</string>
+    <string name="companion_web_connect">Verbinden</string>
+    <string name="companion_web_invalid_code">Ongeldige code. Controleer de code op je TV en probeer opnieuw.</string>
+    <string name="extras_like_title">Leuk</string>
+    <string name="extras_dislike_title">Niet geïnteresseerd</string>
+    <string name="extras_ui_scale_title">Interfacegrootte</string>
+    <string name="extras_ui_scale_desc">Past de algemene grootte van menu\'s, posters en tekst op de tv aan</string>
+    <string name="extras_addon_rename_title">Add-on hernoemen</string>
 </resources>

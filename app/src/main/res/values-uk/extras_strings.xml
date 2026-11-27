@@ -53,4 +53,26 @@
     <string name="extras_country_title">Країна / регіон (Топ-10)</string>
     <string name="extras_country_subtitle">Виберіть країну для списку Топ-10 на головному екрані</string>
     <string name="extras_country_auto">Автоматично (%1$s)</string>
+    <string name="extras_show_top10_title">Показувати ряди «Топ-10»</string>
+    <string name="extras_show_top10_desc">Топ-10 фільмів і серіалів вашої країни на головній</string>
+    <string name="extras_accent_title">Колір теми</string>
+    <string name="extras_accent_red">Червоний</string>
+    <string name="extras_accent_blue">Синій</string>
+    <string name="extras_accent_green">Зелений</string>
+    <string name="extras_accent_purple">Фіолетовий</string>
+    <string name="extras_accent_orange">Помаранчевий</string>
+    <string name="extras_accent_pink">Рожевий</string>
+    <string name="extras_search_keyboard_title">Клавіатура пошуку</string>
+    <string name="extras_search_keyboard_desc">Клавіатура Notflix на екрані або текстове поле, яке відкриває клавіатуру телевізора (Gboard і мікрофон)</string>
+    <string name="extras_search_keyboard_notflix">Клавіатура Notflix</string>
+    <string name="extras_search_keyboard_system">Системна клавіатура</string>
+    <string name="companion_web_enter_code">Введіть 6-значний код із екрана ТВ, щоб підключити пульт.</string>
+    <string name="companion_web_code_placeholder">Код (напр. A1B2C3)</string>
+    <string name="companion_web_connect">Підключити</string>
+    <string name="companion_web_invalid_code">Неправильний код. Перевірте код на ТВ і спробуйте ще раз.</string>
+    <string name="extras_like_title">Подобається</string>
+    <string name="extras_dislike_title">Не цікавить</string>
+    <string name="extras_ui_scale_title">Розмір інтерфейсу</string>
+    <string name="extras_ui_scale_desc">Налаштовує загальний розмір меню, постерів і тексту на ТБ</string>
+    <string name="extras_addon_rename_title">Перейменувати доповнення</string>
 </resources>

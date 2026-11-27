@@ -53,4 +53,26 @@
     <string name="extras_country_title">Paese / Regione (Top 10)</string>
     <string name="extras_country_subtitle">Scegli di quale Paese mostrare la Top 10 nella Home</string>
     <string name="extras_country_auto">Automatico (%1$s)</string>
+    <string name="extras_show_top10_title">Mostra le righe Top 10</string>
+    <string name="extras_show_top10_desc">Top 10 film e serie nel tuo paese nella Home</string>
+    <string name="extras_accent_title">Colore del tema</string>
+    <string name="extras_accent_red">Rosso</string>
+    <string name="extras_accent_blue">Blu</string>
+    <string name="extras_accent_green">Verde</string>
+    <string name="extras_accent_purple">Viola</string>
+    <string name="extras_accent_orange">Arancione</string>
+    <string name="extras_accent_pink">Rosa</string>
+    <string name="extras_search_keyboard_title">Tastiera di ricerca</string>
+    <string name="extras_search_keyboard_desc">Tastiera Notflix sullo schermo, o un campo di testo che apre la tastiera della TV (Gboard e il suo microfono)</string>
+    <string name="extras_search_keyboard_notflix">Tastiera Notflix</string>
+    <string name="extras_search_keyboard_system">Tastiera di sistema</string>
+    <string name="companion_web_enter_code">Inserisci il codice di 6 caratteri mostrato sulla TV per collegare il telecomando.</string>
+    <string name="companion_web_code_placeholder">Codice (es. A1B2C3)</string>
+    <string name="companion_web_connect">Connetti</string>
+    <string name="companion_web_invalid_code">Codice non valido. Controlla il codice sulla TV e riprova.</string>
+    <string name="extras_like_title">Mi piace</string>
+    <string name="extras_dislike_title">Non mi interessa</string>
+    <string name="extras_ui_scale_title">Dimensione interfaccia</string>
+    <string name="extras_ui_scale_desc">Regola la dimensione generale di menu, locandine e testi sulla TV</string>
+    <string name="extras_addon_rename_title">Rinomina componente aggiuntivo</string>
 </resources>

@@ -217,7 +217,7 @@
   <string name="detail_marked_episodes_unwatched">Επισημάνθηκαν ως μη προβληθέντα επεισόδια: %1$d</string>
   <string name="detail_marked_previous_watched">Επισημάνθηκαν ως προβληθέντα προηγούμενα επεισόδια: %1$d</string>
   <string name="playback_unavailable">Μη διαθέσιμη αναπαραγωγή</string>
-  <string name="playback_unavailable_message">Η αναπαραγωγή δεν είναι διαθέσιμη για αυτόν τον τίτλο με τις τρέχουσες ρυθμίσεις σας.</string>
+  <string name="playback_unavailable_message">Κανένα πρόσθετο πηγών δεν μπορεί να αναπαράγει αυτόν τον τίτλο. Εγκαταστήστε ένα από Ρυθμίσεις › Πρόσθετα (οδηγοί στο r/NotflixTV).</string>
   <!-- MetaDetailsScreen -->
   <string name="detail_btn_play">Αναπαραγωγή</string>
   <string name="detail_btn_resume">Συνέχεια</string>

@@ -53,4 +53,26 @@
     <string name="extras_country_title">Šalis / regionas (Top 10)</string>
     <string name="extras_country_subtitle">Pasirinkite, kurios šalies Top 10 rodyti pradiniame ekrane</string>
     <string name="extras_country_auto">Automatiškai (%1$s)</string>
+    <string name="extras_show_top10_title">Rodyti „Top 10“ eilutes</string>
+    <string name="extras_show_top10_desc">Jūsų šalies 10 populiariausių filmų ir serialų pradžios ekrane</string>
+    <string name="extras_accent_title">Temos spalva</string>
+    <string name="extras_accent_red">Raudona</string>
+    <string name="extras_accent_blue">Mėlyna</string>
+    <string name="extras_accent_green">Žalia</string>
+    <string name="extras_accent_purple">Violetinė</string>
+    <string name="extras_accent_orange">Oranžinė</string>
+    <string name="extras_accent_pink">Rožinė</string>
+    <string name="extras_search_keyboard_title">Paieškos klaviatūra</string>
+    <string name="extras_search_keyboard_desc">Notflix klaviatūra ekrane arba teksto laukas, atidarantis televizoriaus klaviatūrą (Gboard ir mikrofonas)</string>
+    <string name="extras_search_keyboard_notflix">Notflix klaviatūra</string>
+    <string name="extras_search_keyboard_system">Sistemos klaviatūra</string>
+    <string name="companion_web_enter_code">Įveskite 6 simbolių kodą, rodomą televizoriuje, kad prijungtumėte pultelį.</string>
+    <string name="companion_web_code_placeholder">Kodas (pvz., A1B2C3)</string>
+    <string name="companion_web_connect">Prisijungti</string>
+    <string name="companion_web_invalid_code">Neteisingas kodas. Patikrinkite kodą televizoriuje ir bandykite dar kartą.</string>
+    <string name="extras_like_title">Patinka</string>
+    <string name="extras_dislike_title">Nedomina</string>
+    <string name="extras_ui_scale_title">Sąsajos dydis</string>
+    <string name="extras_ui_scale_desc">Reguliuoja bendrą meniu, plakatų ir teksto dydį televizoriuje</string>
+    <string name="extras_addon_rename_title">Pervadinti priedą</string>
 </resources>

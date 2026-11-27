@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">このバージョンの新機能</string>
     <string name="notflix_whats_new_about_subtitle">バージョン %1$s の変更点を見る</string>
     <string-array name="notflix_whats_new_items">
-        <item>カードサイズを選択: 小、中、大。</item>
-        <item>カードが開く速さを選択。ボタンが見つけやすくなります。</item>
-        <item>カードはコレクション内でも開き、予告編を再生します。</item>
-        <item>評価がIMDbかTMDBかを表示します。</item>
-        <item>言語ごとの自動再生：複数の言語を選んで順番を決め、画質と言語のどちらを優先するか選べます。</item>
-        <item>タイトルと説明をアプリの言語で表示（TMDBキーが必要）。</item>
-        <item>Notflixはアプリのすべての言語に翻訳されました。</item>
-        <item>設定がすっきり：選択肢はリストで開き、Notflix に関係しない項目は非表示になります。</item>
-        <item>KIDS プロフィールにはアニメやファミリー作品が並ぶ専用ホームがあります（TMDB キーが必要）。</item>
-        <item>Simklに接続できるようになりました。</item>
-        <item>Trakt：コードだけで接続でき、設定は不要です。</item>
+        <item>外観設定にテーマカラー（色味付きダーク背景）とカスタマイズ可能なTVインターフェースサイズ（60%〜130%）を追加。</item>
+        <item>詳細画面とバナーに「いいね」「興味なし」ボタンを追加し、プロフィールごとのおすすめ精度を向上。</item>
+        <item>エピソード評価にSeriesGraphとTMDBのフォールバックを追加し、ほぼすべての作品で評価を表示。</item>
+        <item>ダミーや未キャッシュのストリームを自動スキップ（最大10回）し、エピソードの自動再生を高速化。</item>
+        <item>アドオン名の変更、Top 10行の表示切替、Notflixまたはシステム検索キーボードの選択に対応。</item>
+        <item>ローカライズされたポスター表示の改善と安定性の向上。</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflixキー</string>
     <string name="notflix_tmdb_attribution">この製品はTMDB APIを使用していますが、TMDBによって承認または認定されていません。</string>

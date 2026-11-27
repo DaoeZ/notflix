@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Válassz forrást a letöltéshez</string>
     <string name="notflix_offline_started">Letöltés sorba állítva</string>
     <string name="notflix_offline_failed">Ezt a fájlt nem sikerült megnyitni vagy letölteni. Próbálj egy közvetlen videofájlt.</string>
+    <string name="notflix_offline_new_code">Kód frissítése</string>
 </resources>

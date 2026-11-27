@@ -2769,4 +2769,5 @@
     <string name="notflix_billboard_play_description">Afspil %1$s</string>
     <string name="notflix_billboard_info_description">Mere information: %1$s</string>
     <string name="notflix_billboard_select">Vælg titel %1$d af %2$d</string>
+    <string name="playback_unavailable_message">Ingen kildetilføjelse kan afspille denne titel. Installer en i Indstillinger › Tilføjelser (guides på r/NotflixTV).</string>
 </resources>

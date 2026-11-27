@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Bu sürümdeki yenilikler</string>
     <string name="notflix_whats_new_about_subtitle">%1$s sürümündeki değişikliklere bakın</string>
     <string-array name="notflix_whats_new_items">
-        <item>Kart boyutunu seçin: küçük, orta veya büyük.</item>
-        <item>Kartların ne kadar hızlı açılacağını seçin; düğmeleri daha kolay görünür.</item>
-        <item>Kartlar artık koleksiyonlarda da açılıyor ve fragman oynatıyor.</item>
-        <item>Puanlar IMDb\'den mi yoksa TMDB\'den mi geldiğini gösterir.</item>
-        <item>Dile göre otomatik oynatma: birden fazla dil seçin, sıralayın ve önceliğin kalitede mi dilde mi olacağına karar verin.</item>
-        <item>Başlıklar ve açıklamalar uygulamanın dilinde (TMDB anahtarıyla).</item>
-        <item>Notflix tüm uygulama dillerine çevrildi.</item>
-        <item>Daha sade ayarlar: seçimler liste olarak açılır, Notflix\'i etkilemeyen seçenekler gizlenir.</item>
-        <item>KIDS profillerinin çizgi filmler ve aile yapımlarıyla kendi ana sayfası var (TMDB anahtarı gerekir).</item>
-        <item>Simkl artık bağlanabilir.</item>
-        <item>Trakt: tek bir kodla bağlanın, kurulum gerekmez.</item>
+        <item>Görünümde renk tonlu koyu arka planlı tema rengi seçici ve özelleştirilebilir TV arayüz boyutu (%60–%130).</item>
+        <item>Profil bazında önerileri iyileştirmek için ayrıntılar ve afişte «Beğendim» / «Bana göre değil» düğmeleri.</item>
+        <item>Bölüm puanları artık SeriesGraph ve TMDB yedeğini kullanıyor; neredeyse her dizide puan görünüyor.</item>
+        <item>Sahte veya önbelleksiz akışları otomatik atlama (10 denemeye kadar) ve daha hızlı bölüm otomatik oynatma.</item>
+        <item>Eklentileri yeniden adlandırma, Top 10 satırlarını açıp kapatma ve Notflix veya sistem arama klavyesi seçimi.</item>
+        <item>Geliştirilmiş yerelleştirilmiş afişler ve kararlılık düzeltmeleri.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix anahtarı</string>
     <string name="notflix_tmdb_attribution">Bu ürün TMDB API\'sini kullanır ancak TMDB tarafından onaylanmamış veya sertifikalandırılmamıştır.</string>

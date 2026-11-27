@@ -193,17 +193,12 @@
     <string name="notflix_whats_new_about_title">Novinky v tejto verzii</string>
     <string name="notflix_whats_new_about_subtitle">Pozrite si zmeny vo verzii %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Vyberte veľkosť kariet: malá, stredná alebo veľká.</item>
-        <item>Vyberte, ako rýchlo sa karty otvárajú; ich tlačidlá sú lepšie viditeľné.</item>
-        <item>Karty sa teraz otvárajú aj v kolekciách a prehrávajú trailer.</item>
-        <item>Hodnotenia ukazujú, či pochádzajú z IMDb alebo TMDB.</item>
-        <item>Automatické prehrávanie podľa jazyka: vyberte ich niekoľko, zoraďte ich a rozhodnite, či má prednosť kvalita, alebo jazyk.</item>
-        <item>Tituly a popisy v jazyku aplikácie (s kľúčom TMDB).</item>
-        <item>Notflix je preložený do všetkých jazykov aplikácie.</item>
-        <item>Prehľadnejšie nastavenia: voľby sa otvárajú ako zoznam a možnosti bez vplyvu na Notflix sú skryté.</item>
-        <item>Profily KIDS majú vlastnú domovskú stránku s animákmi a rodinnými titulmi (vyžaduje kľúč TMDB).</item>
-        <item>Simkl sa teraz dá pripojiť.</item>
-        <item>Trakt: pripojenie iba kódom, bez nastavovania.</item>
+        <item>Výber farby motívu s tónovaným tmavým pozadím a nastaviteľná veľkosť rozhrania TV (60 %–130 %) vo Vzhľade.</item>
+        <item>Tlačidlá «Páči sa mi» a «Nezaujíma ma» v detailoch a banneri pre presnejšie odporúčania na profil.</item>
+        <item>Hodnotenia epizód teraz ako zálohu používajú SeriesGraph a TMDB, takže hodnotenia zobrazuje takmer každý seriál.</item>
+        <item>Automatické preskočenie falošných alebo nekešovaných zdrojov (až 10 pokusov) a rýchlejšie automatické prehrávanie epizód.</item>
+        <item>Premenovanie doplnkov, prepínač riadkov Top 10 a voľba medzi klávesnicou Notflix alebo systémovou.</item>
+        <item>Lepšie lokalizované plagáty a opravy stability.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Kľúč Notflix</string>
     <string name="notflix_tmdb_attribution">Tento produkt používa rozhranie API TMDB, ale nie je schválený ani certifikovaný spoločnosťou TMDB.</string>

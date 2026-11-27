@@ -91,6 +91,9 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
             .getString("locale_tag", null)
         LocaleCache.localeTag = tag ?: ""
         com.nuvio.tv.ui.screens.home.NotflixCountryPreference.initialize(this)
+        com.nuvio.tv.ui.appearance.NotflixAccent.initialize(this)
+        com.nuvio.tv.ui.screens.search.NotflixSearchModePreference.initialize(this)
+        com.nuvio.tv.data.local.NotflixTitleFeedbackStore.initialize(this)
     }
 
     override fun newImageLoader(context: android.content.Context): ImageLoader {

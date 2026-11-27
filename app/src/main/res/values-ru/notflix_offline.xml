@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Выберите источник для загрузки</string>
     <string name="notflix_offline_started">Загрузка в очереди</string>
     <string name="notflix_offline_failed">Не удалось открыть или скачать этот файл. Попробуйте прямой видеофайл.</string>
+    <string name="notflix_offline_new_code">Обновить код</string>
 </resources>

@@ -56,7 +56,8 @@ internal fun NotflixEpisodeVisual(
                     fontFamily = NotflixVisualSpec.BodyFont, fontSize = 12.sp, lineHeight = 15.sp,
                     fontWeight = FontWeight.SemiBold, color = NotflixVisualSpec.Text, maxLines = 2,
                     overflow = TextOverflow.Ellipsis)
-                Text(listOfNotNull(date.takeIf { it.isNotBlank() }, runtime, rating?.let { "IMDb $it" }).joinToString(" · "),
+                // Rating first: on a long date the line ellipsizes at its end, which used to cut the rating.
+                Text(listOfNotNull(rating?.let { "IMDb $it" }, runtime, date.takeIf { it.isNotBlank() }).joinToString(" · "),
                     fontFamily = NotflixVisualSpec.BodyFont, fontSize = 9.sp, color = NotflixVisualSpec.Secondary,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (watched || unavailable != null) Text(listOfNotNull(if (watched) stringResource(R.string.episodes_cd_watched) else null, unavailable).joinToString(" · "),

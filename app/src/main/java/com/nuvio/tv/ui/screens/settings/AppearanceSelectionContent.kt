@@ -91,23 +91,61 @@ fun AppearanceSelectionContent(
         }
         }
         if (state.context != null && state.effective == AppAppearance.NOTFLIX) {
-            // M60 PARTE 3: a choice is one row with the current value that opens a list, never a
-            // row of repeated buttons or an OK cycle.
+            // 1. Visual look (Theme colour, UI scale, card size/opening, motion)
+            if (com.nuvio.tv.ui.appearance.AppearancePolicy.NOTFLIX_AVAILABLE &&
+                notflixSettingsRowVisible("AppearanceSelectionContent.notflix_wikipedia_enabled")
+            ) {
+                val accentNames = mapOf(
+                    com.nuvio.tv.ui.appearance.NotflixAccentColor.RED to stringResource(R.string.extras_accent_red),
+                    com.nuvio.tv.ui.appearance.NotflixAccentColor.BLUE to stringResource(R.string.extras_accent_blue),
+                    com.nuvio.tv.ui.appearance.NotflixAccentColor.GREEN to stringResource(R.string.extras_accent_green),
+                    com.nuvio.tv.ui.appearance.NotflixAccentColor.PURPLE to stringResource(R.string.extras_accent_purple),
+                    com.nuvio.tv.ui.appearance.NotflixAccentColor.ORANGE to stringResource(R.string.extras_accent_orange),
+                    com.nuvio.tv.ui.appearance.NotflixAccentColor.PINK to stringResource(R.string.extras_accent_pink),
+                )
+                val accent = com.nuvio.tv.ui.appearance.NotflixAccent.selected
+                SettingsSingleChoiceRow(
+                    title = stringResource(R.string.extras_accent_title),
+                    value = accentNames.getValue(accent),
+                    options = accentNames.map { (choice, name) -> SettingsPickerOption(choice, name) },
+                    selectedValue = accent,
+                    onOptionSelected = { com.nuvio.tv.ui.appearance.NotflixAccent.select(it) },
+                    stateKey = state.context,
+                    modifier = Modifier.testTag("accent-color-selector")
+                )
+                val uiScalePercent = com.nuvio.tv.ui.appearance.NotflixUiScale.scalePercent
+                SettingsSingleChoiceRow(
+                    title = stringResource(R.string.extras_ui_scale_title),
+                    subtitle = stringResource(R.string.extras_ui_scale_desc),
+                    value = "${uiScalePercent}%",
+                    options = com.nuvio.tv.ui.appearance.NotflixUiScale.STEPS.map { pct ->
+                        SettingsPickerOption(pct, "${pct}%")
+                    },
+                    selectedValue = uiScalePercent,
+                    onOptionSelected = { com.nuvio.tv.ui.appearance.NotflixUiScale.select(it) },
+                    stateKey = state.context,
+                    modifier = Modifier.testTag("ui-scale-selector")
+                )
+            }
             SettingsSingleChoiceRow(
-                settingId = "AppearanceSelectionContent.notflix_home_motion_title",
-                title = stringResource(R.string.notflix_home_motion_title),
-                subtitle = stringResource(R.string.notflix_home_motion_help),
-                value = stringResource(if (state.reduceHomeMotion) R.string.notflix_home_motion_reduced
-                    else R.string.notflix_home_motion_normal),
+                settingId = "AppearanceSelectionContent.notflix_card_size_title",
+                title = stringResource(R.string.notflix_card_size_title),
+                subtitle = stringResource(R.string.notflix_card_size_help),
+                value = stringResource(when (state.cardSize) {
+                    NotflixCardSize.SMALL -> R.string.notflix_card_size_small
+                    NotflixCardSize.MEDIUM -> R.string.notflix_card_size_medium
+                    NotflixCardSize.LARGE -> R.string.notflix_card_size_large
+                }),
                 options = listOf(
-                    SettingsPickerOption(false, stringResource(R.string.notflix_home_motion_normal)),
-                    SettingsPickerOption(true, stringResource(R.string.notflix_home_motion_reduced))
+                    SettingsPickerOption(NotflixCardSize.SMALL, stringResource(R.string.notflix_card_size_small)),
+                    SettingsPickerOption(NotflixCardSize.MEDIUM, stringResource(R.string.notflix_card_size_medium)),
+                    SettingsPickerOption(NotflixCardSize.LARGE, stringResource(R.string.notflix_card_size_large))
                 ),
-                selectedValue = state.reduceHomeMotion,
-                onOptionSelected = onSelectHomeMotion,
+                selectedValue = state.cardSize,
+                onOptionSelected = onSelectCardSize,
                 stateKey = state.context,
-                optionTestTag = { if (it) "home-motion-option-reduced" else "home-motion-option-normal" },
-                modifier = Modifier.testTag(if (state.reduceHomeMotion) "home-motion-reduced" else "home-motion-normal")
+                optionTestTag = { "card-size-option-${it.name.lowercase()}" },
+                modifier = Modifier.testTag("card-size-${state.cardSize.name.lowercase()}")
             )
             SettingsSingleChoiceRow(
                 settingId = "AppearanceSelectionContent.notflix_card_open_title",
@@ -129,26 +167,66 @@ fun AppearanceSelectionContent(
                 optionTestTag = { "card-opening-option-${it.name.lowercase()}" },
                 modifier = Modifier.testTag("card-opening-${state.cardOpening.name.lowercase()}")
             )
+            // M60 PARTE 3: a choice is one row with the current value that opens a list, never a
+            // row of repeated buttons or an OK cycle.
             SettingsSingleChoiceRow(
-                settingId = "AppearanceSelectionContent.notflix_card_size_title",
-                title = stringResource(R.string.notflix_card_size_title),
-                subtitle = stringResource(R.string.notflix_card_size_help),
-                value = stringResource(when (state.cardSize) {
-                    NotflixCardSize.SMALL -> R.string.notflix_card_size_small
-                    NotflixCardSize.MEDIUM -> R.string.notflix_card_size_medium
-                    NotflixCardSize.LARGE -> R.string.notflix_card_size_large
-                }),
+                settingId = "AppearanceSelectionContent.notflix_home_motion_title",
+                title = stringResource(R.string.notflix_home_motion_title),
+                subtitle = stringResource(R.string.notflix_home_motion_help),
+                value = stringResource(if (state.reduceHomeMotion) R.string.notflix_home_motion_reduced
+                    else R.string.notflix_home_motion_normal),
                 options = listOf(
-                    SettingsPickerOption(NotflixCardSize.SMALL, stringResource(R.string.notflix_card_size_small)),
-                    SettingsPickerOption(NotflixCardSize.MEDIUM, stringResource(R.string.notflix_card_size_medium)),
-                    SettingsPickerOption(NotflixCardSize.LARGE, stringResource(R.string.notflix_card_size_large))
+                    SettingsPickerOption(false, stringResource(R.string.notflix_home_motion_normal)),
+                    SettingsPickerOption(true, stringResource(R.string.notflix_home_motion_reduced))
                 ),
-                selectedValue = state.cardSize,
-                onOptionSelected = onSelectCardSize,
+                selectedValue = state.reduceHomeMotion,
+                onOptionSelected = onSelectHomeMotion,
                 stateKey = state.context,
-                optionTestTag = { "card-size-option-${it.name.lowercase()}" },
-                modifier = Modifier.testTag("card-size-${state.cardSize.name.lowercase()}")
+                optionTestTag = { if (it) "home-motion-option-reduced" else "home-motion-option-normal" },
+                modifier = Modifier.testTag(if (state.reduceHomeMotion) "home-motion-reduced" else "home-motion-normal")
             )
+            // 2. Top 10 rows & country
+            if (com.nuvio.tv.ui.appearance.AppearancePolicy.NOTFLIX_AVAILABLE &&
+                notflixSettingsRowVisible("AppearanceSelectionContent.notflix_wikipedia_enabled")
+            ) {
+                val showTop10 by com.nuvio.tv.ui.screens.home.NotflixCountryPreference.showTop10.collectAsState()
+                SettingsToggleRow(
+                    title = stringResource(R.string.extras_show_top10_title),
+                    subtitle = stringResource(R.string.extras_show_top10_desc),
+                    checked = showTop10,
+                    onToggle = { com.nuvio.tv.ui.screens.home.NotflixCountryPreference.setShowTop10(!showTop10) },
+                    modifier = Modifier.testTag("top10-show-toggle"),
+                    expandSubtitleOnFocus = true
+                )
+                val countryOverride by com.nuvio.tv.ui.screens.home.NotflixCountryPreference.selectedCountry.collectAsState()
+                val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+                val autoCode = remember(locale) { com.nuvio.tv.ui.screens.home.notflixSystemCountryCode(locale) }
+                val autoName = remember(autoCode, locale) {
+                    com.nuvio.tv.ui.screens.home.NotflixCountryPreference.displayCountryName(autoCode, locale)
+                }
+                val autoLabel = stringResource(R.string.extras_country_auto, autoName)
+                val countryOptions = remember(locale, autoLabel) {
+                    val sorted = com.nuvio.tv.ui.screens.home.NotflixCountryPreference.SUPPORTED_COUNTRIES
+                        .map { code -> code to com.nuvio.tv.ui.screens.home.NotflixCountryPreference.displayCountryName(code, locale) }
+                        .sortedBy { it.second.lowercase(locale) }
+                        .map { SettingsPickerOption(it.first, it.second) }
+                    listOf(SettingsPickerOption(com.nuvio.tv.ui.screens.home.NotflixCountryPreference.AUTO, autoLabel)) + sorted
+                }
+                val currentCountryLabel = if (countryOverride.isEmpty()) autoLabel else remember(countryOverride, locale) {
+                    com.nuvio.tv.ui.screens.home.NotflixCountryPreference.displayCountryName(countryOverride, locale)
+                }
+                SettingsSingleChoiceRow(
+                    title = stringResource(R.string.extras_country_title),
+                    subtitle = stringResource(R.string.extras_country_subtitle),
+                    value = currentCountryLabel,
+                    options = countryOptions,
+                    selectedValue = countryOverride,
+                    onOptionSelected = { code -> com.nuvio.tv.ui.screens.home.NotflixCountryPreference.select(code) },
+                    stateKey = state.context,
+                    modifier = Modifier.testTag("top10-country-selector")
+                )
+            }
+            // 3. Intro & preview rows (projected into INTRO / TRAILERS pages)
             SettingsToggleRow(
                 settingId = "AppearanceSelectionContent.notflix_intro_enabled",
                 title = stringResource(R.string.notflix_intro_enabled),
@@ -185,6 +263,27 @@ fun AppearanceSelectionContent(
                 modifier = Modifier.testTag("preview-sound"),
                 expandSubtitleOnFocus = true
             )
+            // 4. Extras (search keyboard, UI sounds, Wikipedia)
+            if (com.nuvio.tv.ui.appearance.AppearancePolicy.NOTFLIX_AVAILABLE &&
+                notflixSettingsRowVisible("AppearanceSelectionContent.notflix_wikipedia_enabled")
+            ) {
+                val systemSearchKeyboard by com.nuvio.tv.ui.screens.search.NotflixSearchModePreference.systemKeyboard.collectAsState()
+                val notflixKeyboardLabel = stringResource(R.string.extras_search_keyboard_notflix)
+                val systemKeyboardLabel = stringResource(R.string.extras_search_keyboard_system)
+                SettingsSingleChoiceRow(
+                    title = stringResource(R.string.extras_search_keyboard_title),
+                    subtitle = stringResource(R.string.extras_search_keyboard_desc),
+                    value = if (systemSearchKeyboard) systemKeyboardLabel else notflixKeyboardLabel,
+                    options = listOf(
+                        SettingsPickerOption(false, notflixKeyboardLabel),
+                        SettingsPickerOption(true, systemKeyboardLabel)
+                    ),
+                    selectedValue = systemSearchKeyboard,
+                    onOptionSelected = { com.nuvio.tv.ui.screens.search.NotflixSearchModePreference.setSystemKeyboard(it) },
+                    stateKey = state.context,
+                    modifier = Modifier.testTag("search-keyboard-selector")
+                )
+            }
             SettingsToggleRow(
                 settingId = "AppearanceSelectionContent.notflix_ui_sounds",
                 title = stringResource(R.string.notflix_ui_sounds),
@@ -204,35 +303,6 @@ fun AppearanceSelectionContent(
                     modifier = Modifier.testTag("wikipedia-enabled"),
                     expandSubtitleOnFocus = true
                 )
-                if (notflixSettingsRowVisible("AppearanceSelectionContent.notflix_wikipedia_enabled")) {
-                    val countryOverride by com.nuvio.tv.ui.screens.home.NotflixCountryPreference.selectedCountry.collectAsState()
-                    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
-                    val autoCode = remember(locale) { com.nuvio.tv.ui.screens.home.notflixSystemCountryCode(locale) }
-                    val autoName = remember(autoCode, locale) {
-                        com.nuvio.tv.ui.screens.home.NotflixCountryPreference.displayCountryName(autoCode, locale)
-                    }
-                    val autoLabel = stringResource(R.string.extras_country_auto, autoName)
-                    val countryOptions = remember(locale, autoLabel) {
-                        val sorted = com.nuvio.tv.ui.screens.home.NotflixCountryPreference.SUPPORTED_COUNTRIES
-                            .map { code -> code to com.nuvio.tv.ui.screens.home.NotflixCountryPreference.displayCountryName(code, locale) }
-                            .sortedBy { it.second.lowercase(locale) }
-                            .map { SettingsPickerOption(it.first, it.second) }
-                        listOf(SettingsPickerOption(com.nuvio.tv.ui.screens.home.NotflixCountryPreference.AUTO, autoLabel)) + sorted
-                    }
-                    val currentCountryLabel = if (countryOverride.isEmpty()) autoLabel else remember(countryOverride, locale) {
-                        com.nuvio.tv.ui.screens.home.NotflixCountryPreference.displayCountryName(countryOverride, locale)
-                    }
-                    SettingsSingleChoiceRow(
-                        title = stringResource(R.string.extras_country_title),
-                        subtitle = stringResource(R.string.extras_country_subtitle),
-                        value = currentCountryLabel,
-                        options = countryOptions,
-                        selectedValue = countryOverride,
-                        onOptionSelected = { code -> com.nuvio.tv.ui.screens.home.NotflixCountryPreference.select(code) },
-                        stateKey = state.context,
-                        modifier = Modifier.testTag("top10-country-selector")
-                    )
-                }
                 if (notflixSettingsRowVisible("AppearanceSelectionContent.collection")) collectionCreator()
             }
         }

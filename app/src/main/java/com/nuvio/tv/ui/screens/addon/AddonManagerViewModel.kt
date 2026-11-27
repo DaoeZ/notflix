@@ -220,6 +220,12 @@ class AddonManagerViewModel @Inject constructor(
         }
     }
 
+    fun renameAddon(baseUrl: String, customName: String) {
+        viewModelScope.launch {
+            addonRepository.renameAddon(baseUrl, customName)
+        }
+    }
+
     fun moveAddonUp(baseUrl: String) {
         reorderAddon(baseUrl, -1)
     }

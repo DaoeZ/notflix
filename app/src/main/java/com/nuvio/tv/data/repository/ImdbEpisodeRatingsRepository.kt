@@ -1,6 +1,7 @@
 package com.nuvio.tv.data.repository
 
 import android.util.Log
+import com.nuvio.tv.core.tmdb.TmdbMetadataService
 import com.nuvio.tv.data.remote.api.ImdbTapframeApi
 import com.nuvio.tv.data.remote.api.SeriesGraphApi
 import kotlinx.coroutines.CoroutineScope
@@ -16,7 +17,8 @@ import javax.inject.Singleton
 @Singleton
 class ImdbEpisodeRatingsRepository @Inject constructor(
     private val imdbTapframeApi: ImdbTapframeApi,
-    private val seriesGraphApi: SeriesGraphApi
+    private val seriesGraphApi: SeriesGraphApi,
+    private val tmdbMetadataService: TmdbMetadataService
 ) {
     private data class CacheEntry(
         val ratings: Map<Pair<Int, Int>, Double>,
@@ -32,7 +34,8 @@ class ImdbEpisodeRatingsRepository @Inject constructor(
 
     suspend fun getEpisodeRatings(
         imdbId: String?,
-        tmdbId: Int?
+        tmdbId: Int?,
+        expectedEpisodes: Set<Pair<Int, Int>> = emptySet()
     ): Map<Pair<Int, Int>, Double> {
         val normalizedImdbId = imdbId
             ?.trim()
@@ -41,10 +44,8 @@ class ImdbEpisodeRatingsRepository @Inject constructor(
         val normalizedTmdbId = tmdbId?.takeIf { it > 0 }
         if (normalizedImdbId == null && normalizedTmdbId == null) return emptyMap()
 
-        val cacheKey = when {
-            !normalizedImdbId.isNullOrBlank() -> "imdb:$normalizedImdbId"
-            else -> "tmdb:$normalizedTmdbId"
-        }
+        val seasonsKey = expectedEpisodes.map { it.first }.distinct().sorted().joinToString(",")
+        val cacheKey = "imdb:${normalizedImdbId.orEmpty()}|tmdb:${normalizedTmdbId ?: 0}|s:$seasonsKey"
 
         val now = System.currentTimeMillis()
         cache[cacheKey]?.let { cached ->
@@ -57,7 +58,8 @@ class ImdbEpisodeRatingsRepository @Inject constructor(
                 try {
                     fetchEpisodeRatings(
                         imdbId = normalizedImdbId,
-                        tmdbId = normalizedTmdbId
+                        tmdbId = normalizedTmdbId,
+                        expectedEpisodes = expectedEpisodes
                     ).also { result ->
                         cache[cacheKey] = CacheEntry(
                             ratings = result,
@@ -77,21 +79,58 @@ class ImdbEpisodeRatingsRepository @Inject constructor(
         return deferred.await()
     }
 
+    /**
+     * Per-episode fallback order: 1) IMDb (Tapframe), 2) SeriesGraph, 3) TMDB.
+     * Earlier sources always win; later sources only fill episodes still missing a rating.
+     */
     private suspend fun fetchEpisodeRatings(
         imdbId: String?,
-        tmdbId: Int?
+        tmdbId: Int?,
+        expectedEpisodes: Set<Pair<Int, Int>>
     ): Map<Pair<Int, Int>, Double> {
+        val merged = linkedMapOf<Pair<Int, Int>, Double>()
+
         if (!imdbId.isNullOrBlank()) {
-            val primary = fetchFromImdbTapframe(imdbId)
-            if (primary.isNotEmpty()) return primary
-            Log.w(tag, "Primary episode ratings empty for imdbId=$imdbId, trying fallback.")
+            merged.putAll(fetchFromImdbTapframe(imdbId))
         }
 
-        if (tmdbId != null && tmdbId > 0) {
-            return fetchFromSeriesGraph(tmdbId)
+        val needsMoreAfterImdb = merged.isEmpty() || expectedEpisodes.any { it !in merged }
+        if (tmdbId != null && tmdbId > 0 && needsMoreAfterImdb) {
+            fetchFromSeriesGraph(tmdbId).forEach { (key, value) ->
+                if (key !in merged) merged[key] = value
+            }
         }
 
-        return emptyMap()
+        val missingSeasons = if (expectedEpisodes.isNotEmpty()) {
+            expectedEpisodes.asSequence()
+                .filter { it !in merged }
+                .map { it.first }
+                .filter { it > 0 }
+                .distinct()
+                .sorted()
+                .toList()
+        } else {
+            emptyList()
+        }
+        if (tmdbId != null && tmdbId > 0 && missingSeasons.isNotEmpty()) {
+            fetchFromTmdb(tmdbId, missingSeasons).forEach { (key, value) ->
+                if (key !in merged) merged[key] = value
+            }
+        }
+
+        return merged
+    }
+
+    private suspend fun fetchFromTmdb(
+        tmdbId: Int,
+        seasonNumbers: List<Int>
+    ): Map<Pair<Int, Int>, Double> {
+        return try {
+            tmdbMetadataService.fetchEpisodeRatings(tmdbId, seasonNumbers)
+        } catch (e: Exception) {
+            Log.w(tag, "Error fetching TMDB episode ratings for tmdbId=$tmdbId", e)
+            emptyMap()
+        }
     }
 
     private suspend fun fetchFromImdbTapframe(imdbId: String): Map<Pair<Int, Int>, Double> {
@@ -128,7 +167,7 @@ class ImdbEpisodeRatingsRepository @Inject constructor(
                 season.episodes.orEmpty().forEach { episode ->
                     val seasonNumber = episode.seasonNumber ?: return@forEach
                     val episodeNumber = episode.episodeNumber ?: return@forEach
-                    val voteAverage = episode.voteAverage ?: return@forEach
+                    val voteAverage = episode.voteAverage?.takeIf { it > 0.0 } ?: return@forEach
                     put(seasonNumber to episodeNumber, voteAverage)
                 }
             }

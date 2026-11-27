@@ -227,7 +227,7 @@
     <string name="detail_marked_episodes_unwatched">İzlenmedi olarak işaretlenen bölümler: %1$d</string>
     <string name="detail_marked_previous_watched">İzlendi olarak işaretlenen önceki bölümler: %1$d</string>
     <string name="playback_unavailable">Oynatma kullanılamıyor</string>
-    <string name="playback_unavailable_message">Mevcut kurulumunuzla bu içerik oynatılamıyor.</string>
+    <string name="playback_unavailable_message">Bu içeriği oynatabilecek kaynak eklentisi yok. Ayarlar › Eklentiler bölümünden bir tane kurun (rehberler: r/NotflixTV).</string>
 
     <!-- MetaDetailsScreen -->
     <string name="detail_btn_play">Oynat</string>

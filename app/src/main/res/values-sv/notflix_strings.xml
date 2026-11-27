@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Nyheter i den här versionen</string>
     <string name="notflix_whats_new_about_subtitle">Se ändringarna i version %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Välj kortstorlek: liten, mellan eller stor.</item>
-        <item>Välj hur snabbt korten öppnas, och deras knappar syns bättre.</item>
-        <item>Korten öppnas och spelar trailer även i samlingar.</item>
-        <item>Betygen visar om de kommer från IMDb eller TMDB.</item>
-        <item>Automatisk uppspelning efter språk: välj flera, ordna dem och bestäm om kvalitet eller språk går först.</item>
-        <item>Titlar och beskrivningar på appens språk (med TMDB-nyckel).</item>
-        <item>Notflix är översatt till alla appens språk.</item>
-        <item>Tydligare inställningar: val öppnas som listor och alternativ som inte påverkar Notflix döljs.</item>
-        <item>KIDS-profiler får en egen startsida med tecknat och familjetitlar (kräver en TMDB-nyckel).</item>
-        <item>Simkl kan nu anslutas.</item>
-        <item>Trakt: anslut med bara en kod, ingen konfiguration.</item>
+        <item>Temafärgväljare med tonad mörk bakgrund och anpassningsbar TV-gränssnittsstorlek (60 %–130 %) i Utseende.</item>
+        <item>«Gilla» och «Inte för mig» på detaljer och banner för bättre rekommendationer per profil.</item>
+        <item>Avsnittsbetyg använder nu SeriesGraph och TMDB som reserv så att nästan alla serier visar betyg.</item>
+        <item>Automatisk överhoppning av falska eller ocachade strömmar (upp till 10 försök) och snabbare autouppspelning av avsnitt.</item>
+        <item>Byt namn på tillägg, visa/dölj Topp 10-rader och välj mellan Notflix- eller systemtangentbord.</item>
+        <item>Förbättrade lokaliserade affischer och stabilitetsfixar.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix-nyckel</string>
     <string name="notflix_tmdb_attribution">Den här produkten använder TMDB:s API men är inte godkänd eller certifierad av TMDB.</string>

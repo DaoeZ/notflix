@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Виберіть джерело для завантаження</string>
     <string name="notflix_offline_started">Завантаження в черзі</string>
     <string name="notflix_offline_failed">Не вдалося відкрити або завантажити цей файл. Спробуйте прямий відеофайл.</string>
+    <string name="notflix_offline_new_code">Оновити код</string>
 </resources>

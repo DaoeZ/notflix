@@ -3187,4 +3187,5 @@
     <string name="notflix_billboard_play_description">Воспроизвести %1$s</string>
     <string name="notflix_billboard_info_description">Подробнее: %1$s</string>
     <string name="notflix_billboard_select">Выберите название %1$d из %2$d</string>
+    <string name="playback_unavailable_message">Ни одно дополнение источников не может воспроизвести этот контент. Установите его в Настройки › Дополнения (руководства на r/NotflixTV).</string>
 </resources>

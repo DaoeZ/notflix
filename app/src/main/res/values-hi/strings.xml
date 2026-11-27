@@ -1070,4 +1070,5 @@
     <string name="notflix_billboard_play_description">%1$s चलाएँ</string>
     <string name="notflix_billboard_info_description">अधिक जानकारी: %1$s</string>
     <string name="notflix_billboard_select">शीर्षक %1$d / %2$d चुनें</string>
+    <string name="playback_unavailable_message">कोई भी सोर्स ऐड-ऑन इस शीर्षक को नहीं चला सकता। सेटिंग्स › ऐड-ऑन में एक इंस्टॉल करें (गाइड: r/NotflixTV)।</string>
 </resources>

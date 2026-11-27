@@ -53,4 +53,26 @@
     <string name="extras_country_title">البلد / المنطقة (أفضل 10)</string>
     <string name="extras_country_subtitle">اختر البلد الذي تظهر قائمة أفضل 10 الخاصة به في الرئيسية</string>
     <string name="extras_country_auto">تلقائي (%1$s)</string>
+    <string name="extras_show_top10_title">إظهار صفوف أفضل 10</string>
+    <string name="extras_show_top10_desc">أفضل 10 أفلام ومسلسلات في بلدك على الصفحة الرئيسية</string>
+    <string name="extras_accent_title">لون السمة</string>
+    <string name="extras_accent_red">أحمر</string>
+    <string name="extras_accent_blue">أزرق</string>
+    <string name="extras_accent_green">أخضر</string>
+    <string name="extras_accent_purple">بنفسجي</string>
+    <string name="extras_accent_orange">برتقالي</string>
+    <string name="extras_accent_pink">وردي</string>
+    <string name="extras_search_keyboard_title">لوحة مفاتيح البحث</string>
+    <string name="extras_search_keyboard_desc">لوحة مفاتيح Notflix على الشاشة، أو حقل نص يفتح لوحة مفاتيح التلفزيون (Gboard والميكروفون)</string>
+    <string name="extras_search_keyboard_notflix">لوحة مفاتيح Notflix</string>
+    <string name="extras_search_keyboard_system">لوحة مفاتيح النظام</string>
+    <string name="companion_web_enter_code">أدخل الرمز المكوّن من 6 أحرف الظاهر على التلفاز لتوصيل الريموت.</string>
+    <string name="companion_web_code_placeholder">الرمز (مثال A1B2C3)</string>
+    <string name="companion_web_connect">اتصال</string>
+    <string name="companion_web_invalid_code">رمز غير صحيح. تحقق من الرمز على التلفاز وحاول مجدداً.</string>
+    <string name="extras_like_title">أعجبني</string>
+    <string name="extras_dislike_title">لا يهمني</string>
+    <string name="extras_ui_scale_title">حجم الواجهة</string>
+    <string name="extras_ui_scale_desc">يضبط الحجم العام للقوائم والملصقات والنصوص على التلفاز</string>
+    <string name="extras_addon_rename_title">إعادة تسمية الإضافة</string>
 </resources>

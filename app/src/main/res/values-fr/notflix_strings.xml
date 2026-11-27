@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Nouveautés de cette version</string>
     <string name="notflix_whats_new_about_subtitle">Voir les changements de la version %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Choisissez la taille des cartes : petite, moyenne ou grande.</item>
-        <item>Choisissez la vitesse d’ouverture des cartes, et leurs boutons se repèrent mieux.</item>
-        <item>Les cartes s’ouvrent aussi et lisent la bande-annonce dans les collections.</item>
-        <item>Les notes indiquent si elles viennent d’IMDb ou de TMDB.</item>
-        <item>Lecture automatique par langue : choisissez-en plusieurs, classez-les et décidez si la qualité ou la langue passe en premier.</item>
-        <item>Titres et descriptions dans la langue de l’app (avec une clé TMDB).</item>
-        <item>Notflix est traduit dans toutes les langues de l’app.</item>
-        <item>Réglages plus clairs : les choix s’ouvrent en liste et les options sans effet sur Notflix sont masquées.</item>
-        <item>Les profils KIDS ont leur propre accueil avec dessins animés et titres familiaux (clé TMDB nécessaire).</item>
-        <item>Simkl peut maintenant être connecté.</item>
-        <item>Trakt : connexion avec un simple code, sans rien configurer.</item>
+        <item>Sélecteur de couleur du thème avec fond sombre teinté et taille d’interface TV personnalisable (60 %–130 %) dans Apparence.</item>
+        <item>Boutons « J’aime » et « Pas pour moi » sur les fiches et la bannière pour affiner vos recommandations par profil.</item>
+        <item>Les notes d’épisodes s’appuient désormais aussi sur SeriesGraph et TMDB afin que presque chaque série affiche une note.</item>
+        <item>Saut automatique des flux factices ou non mis en cache (jusqu’à 10 essais) et lecture automatique plus rapide des épisodes.</item>
+        <item>Renommage des extensions, affichage/masquage des rangées Top 10 et choix du clavier Notflix ou système.</item>
+        <item>Affiches localisées améliorées (privilégie les couvertures avec titre) et correctifs de stabilité.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Clé Notflix</string>
     <string name="notflix_tmdb_attribution">Ce produit utilise l\'API TMDB mais n\'est ni approuvé ni certifié par TMDB.</string>

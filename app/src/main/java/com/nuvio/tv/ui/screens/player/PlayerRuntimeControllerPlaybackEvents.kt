@@ -662,6 +662,7 @@ internal fun PlayerRuntimeController.saveWatchProgressIfNeeded() {
     if (!hasRenderedFirstFrame) return
     val currentPosition = currentPlaybackPositionMs() ?: return
     val duration = getEffectiveDuration(currentPosition)
+    checkShortPlaceholderSource(duration)
     // Don't save progress for very short streams (< 2:01) — these are
     // typically error/warning messages or "stream not ready" placeholders that
     // would incorrectly mark content as watched when the user exits.
@@ -1690,7 +1691,7 @@ fun PlayerRuntimeController.onEvent(event: PlayerEvent) {
             selectEpisodesSeason(event.season)
         }
         is PlayerEvent.OnEpisodeSelected -> {
-            loadStreamsForEpisode(event.video)
+            loadStreamsForEpisode(video = event.video, forceRefresh = false, autoPlay = true)
         }
         PlayerEvent.OnReloadEpisodeStreams -> {
             reloadEpisodeStreams()

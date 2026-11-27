@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Nyheter i denne versjonen</string>
     <string name="notflix_whats_new_about_subtitle">Se endringene i versjon %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Velg kortstørrelse: liten, middels eller stor.</item>
-        <item>Velg hvor raskt kort åpnes, og knappene deres er lettere å se.</item>
-        <item>Kort åpnes også og spiller av trailer i samlinger.</item>
-        <item>Vurderingene viser om de kommer fra IMDb eller TMDB.</item>
-        <item>Automatisk avspilling etter språk: velg flere, sett dem i rekkefølge og bestem om kvalitet eller språk går først.</item>
-        <item>Titler og beskrivelser på appens språk (med TMDB-nøkkel).</item>
-        <item>Notflix er oversatt til alle appens språk.</item>
-        <item>Ryddigere innstillinger: valg åpnes som lister, og alternativer som ikke påvirker Notflix, er skjult.</item>
-        <item>KIDS-profiler får sin egen startside med tegnefilm og familietitler (krever en TMDB-nøkkel).</item>
-        <item>Simkl kan nå kobles til.</item>
-        <item>Trakt: koble til med bare en kode, uten oppsett.</item>
+        <item>Temafargevelger med tonet mørk bakgrunn og tilpassbar TV-grensesnittstørrelse (60 %–130 %) i Utseende.</item>
+        <item>«Liker» og «Ikke for meg» på detaljer og banner for bedre anbefalinger per profil.</item>
+        <item>Episodevurderinger bruker nå SeriesGraph og TMDB som reserve slik at nesten alle serier viser vurdering.</item>
+        <item>Automatisk hopping over falske eller ikke-bufrede strømmer (opptil 10 forsøk) og raskere autoavspilling av episoder.</item>
+        <item>Gi tillegg nytt navn, vis/skjul Topp 10-rader og velg mellom Notflix- eller systemtastatur.</item>
+        <item>Forbedrede lokaliserte plakater og stabilitetsrettelser.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix-nøkkel</string>
     <string name="notflix_tmdb_attribution">Dette produktet bruker TMDB API, men er ikke godkjent eller sertifisert av TMDB.</string>

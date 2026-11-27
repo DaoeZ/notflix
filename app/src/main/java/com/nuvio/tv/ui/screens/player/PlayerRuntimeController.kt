@@ -577,6 +577,11 @@ class PlayerRuntimeController(
     internal var notflixSharpenSession: NotflixSharpenSession = NotflixSharpenSession.forPlayback()
     internal var mpvPreferredAudioLanguages: List<String> = emptyList()
     internal var currentStreamBingeGroup: String? = navigationArgs.bingeGroup
+    /** Notflix: stream URL already checked for a short error clip, and the clips found, by add-on + file. */
+    internal var placeholderCheckedStreamUrl: String? = null
+    internal val placeholderStreamKeys = mutableSetOf<String>()
+    internal var placeholderFallbackAttempts: Int = 0
+    internal var placeholderFallbackJob: kotlinx.coroutines.Job? = null
     // Per-device delay + current stream's behaviorHints.audioDelayMs + the user's tweak on that stream.
     internal var audioDelayParts: AudioDelayParts = AudioDelayParts().withStream(navigationArgs.audioDelayMs ?: 0)
     internal var hasAppliedRememberedAudioSelection: Boolean = false
@@ -813,6 +818,8 @@ class PlayerRuntimeController(
         sourceStreamsScope = null
         episodeStreamsScope?.cancel()
         episodeStreamsScope = null
+        placeholderFallbackJob?.cancel()
+        placeholderFallbackJob = null
     }
 
 }

@@ -53,4 +53,26 @@
     <string name="extras_country_title">Land / Region (Top 10)</string>
     <string name="extras_country_subtitle">Wähle aus, für welches Land die Top 10 auf der Startseite angezeigt werden</string>
     <string name="extras_country_auto">Automatisch (%1$s)</string>
+    <string name="extras_show_top10_title">Top-10-Reihen anzeigen</string>
+    <string name="extras_show_top10_desc">Top 10 Filme und Serien in deinem Land auf der Startseite</string>
+    <string name="extras_accent_title">Designfarbe</string>
+    <string name="extras_accent_red">Rot</string>
+    <string name="extras_accent_blue">Blau</string>
+    <string name="extras_accent_green">Grün</string>
+    <string name="extras_accent_purple">Lila</string>
+    <string name="extras_accent_orange">Orange</string>
+    <string name="extras_accent_pink">Pink</string>
+    <string name="extras_search_keyboard_title">Suchtastatur</string>
+    <string name="extras_search_keyboard_desc">Notflix-Tastatur auf dem Bildschirm oder ein Textfeld, das die Tastatur deines Fernsehers öffnet (Gboard und Mikrofon)</string>
+    <string name="extras_search_keyboard_notflix">Notflix-Tastatur</string>
+    <string name="extras_search_keyboard_system">Systemtastatur</string>
+    <string name="companion_web_enter_code">Gib den 6-stelligen Code auf deinem TV ein, um die Fernbedienung zu verbinden.</string>
+    <string name="companion_web_code_placeholder">Code (z. B. A1B2C3)</string>
+    <string name="companion_web_connect">Verbinden</string>
+    <string name="companion_web_invalid_code">Ungültiger Code. Prüfe den Code auf deinem TV und versuche es erneut.</string>
+    <string name="extras_like_title">Gefällt mir</string>
+    <string name="extras_dislike_title">Kein Interesse</string>
+    <string name="extras_ui_scale_title">Oberflächengröße</string>
+    <string name="extras_ui_scale_desc">Passt die Gesamtgröße von Menüs, Postern und Text auf dem Fernseher an</string>
+    <string name="extras_addon_rename_title">Add-on umbenennen</string>
 </resources>

@@ -148,8 +148,8 @@ android {
         minSdk = 24
         targetSdk = 36
         // Above the published Notflix 1.0.1 (1079) so every build updates in place.
-        versionCode = 1080
-        versionName = "1.0.3"
+        versionCode = 1081
+        versionName = "1.0.5"
 
         buildConfigField("String", "PARENTAL_GUIDE_API_URL", "\"${localProperties.getProperty("PARENTAL_GUIDE_API_URL", "")}\"")
         buildConfigField("String", "TRAILER_API_URL", "\"${localProperties.getProperty("TRAILER_API_URL", "")}\"")

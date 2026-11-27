@@ -53,4 +53,26 @@
     <string name="extras_country_title">நாடு / பகுதி (டாப் 10)</string>
     <string name="extras_country_subtitle">முகப்பில் எந்த நாட்டின் டாப் 10 காட்டப்பட வேண்டும் என்பதைத் தேர்ந்தெடுக்கவும்</string>
     <string name="extras_country_auto">தானியங்கி (%1$s)</string>
+    <string name="extras_show_top10_title">டாப் 10 வரிசைகளைக் காட்டு</string>
+    <string name="extras_show_top10_desc">முகப்பில் உங்கள் நாட்டின் டாப் 10 திரைப்படங்கள் மற்றும் தொடர்கள்</string>
+    <string name="extras_accent_title">தீம் நிறம்</string>
+    <string name="extras_accent_red">சிவப்பு</string>
+    <string name="extras_accent_blue">நீலம்</string>
+    <string name="extras_accent_green">பச்சை</string>
+    <string name="extras_accent_purple">ஊதா</string>
+    <string name="extras_accent_orange">ஆரஞ்சு</string>
+    <string name="extras_accent_pink">இளஞ்சிவப்பு</string>
+    <string name="extras_search_keyboard_title">தேடல் விசைப்பலகை</string>
+    <string name="extras_search_keyboard_desc">திரையில் Notflix விசைப்பலகை, அல்லது உங்கள் டிவியின் விசைப்பலகையைத் திறக்கும் உரைப் புலம் (Gboard மற்றும் மைக்ரோஃபோன்)</string>
+    <string name="extras_search_keyboard_notflix">Notflix விசைப்பலகை</string>
+    <string name="extras_search_keyboard_system">சிஸ்டம் விசைப்பலகை</string>
+    <string name="companion_web_enter_code">ரிமோட்டை இணைக்க உங்கள் டிவியில் காட்டப்படும் 6-எழுத்து குறியீட்டை உள்ளிடவும்.</string>
+    <string name="companion_web_code_placeholder">குறியீடு (எ.கா. A1B2C3)</string>
+    <string name="companion_web_connect">இணைக்கவும்</string>
+    <string name="companion_web_invalid_code">தவறான குறியீடு. டிவியில் உள்ள குறியீட்டை சரிபார்த்து மீண்டும் முயற்சிக்கவும்.</string>
+    <string name="extras_like_title">பிடிக்கும்</string>
+    <string name="extras_dislike_title">ஆர்வமில்லை</string>
+    <string name="extras_ui_scale_title">இடைமுக அளவு</string>
+    <string name="extras_ui_scale_desc">டிவியில் மெனுக்கள், போஸ்டர்கள் மற்றும் எழுத்துகளின் ஒட்டுமொத்த அளவை மாற்றுகிறது</string>
+    <string name="extras_addon_rename_title">சேர்க்கைக்கு மறுபெயரிடு</string>
 </resources>

@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Vyberte zdroj na stiahnutie</string>
     <string name="notflix_offline_started">Sťahovanie zaradené do frontu</string>
     <string name="notflix_offline_failed">Tento súbor sa nepodarilo otvoriť ani stiahnuť. Skúste priamy videosúbor.</string>
+    <string name="notflix_offline_new_code">Obnoviť kód</string>
 </resources>

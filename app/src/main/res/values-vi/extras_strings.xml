@@ -53,4 +53,26 @@
     <string name="extras_country_title">Quốc gia / Khu vực (Top 10)</string>
     <string name="extras_country_subtitle">Chọn quốc gia cho danh sách Top 10 hiển thị trên Trang chủ</string>
     <string name="extras_country_auto">Tự động (%1$s)</string>
+    <string name="extras_show_top10_title">Hiện hàng Top 10</string>
+    <string name="extras_show_top10_desc">Top 10 phim và series tại quốc gia của bạn trên Trang chủ</string>
+    <string name="extras_accent_title">Màu chủ đề</string>
+    <string name="extras_accent_red">Đỏ</string>
+    <string name="extras_accent_blue">Xanh dương</string>
+    <string name="extras_accent_green">Xanh lá</string>
+    <string name="extras_accent_purple">Tím</string>
+    <string name="extras_accent_orange">Cam</string>
+    <string name="extras_accent_pink">Hồng</string>
+    <string name="extras_search_keyboard_title">Bàn phím tìm kiếm</string>
+    <string name="extras_search_keyboard_desc">Bàn phím Notflix trên màn hình, hoặc ô văn bản mở bàn phím của TV (Gboard và micro)</string>
+    <string name="extras_search_keyboard_notflix">Bàn phím Notflix</string>
+    <string name="extras_search_keyboard_system">Bàn phím hệ thống</string>
+    <string name="companion_web_enter_code">Nhập mã 6 ký tự hiển thị trên TV để kết nối điều khiển từ xa.</string>
+    <string name="companion_web_code_placeholder">Mã (vd. A1B2C3)</string>
+    <string name="companion_web_connect">Kết nối</string>
+    <string name="companion_web_invalid_code">Mã không hợp lệ. Kiểm tra lại mã trên TV và thử lại.</string>
+    <string name="extras_like_title">Thích</string>
+    <string name="extras_dislike_title">Không quan tâm</string>
+    <string name="extras_ui_scale_title">Kích thước giao diện</string>
+    <string name="extras_ui_scale_desc">Điều chỉnh kích thước tổng thể của menu, áp phích và chữ trên TV</string>
+    <string name="extras_addon_rename_title">Đổi tên tiện ích bổ sung</string>
 </resources>

@@ -26,13 +26,15 @@ Notflix es una capa visual hecha por fans para Nuvio. Conserva todo lo que hace 
 > [!IMPORTANT]
 > Notflix **no aloja, indexa ni distribuye contenido**. Solo muestra lo que devuelven los complementos y servicios que configures. Es un proyecto independiente de fans, **sin relación con ningún servicio de streaming**, y no es una versión oficial de Nuvio.
 
-## Novedades de la 1.0
+## Novedades de la 1.0.5
 
-- **Android TV sale de beta.** Es más rápida y trae nuevos controles del reproductor que puedes ordenar, Ajustes rediseñados, reproducción automática más lista por idioma, y pósters y tráileres en tu idioma. Ahora también hay descargas en la tele.
-- **Se estrena la app para móviles Android.** Tiene el mismo estilo de Notflix, pensado para el dedo, con descargas, *Enviar a la TV* y sincronización con la app de la tele.
-- **iPhone** llegará más adelante.
+- **Me gusta / No me interesa** en las fichas, para que «Para ti» aprenda lo que le gusta a cada perfil.
+- **Color del tema** (rojo, azul, verde, morado, naranja o rosa) y, en la tele, **tamaño de la interfaz** del 60 % al 130 %.
+- **Notas de episodios en casi todas las series**, con SeriesGraph y TMDB como respaldo cuando IMDb no las tiene.
+- **Adiós a los vídeos trampa**: los vídeos de relleno y los enlaces sin caché se saltan solos, y los episodios arrancan antes.
+- **Subtítulos con su propio estilo en cada dispositivo**, filas Top 10 que se pueden ocultar, complementos que se pueden renombrar y Ajustes reorganizados.
 
-Lista completa en las [notas de la versión 1.0](https://github.com/DaoeZ/notflix/releases/latest).
+La 1.0 trajo la app para móviles Android y sacó de beta la de la tele. Lista completa en las [notas de la versión](https://github.com/DaoeZ/notflix/releases/latest).
 
 ## Capturas
 

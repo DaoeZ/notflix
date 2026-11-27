@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Có gì mới trong phiên bản này</string>
     <string name="notflix_whats_new_about_subtitle">Xem thay đổi ở phiên bản %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Chọn kích thước thẻ: nhỏ, vừa hoặc lớn.</item>
-        <item>Chọn tốc độ mở thẻ; các nút cũng dễ thấy hơn.</item>
-        <item>Thẻ giờ cũng mở và phát trailer trong bộ sưu tập.</item>
-        <item>Điểm đánh giá cho biết đến từ IMDb hay TMDB.</item>
-        <item>Tự phát theo ngôn ngữ: chọn nhiều ngôn ngữ, sắp xếp thứ tự và quyết định ưu tiên chất lượng hay ngôn ngữ.</item>
-        <item>Tiêu đề và mô tả theo ngôn ngữ của ứng dụng (cần khóa TMDB).</item>
-        <item>Notflix đã được dịch sang mọi ngôn ngữ của ứng dụng.</item>
-        <item>Cài đặt gọn hơn: các lựa chọn mở dạng danh sách, tùy chọn không ảnh hưởng Notflix được ẩn đi.</item>
-        <item>Hồ sơ KIDS có Trang chủ riêng với phim hoạt hình và nội dung gia đình (cần khóa TMDB).</item>
-        <item>Giờ có thể kết nối Simkl.</item>
-        <item>Trakt: kết nối chỉ bằng một mã, không cần cài đặt.</item>
+        <item>Bộ chọn màu chủ đề với nền tối pha màu và tùy chỉnh kích thước giao diện TV (60%–130%) trong Giao diện.</item>
+        <item>Nút «Thích» và «Không phù hợp» ở chi tiết và biểu ngữ để tinh chỉnh đề xuất theo từng hồ sơ.</item>
+        <item>Điểm tập phim nay dùng thêm SeriesGraph và TMDB nên hầu hết mọi phim bộ đều hiển thị đánh giá.</item>
+        <item>Tự động bỏ qua luồng giả hoặc chưa lưu đệm (tối đa 10 lần thử) và tự động phát tập nhanh hơn.</item>
+        <item>Đổi tên tiện ích, bật/tắt hàng Top 10 và chọn giữa bàn phím Notflix hoặc bàn phím hệ thống.</item>
+        <item>Cải thiện áp phích bản địa hóa và sửa lỗi ổn định.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Khóa Notflix</string>
     <string name="notflix_tmdb_attribution">Sản phẩm này sử dụng API của TMDB nhưng không được TMDB chứng thực hoặc công nhận.</string>

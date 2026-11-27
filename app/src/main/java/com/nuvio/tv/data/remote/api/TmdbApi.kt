@@ -321,7 +321,8 @@ data class TmdbFindResult(
     @Json(name = "title") val title: String? = null,
     @Json(name = "name") val name: String? = null,
     @Json(name = "media_type") val mediaType: String? = null,
-    @Json(name = "poster_path") val posterPath: String? = null
+    @Json(name = "poster_path") val posterPath: String? = null,
+    @Json(name = "vote_average") val voteAverage: Double? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -530,7 +531,9 @@ data class TmdbEpisode(
     @Json(name = "overview") val overview: String? = null,
     @Json(name = "still_path") val stillPath: String? = null,
     @Json(name = "air_date") val airDate: String? = null,
-    @Json(name = "runtime") val runtime: Int? = null
+    @Json(name = "runtime") val runtime: Int? = null,
+    @Json(name = "vote_average") val voteAverage: Double? = null,
+    @Json(name = "vote_count") val voteCount: Int? = null
 )
 
 @JsonClass(generateAdapter = true)

@@ -126,6 +126,7 @@ class MetaDetailsViewModel @Inject constructor(
 
     private val _posterCardCornerRadiusDp = MutableStateFlow(12)
     val posterCardCornerRadiusDp: StateFlow<Int> = _posterCardCornerRadiusDp.asStateFlow()
+    val activeProfileId: StateFlow<Int> get() = profileManager.activeProfileId
 
     private val localizedContext: Context
         get() = context.withAppLocale()
@@ -1523,9 +1524,15 @@ class MetaDetailsViewModel @Inject constructor(
                     return@launch
                 }
 
+                val expectedEpisodes = meta.videos.mapNotNull { video ->
+                    val s = video.season?.takeIf { it > 0 } ?: return@mapNotNull null
+                    val e = video.episode?.takeIf { it > 0 } ?: return@mapNotNull null
+                    s to e
+                }.toSet()
                 val ratings = imdbEpisodeRatingsRepository.getEpisodeRatings(
                     imdbId = imdbId,
-                    tmdbId = tmdbId
+                    tmdbId = tmdbId,
+                    expectedEpisodes = expectedEpisodes
                 )
 
                 _uiState.update { state ->

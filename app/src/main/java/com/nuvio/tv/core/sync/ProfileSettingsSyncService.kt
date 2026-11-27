@@ -142,7 +142,19 @@ private val localOnlyPlayerProfileSettingsKeys = setOf(
     "migration_allow_large_target_buffer_off_done",
     "migration_buffer_budget_managed_exo_done",
     "migration_vod_cache_back_buffer_zeroed_done",
-    "nuvio_performance_mode_enabled"
+    "nuvio_performance_mode_enabled",
+    // Subtitle layout & visual appearance depend on screen size / viewing distance (TV vs tablet/phone).
+    "subtitle_size",
+    "subtitle_vertical_offset",
+    "subtitle_bold",
+    "subtitle_text_color",
+    "subtitle_background_color",
+    "subtitle_outline_enabled",
+    "subtitle_outline_color",
+    "subtitle_outline_width",
+    "subtitle_hdr_style_enabled",
+    "subtitle_hdr_text_color",
+    "subtitle_hdr_brightness"
 )
 
 // 4K trailers depend on the device's RAM, so a choice made on one device must not reach another.

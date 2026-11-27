@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Yang baru di versi ini</string>
     <string name="notflix_whats_new_about_subtitle">Lihat perubahan di versi %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Pilih ukuran kartu: kecil, sedang, atau besar.</item>
-        <item>Pilih seberapa cepat kartu terbuka; tombolnya lebih mudah dilihat.</item>
-        <item>Kartu kini juga terbuka dan memutar trailer di dalam koleksi.</item>
-        <item>Rating menunjukkan apakah berasal dari IMDb atau TMDB.</item>
-        <item>Putar otomatis menurut bahasa: pilih beberapa, urutkan, dan tentukan apakah kualitas atau bahasa yang diutamakan.</item>
-        <item>Judul dan deskripsi dalam bahasa aplikasi (dengan kunci TMDB).</item>
-        <item>Notflix telah diterjemahkan ke semua bahasa aplikasi.</item>
-        <item>Pengaturan lebih rapi: pilihan terbuka sebagai daftar dan opsi yang tidak memengaruhi Notflix disembunyikan.</item>
-        <item>Profil KIDS punya Beranda sendiri berisi kartun dan judul keluarga (perlu kunci TMDB).</item>
-        <item>Simkl kini dapat dihubungkan.</item>
-        <item>Trakt: hubungkan hanya dengan kode, tanpa pengaturan.</item>
+        <item>Pemilih warna tema dengan latar gelap bernuansa dan ukuran antarmuka TV yang dapat disesuaikan (60%–130%) di Tampilan.</item>
+        <item>Tombol «Suka» dan «Tidak tertarik» di detail dan banner untuk menyempurnakan rekomendasi per profil.</item>
+        <item>Rating episode kini memakai SeriesGraph dan TMDB sebagai cadangan agar hampir semua serial menampilkan rating.</item>
+        <item>Lewati otomatis stream palsu atau belum di-cache (hingga 10 percobaan) dan putar otomatis episode lebih cepat.</item>
+        <item>Ubah nama add-on, aktifkan/nonaktifkan baris Top 10, dan pilih keyboard Notflix atau sistem.</item>
+        <item>Poster terlokalisasi lebih baik dan perbaikan stabilitas.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Kunci Notflix</string>
     <string name="notflix_tmdb_attribution">Produk ini menggunakan API TMDB tetapi tidak didukung atau disertifikasi oleh TMDB.</string>

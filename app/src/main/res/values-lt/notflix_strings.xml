@@ -193,17 +193,12 @@
     <string name="notflix_whats_new_about_title">Kas naujo šioje versijoje</string>
     <string name="notflix_whats_new_about_subtitle">Peržiūrėkite %1$s versijos pakeitimus</string>
     <string-array name="notflix_whats_new_items">
-        <item>Pasirinkite kortelių dydį: mažas, vidutinis ar didelis.</item>
-        <item>Pasirinkite, kaip greitai atsidaro kortelės; jų mygtukai geriau matomi.</item>
-        <item>Kortelės dabar atsidaro ir kolekcijose bei leidžia anonsą.</item>
-        <item>Vertinimai rodo, ar jie iš IMDb, ar iš TMDB.</item>
-        <item>Automatinis atkūrimas pagal kalbą: pasirinkite kelias, surikiuokite jas ir nuspręskite, kas svarbiau – kokybė ar kalba.</item>
-        <item>Pavadinimai ir aprašymai programos kalba (su TMDB raktu).</item>
-        <item>Notflix išverstas į visas programos kalbas.</item>
-        <item>Aiškesni nustatymai: pasirinkimai atsidaro sąrašu, o Notflix neturinčios įtakos parinktys paslėptos.</item>
-        <item>KIDS profiliai turi savo pradžios ekraną su animaciniais ir šeimos filmais (reikia TMDB rakto).</item>
-        <item>Simkl dabar galima prijungti.</item>
-        <item>Trakt: prisijungimas tik kodu, be nustatymų.</item>
+        <item>Temos spalvos pasirinkimas su tamsiu atspalviu fonu ir pritaikomu TV sąsajos dydžiu (60 %–130 %) skiltyje Išvaizda.</item>
+        <item>Mygtukai «Patinka» ir «Nedomina» aprašymuose ir juostoje tikslesnėms rekomendacijoms pagal profilį.</item>
+        <item>Serijų įvertinimai dabar naudoja SeriesGraph ir TMDB kaip atsarginius šaltinius, todėl įvertinimai rodomi beveik visiems serialams.</item>
+        <item>Automatinis netikrų ar neišsaugotų talpykloje srautų praleidimas (iki 10 bandymų) ir greitesnis serijų automatinis paleidimas.</item>
+        <item>Priedų pervadinimas, Top 10 eilučių perjungiklis ir Notflix arba sistemos paieškos klaviatūros pasirinkimas.</item>
+        <item>Patobulinti lokalizuoti plakatai ir stabilumo pataisymai.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix raktas</string>
     <string name="notflix_tmdb_attribution">Šis produktas naudoja TMDB API, tačiau jo nepalaiko ir nesertifikuoja TMDB.</string>

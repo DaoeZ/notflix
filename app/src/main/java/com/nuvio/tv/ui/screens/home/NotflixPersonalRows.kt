@@ -96,8 +96,15 @@ internal fun notflixForYouAnchors(progress: List<WatchProgress>): List<WatchProg
 
 private data class ForYouHistory(
     val anchors: List<WatchProgress>,
+    val likedAnchorKeys: Set<String>,
+    val dislikedEntries: List<Pair<String, String>>,
     val watchedIds: Set<String>,
     val limit: AgeLevel?,
+)
+
+private data class ForYouLoadedData(
+    val positive: List<Pair<NotflixBecause, Int>>,
+    val dislikedRelatedKeys: Set<Pair<String, String>>,
 )
 
 /** Same filters as the official post-play recommendations: not the anchor, not watched, not unreleased if hidden, unique. */
@@ -236,23 +243,74 @@ class NotflixPersonalRowsViewModel @Inject constructor(
                 val cur = runCatching { tmdbSettingsDataStore.settings.value }.getOrNull()
                 emit(if (cur != null) Triple(cur.enabled, cur.useMoreLikeThis, cur.language) else Triple(true, true, ""))
             },
-        traktSettingsDataStore.moreLikeThisSource.onStart { emit(MoreLikeThisSourcePreference.TMDB) }
-    ) { progress, limit, tmdbKey, recSource ->
+        traktSettingsDataStore.moreLikeThisSource.onStart { emit(MoreLikeThisSourcePreference.TMDB) },
+        com.nuvio.tv.data.local.NotflixTitleFeedbackStore.revision
+    ) { progress, limit, tmdbKey, recSource, _ ->
+        val likedEntries = com.nuvio.tv.data.local.NotflixTitleFeedbackStore.likedEntries(profile)
+        val dislikedEntries = com.nuvio.tv.data.local.NotflixTitleFeedbackStore.dislikedEntries(profile)
+        val dislikedIds = dislikedEntries.mapTo(mutableSetOf()) { it.second }
+        val likedAnchors = likedEntries.take(4).map { (type, id) ->
+            WatchProgress(
+                contentId = id,
+                contentType = type,
+                name = "",
+                poster = null,
+                backdrop = null,
+                logo = null,
+                videoId = id,
+                season = null,
+                episode = null,
+                episodeTitle = null,
+                position = 0L,
+                duration = 0L,
+                lastWatched = Long.MAX_VALUE
+            )
+        }
+        val watchedAnchors = notflixForYouAnchors(progress)
+            .filterNot { it.contentId.trim().lowercase() in dislikedIds }
+        val mergedAnchors = (likedAnchors + watchedAnchors)
+            .distinctBy { it.contentId.trim().lowercase() }
+            .take(8)
+        val likedKeySet = likedAnchors.mapTo(mutableSetOf()) { it.contentId.trim().lowercase() }
         Triple(
-            ForYouHistory(notflixForYouAnchors(progress), progress.mapTo(mutableSetOf()) { it.contentId.trim().lowercase() }, limit),
+            ForYouHistory(
+                anchors = mergedAnchors,
+                likedAnchorKeys = likedKeySet,
+                dislikedEntries = dislikedEntries.take(3),
+                watchedIds = progress.mapTo(mutableSetOf()) { it.contentId.trim().lowercase() },
+                limit = limit
+            ),
             tmdbKey,
             recSource
         )
     }
         .distinctUntilChanged { a, b ->
             a.first.anchors.map { it.contentId to it.contentType } == b.first.anchors.map { it.contentId to it.contentType } &&
+                a.first.likedAnchorKeys == b.first.likedAnchorKeys &&
+                a.first.dislikedEntries == b.first.dislikedEntries &&
                 a.first.watchedIds == b.first.watchedIds && a.first.limit == b.first.limit &&
                 a.second == b.second && a.third == b.third
         }
         .transformLatest { (history, _, _) ->
-            emit(emptyList<NotflixBecause>())
+            emit(ForYouLoadedData(emptyList(), emptySet()))
             val limit = ageGate.currentLimitFromStore()
-            val loaded = mutableListOf<NotflixBecause>()
+            val loaded = mutableListOf<Pair<NotflixBecause, Int>>()
+            val dislikedRelated = mutableSetOf<Pair<String, String>>()
+            if (history.dislikedEntries.isNotEmpty()) {
+                coroutineScope {
+                    history.dislikedEntries.map { (type, id) ->
+                        async {
+                            try {
+                                withTimeoutOrNull(8_000L) { loadRelatedKeys(type, id) }.orEmpty()
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Exception) {
+                                emptySet()
+                            }
+                        }
+                    }.awaitAll().forEach { dislikedRelated += it }
+                }
+            }
             for (batch in history.anchors.chunked(2)) {
                 if (profileManager.activeProfileId.value != profile) return@transformLatest
                 val hidden = hiddenKeys.first()
@@ -261,7 +319,9 @@ class NotflixPersonalRowsViewModel @Inject constructor(
                         .map { anchor ->
                             async {
                                 try {
-                                    withTimeoutOrNull(14_000L) { load(anchor, limit, history.watchedIds) }
+                                    val result = withTimeoutOrNull(14_000L) { load(anchor, limit, history.watchedIds) }
+                                    val weight = if (anchor.contentId.trim().lowercase() in history.likedAnchorKeys) 2 else 1
+                                    result?.let { it to weight }
                                 } catch (cancelled: CancellationException) {
                                     throw cancelled
                                 } catch (_: Exception) {
@@ -270,16 +330,46 @@ class NotflixPersonalRowsViewModel @Inject constructor(
                             }
                         }.awaitAll().filterNotNull()
                 }
-                if (profileManager.activeProfileId.value == profile) emit(loaded.toList())
+                if (profileManager.activeProfileId.value == profile) {
+                    emit(ForYouLoadedData(loaded.toList(), dislikedRelated.toSet()))
+                }
             }
         }
-        .combine(hiddenKeys) { sources, hidden ->
-            val visible = sources.mapNotNull { it.withoutHidden(hidden) }
-            val items = mergeBalancedForYou(visible.map { it.items }, NOTFLIX_PERSONAL_ROW_LIMIT)
-            visible.firstOrNull()?.copy(items = items, profileId = profile)
+        .combine(combine(hiddenKeys, com.nuvio.tv.data.local.NotflixTitleFeedbackStore.revision) { h, r -> h to r }) { data, (hidden, _) ->
+            val dislikedIds = com.nuvio.tv.data.local.NotflixTitleFeedbackStore.dislikedIds(profile)
+            val likedGenres = com.nuvio.tv.data.local.NotflixTitleFeedbackStore.likedGenres(profile)
+            val dislikedGenres = com.nuvio.tv.data.local.NotflixTitleFeedbackStore.dislikedGenres(profile)
+            val visible = data.positive.mapNotNull { (src, weight) ->
+                src.withoutHidden(hidden)?.let { it to weight }
+            }
+            val items = mergeWeightedForYou(
+                sources = visible.map { (src, weight) -> src.items to weight },
+                limit = NOTFLIX_PERSONAL_ROW_LIMIT,
+                dislikedIds = dislikedIds,
+                dislikedRelatedKeys = data.dislikedRelatedKeys,
+                likedGenres = likedGenres,
+                dislikedGenres = dislikedGenres
+            )
+            visible.firstOrNull()?.first?.copy(items = items, profileId = profile)?.takeIf { items.isNotEmpty() }
         }
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    private suspend fun loadRelatedKeys(type: String, id: String): Set<Pair<String, String>> {
+        val meta: Meta = metaRepository.getCachedMeta(type, id) ?: withTimeoutOrNull(4_000L) {
+            (metaRepository.getMetaFromAllAddons(type = type, id = id).first { it !is NetworkResult.Loading }
+                as? NetworkResult.Success)?.data
+        } ?: return emptySet()
+        val contentType = resolvePostPlayContentType(type, meta.type) ?: return emptySet()
+        val settings = tmdbSettingsDataStore.settings.first()
+        if (!settings.enabled || !settings.useMoreLikeThis) return emptySet()
+        val lookup = contentType.toApiString(type)
+        val tmdbId = tmdbService.ensureTmdbId(meta.id, lookup, fallbackImdbId = meta.imdbId)
+            ?: tmdbService.ensureTmdbId(id, lookup, fallbackImdbId = meta.imdbId)
+            ?: return emptySet()
+        return tmdbMetadataService.fetchMoreLikeThis(tmdbId = tmdbId, contentType = contentType, language = settings.language)
+            .mapTo(mutableSetOf()) { it.apiType.trim().lowercase() to it.id.trim().lowercase() }
+    }
 
     private suspend fun load(anchor: WatchProgress, limit: AgeLevel?, historyIds: Set<String>): NotflixBecause? {
         val type = anchor.contentType
@@ -338,40 +428,98 @@ internal fun NotflixBecause.withoutHidden(hidden: Set<String>): NotflixBecause? 
  * followed by fair round-robin interleaving capped at 3 single-anchor items per source
  * so no single recently watched movie floods "For You".
  */
-internal fun mergeBalancedForYou(sources: List<List<MetaPreview>>, limit: Int): List<MetaPreview> {
-    if (sources.isEmpty()) return emptyList()
-    val deduped = sources.map { list -> list.distinctBy { it.apiType.lowercase() to it.id.trim().lowercase() } }
-    val counts = mutableMapOf<Pair<String, String>, Int>()
+internal fun mergeBalancedForYou(sources: List<List<MetaPreview>>, limit: Int): List<MetaPreview> =
+    mergeWeightedForYou(sources = sources.map { it to 1 }, limit = limit)
+
+/**
+ * Merges recommendations across multiple weighted anchors:
+ * - Disliked titles are excluded completely.
+ * - "Like" anchors carry double weight (+4 vs +2) and liked genres add a small boost.
+ * - Items similar to "Not interested" titles (related items or shared genres) are penalized and pushed down.
+ */
+internal fun mergeWeightedForYou(
+    sources: List<Pair<List<MetaPreview>, Int>>,
+    limit: Int,
+    dislikedIds: Set<String> = emptySet(),
+    dislikedRelatedKeys: Set<Pair<String, String>> = emptySet(),
+    likedGenres: Map<String, Int> = emptyMap(),
+    dislikedGenres: Map<String, Int> = emptyMap()
+): List<MetaPreview> {
+    if (sources.isEmpty() || limit <= 0) return emptyList()
+    val deduped = sources.map { (list, weight) ->
+        list.asSequence()
+            .filterNot { it.id.trim().lowercase() in dislikedIds }
+            .distinctBy { it.apiType.lowercase() to it.id.trim().lowercase() }
+            .toList() to weight
+    }
+    val scores = mutableMapOf<Pair<String, String>, Int>()
     val firstByKey = linkedMapOf<Pair<String, String>, MetaPreview>()
-    for (list in deduped) {
+    val firstOrder = mutableMapOf<Pair<String, String>, Int>()
+    var orderCounter = 0
+    for ((list, weight) in deduped) {
         for (item in list) {
             val key = item.apiType.lowercase() to item.id.trim().lowercase()
-            counts[key] = (counts[key] ?: 0) + 1
-            if (key !in firstByKey) firstByKey[key] = item
+            scores[key] = (scores[key] ?: 0) + (weight * 2)
+            if (key !in firstByKey) {
+                firstByKey[key] = item
+                firstOrder[key] = orderCounter++
+            }
         }
+    }
+    for ((key, item) in firstByKey) {
+        var adjustment = 0
+        if (key in dislikedRelatedKeys) adjustment -= 4
+        if (likedGenres.isNotEmpty() || dislikedGenres.isNotEmpty()) {
+            var likeHits = 0
+            var dislikeHits = 0
+            item.genres.forEach { raw ->
+                val g = raw.trim().lowercase()
+                if (g in likedGenres) likeHits++
+                // One "not interested" must not sink a whole genre (most series are Drama): it takes two, and more dislikes than likes.
+        if ((dislikedGenres[g] ?: 0) >= 2 && (dislikedGenres[g] ?: 0) > (likedGenres[g] ?: 0)) dislikeHits++
+            }
+            adjustment += minOf(likeHits, 2)
+            adjustment -= minOf(dislikeHits * 2, 4)
+        }
+        if (adjustment != 0) scores[key] = (scores[key] ?: 0) + adjustment
     }
     val result = mutableListOf<MetaPreview>()
     val emitted = mutableSetOf<Pair<String, String>>()
-    counts.entries.filter { it.value >= 2 }.sortedByDescending { it.value }.forEach { (key, _) ->
-        if (result.size >= limit) return result
-        val item = firstByKey[key] ?: return@forEach
-        if (emitted.add(key)) result += item
-    }
+    // High-signal hits first (liked anchors or multi-anchor consensus)
+    scores.entries
+        .filter { it.value >= 4 }
+        .sortedWith(compareByDescending<Map.Entry<Pair<String, String>, Int>> { it.value }.thenBy { firstOrder[it.key] ?: Int.MAX_VALUE })
+        .forEach { (key, _) ->
+            if (result.size >= limit) return result
+            val item = firstByKey[key] ?: return@forEach
+            if (emitted.add(key)) result += item
+        }
+    // Fair round-robin for neutral/positive remaining items (non-penalized first)
     val perAnchorLimit = if (deduped.size >= 3) 3 else Int.MAX_VALUE
     val perAnchorCount = IntArray(deduped.size)
-    val maxLen = deduped.maxOfOrNull { it.size } ?: 0
+    val maxLen = deduped.maxOfOrNull { it.first.size } ?: 0
     for (idx in 0 until maxLen) {
         for (srcIdx in deduped.indices) {
             if (result.size >= limit) return result
             if (perAnchorCount[srcIdx] >= perAnchorLimit) continue
-            val item = deduped[srcIdx].getOrNull(idx) ?: continue
+            val item = deduped[srcIdx].first.getOrNull(idx) ?: continue
             val key = item.apiType.lowercase() to item.id.trim().lowercase()
+            if ((scores[key] ?: 0) <= 0) continue
             if (emitted.add(key)) {
                 result += item
                 perAnchorCount[srcIdx]++
             }
         }
     }
+    // Downweighted items only fill remaining slots at the very end, sorted by score descending
+    scores.entries
+        .filter { it.key !in emitted }
+        .sortedWith(compareByDescending<Map.Entry<Pair<String, String>, Int>> { it.value }.thenBy { firstOrder[it.key] ?: Int.MAX_VALUE })
+        .forEach { (key, _) ->
+            if (result.size >= limit) return result
+            val item = firstByKey[key] ?: return@forEach
+            if (emitted.add(key)) result += item
+        }
     return result
 }
 

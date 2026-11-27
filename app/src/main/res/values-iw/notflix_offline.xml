@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">בחרו מקור להורדה</string>
     <string name="notflix_offline_started">ההורדה נוספה לתור</string>
     <string name="notflix_offline_failed">לא ניתן לפתוח או להוריד את הקובץ. נסו קובץ וידאו ישיר.</string>
+    <string name="notflix_offline_new_code">רענון קוד</string>
 </resources>

@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +75,8 @@ import com.nuvio.tv.ui.theme.NuvioTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.ui.platform.LocalConfiguration
@@ -126,7 +129,8 @@ fun HeroContentSection(
     onHeroActionFocused: () -> Unit = {},
     onPlayFocusRestored: () -> Unit = {},
     onShowFullDescription: () -> Unit = {},
-    onTruncationChanged: (Boolean) -> Unit = {}
+    onTruncationChanged: (Boolean) -> Unit = {},
+    activeProfileId: Int = 1
 ) {
     val context = LocalContext.current
     val isSeriesApi = remember(meta.apiType) {
@@ -248,6 +252,45 @@ fun HeroContentSection(
                     pending = shuffleActionPending,
                     onClick = onRandomEpisodeClick,
                     focusRequester = randomEpisodeFocusRequester,
+                    onFocused = onHeroActionFocused
+                )
+            }
+
+            if (notflix) {
+                val feedbackRev by com.nuvio.tv.data.local.NotflixTitleFeedbackStore.revision.collectAsState()
+                val feedback = remember(activeProfileId, meta.apiType, meta.id, feedbackRev) {
+                    com.nuvio.tv.data.local.NotflixTitleFeedbackStore.get(activeProfileId, meta.apiType, meta.id)
+                }
+                ActionIconButton(
+                    icon = Icons.Default.ThumbUp,
+                    contentDescription = stringResource(R.string.extras_like_title),
+                    onClick = {
+                        com.nuvio.tv.data.local.NotflixTitleFeedbackStore.toggleLike(
+                            profileId = activeProfileId,
+                            type = meta.apiType,
+                            id = meta.id,
+                            genres = meta.genres
+                        )
+                    },
+                    selected = feedback == com.nuvio.tv.data.local.NotflixTitleFeedback.LIKE,
+                    selectedContainerColor = com.nuvio.tv.ui.appearance.NotflixVisualSpec.Accent,
+                    selectedContentColor = Color.White,
+                    onFocused = onHeroActionFocused
+                )
+                ActionIconButton(
+                    icon = Icons.Default.ThumbDown,
+                    contentDescription = stringResource(R.string.extras_dislike_title),
+                    onClick = {
+                        com.nuvio.tv.data.local.NotflixTitleFeedbackStore.toggleDislike(
+                            profileId = activeProfileId,
+                            type = meta.apiType,
+                            id = meta.id,
+                            genres = meta.genres
+                        )
+                    },
+                    selected = feedback == com.nuvio.tv.data.local.NotflixTitleFeedback.DISLIKE,
+                    selectedContainerColor = Color.White,
+                    selectedContentColor = Color.Black,
                     onFocused = onHeroActionFocused
                 )
             }

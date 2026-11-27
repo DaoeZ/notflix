@@ -53,4 +53,26 @@
     <string name="extras_country_title">Negara / Wilayah (Top 10)</string>
     <string name="extras_country_subtitle">Pilih negara untuk daftar Top 10 yang tampil di Beranda</string>
     <string name="extras_country_auto">Otomatis (%1$s)</string>
+    <string name="extras_show_top10_title">Tampilkan baris Top 10</string>
+    <string name="extras_show_top10_desc">Top 10 film dan serial di negaramu di Beranda</string>
+    <string name="extras_accent_title">Warna tema</string>
+    <string name="extras_accent_red">Merah</string>
+    <string name="extras_accent_blue">Biru</string>
+    <string name="extras_accent_green">Hijau</string>
+    <string name="extras_accent_purple">Ungu</string>
+    <string name="extras_accent_orange">Oranye</string>
+    <string name="extras_accent_pink">Merah muda</string>
+    <string name="extras_search_keyboard_title">Keyboard pencarian</string>
+    <string name="extras_search_keyboard_desc">Keyboard Notflix di layar, atau kolom teks yang membuka keyboard TV-mu (Gboard dan mikrofonnya)</string>
+    <string name="extras_search_keyboard_notflix">Keyboard Notflix</string>
+    <string name="extras_search_keyboard_system">Keyboard sistem</string>
+    <string name="companion_web_enter_code">Masukkan kode 6 karakter yang tampil di TV untuk menghubungkan remote.</string>
+    <string name="companion_web_code_placeholder">Kode (mis. A1B2C3)</string>
+    <string name="companion_web_connect">Hubungkan</string>
+    <string name="companion_web_invalid_code">Kode tidak valid. Periksa kode di TV dan coba lagi.</string>
+    <string name="extras_like_title">Suka</string>
+    <string name="extras_dislike_title">Tidak tertarik</string>
+    <string name="extras_ui_scale_title">Ukuran antarmuka</string>
+    <string name="extras_ui_scale_desc">Menyesuaikan ukuran keseluruhan menu, poster, dan teks di TV</string>
+    <string name="extras_addon_rename_title">Ubah nama add-on</string>
 </resources>

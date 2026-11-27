@@ -951,6 +951,8 @@ internal fun PlayerRuntimeController.switchToSourceStream(
 
     nextEpisodeAutoPlayJob?.cancel()
     nextEpisodeAutoPlayJob = null
+    placeholderFallbackJob?.cancel()
+    placeholderFallbackJob = null
 
     flushPlaybackSnapshotForSwitchOrExit()
 
@@ -1090,6 +1092,8 @@ private fun PlayerRuntimeController.switchToTorrentSourceStream(
     stopTorrentStream()
     nextEpisodeAutoPlayJob?.cancel()
     nextEpisodeAutoPlayJob = null
+    placeholderFallbackJob?.cancel()
+    placeholderFallbackJob = null
     flushPlaybackSnapshotForSwitchOrExit()
     resetLoadingOverlayForNewStream()
     releasePlayer(flushPlaybackState = false)
@@ -1214,7 +1218,7 @@ internal fun PlayerRuntimeController.buildEpisodeRequestKey(type: String, video:
     return "$type|${video.id}|${video.season ?: -1}|${video.episode ?: -1}"
 }
 
-internal fun PlayerRuntimeController.loadStreamsForEpisode(video: Video, forceRefresh: Boolean) {
+internal fun PlayerRuntimeController.loadStreamsForEpisode(video: Video, forceRefresh: Boolean, autoPlay: Boolean = false) {
     streamRepository.setLocalPluginSearchPaused(false)
     val type = contentType
     if (type.isNullOrBlank()) {
@@ -1225,7 +1229,7 @@ internal fun PlayerRuntimeController.loadStreamsForEpisode(video: Video, forceRe
     val requestKey = buildEpisodeRequestKey(type = type, video = video)
     val state = _uiState.value
     val hasCachedPayload = state.episodeAllStreams.isNotEmpty() || state.episodeStreamsError != null
-    if (!forceRefresh && requestKey == episodeStreamsCacheRequestKey && hasCachedPayload) {
+    if (!forceRefresh && requestKey == episodeStreamsCacheRequestKey && hasCachedPayload && episodeStreamsJob?.isActive != true) {
         _uiState.update {
             it.copy(
                 showEpisodeStreams = true,
@@ -1235,6 +1239,12 @@ internal fun PlayerRuntimeController.loadStreamsForEpisode(video: Video, forceRe
                 episodeStreamsEpisode = video.episode,
                 episodeStreamsTitle = video.title
             )
+        }
+        if (autoPlay) {
+            episodeStreamsJob?.cancel()
+            episodeStreamsJob = scope.launch {
+                autoPlayPickedEpisode(video, state.episodeAllStreams, streamAddonsFor(video.id).map { it.displayName })
+            }
         }
         return
     }
@@ -1330,7 +1340,141 @@ internal fun PlayerRuntimeController.loadStreamsForEpisode(video: Video, forceRe
             }
         }
         markRemainingEpisodeSourceChipsAsError()
+        if (autoPlay) {
+            autoPlayPickedEpisode(video, _uiState.value.episodeAllStreams, installedAddonOrder)
+        }
     }
+}
+
+/**
+ * Notflix: an episode picked from the in-player episode list plays like the detail page does, with the
+ * user's auto-play settings (Priority list included), once every add-on has answered. With Manual, an
+ * empty Priority list or no stream that fits, the source list simply stays open as before.
+ */
+private suspend fun PlayerRuntimeController.autoPlayPickedEpisode(
+    video: Video,
+    streams: List<Stream>,
+    installedAddonOrder: List<String>
+) {
+    if (streams.isEmpty()) return
+    val settings = playerSettingsDataStore.playerSettings.first()
+    val mode = settings.streamAutoPlayMode
+    if (mode == StreamAutoPlayMode.MANUAL ||
+        (mode == StreamAutoPlayMode.PRIORITY_LIST && settings.streamAutoPlayPriorityList.isEmpty())
+    ) return
+    val cachedStreams = streams.filter(StreamAutoPlaySelector::isCachedForPriority)
+    if (cachedStreams.isEmpty()) return
+    val picked = withContext(Dispatchers.Default) {
+        StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = cachedStreams,
+            mode = mode,
+            regexPattern = settings.streamAutoPlayRegex,
+            source = settings.streamAutoPlaySource,
+            installedAddonNames = installedAddonOrder.toSet(),
+            selectedAddons = settings.streamAutoPlaySelectedAddons,
+            selectedPlugins = settings.streamAutoPlaySelectedPlugins,
+            priorityList = settings.streamAutoPlayPriorityList,
+            carryPriorityAudioLanguage = true
+        )
+    } ?: return
+    // The user may have picked another episode or a stream by hand meanwhile.
+    val state = _uiState.value
+    if (!state.showEpisodeStreams || state.episodeStreamsForVideoId != video.id) return
+    switchToEpisodeStream(stream = picked, forcedTargetVideo = video)
+}
+
+/**
+ * Notflix: some debrid add-ons answer a blocked or missing file with a short clip that plays fine
+ * ("Removed by your debrid", "Enlace inválido / no reproducible"). Once the duration is known, a movie
+ * or episode shorter than two minutes counts as a failed source and the next stream the user's
+ * auto-play settings would pick (the clips already found left out) is played instead. With Manual or
+ * no other match the clip keeps playing, as before.
+ */
+internal fun PlayerRuntimeController.checkShortPlaceholderSource(durationMs: Long) {
+    if (durationMs <= 0L) return
+    val url = currentStreamUrl
+    if (url.isBlank() || placeholderCheckedStreamUrl == url || placeholderFallbackJob?.isActive == true) return
+    placeholderCheckedStreamUrl = url
+    if (!isShortPlaceholderDuration(durationMs)) return
+    if (placeholderFallbackAttempts >= MAX_PLACEHOLDER_FALLBACK_ATTEMPTS) return
+    val request = currentSourceStreamsRequest() ?: return
+    if (request.type.lowercase() !in listOf("movie", "series", "tv", "anime")) return
+    val failedAddon = currentAddonName
+    val failedKeys = placeholderKeysFor(
+        addonName = failedAddon,
+        filename = currentFilename,
+        urlFilename = streamFilenameFromUrl(url),
+        description = currentStreamDescription,
+        infoHash = _uiState.value.currentStreamInfoHash
+    )
+
+    placeholderFallbackJob = scope.launch {
+        val settings = playerSettingsDataStore.playerSettings.first()
+        val mode = settings.streamAutoPlayMode
+        if (mode == StreamAutoPlayMode.MANUAL ||
+            (mode == StreamAutoPlayMode.PRIORITY_LIST && settings.streamAutoPlayPriorityList.isEmpty())
+        ) return@launch
+        placeholderStreamKeys += failedKeys
+        val installedAddonOrder = streamAddonsFor(request.videoId).map { it.displayName }
+        val preferredServerNames = serverStreams.preferredSourceNames(request.type, request.videoId)
+        var data: List<AddonStreams> = emptyList()
+        streamRepository.getStreamsFromAllAddons(
+            type = request.type,
+            videoId = request.videoId,
+            season = request.season,
+            episode = request.episode
+        ).collect { result -> if (result is NetworkResult.Success) data = result.data }
+        val candidates = StreamAutoPlaySelector.orderAddonStreams(data, installedAddonOrder, preferredServerNames)
+            .flatMap { it.streams }
+            .filterNot { stream ->
+                val candidateUrl = stream.getStreamUrl()
+                !StreamAutoPlaySelector.isCachedForPriority(stream) ||
+                    candidateUrl == url || placeholderKeysFor(
+                    addonName = stream.addonName,
+                    filename = stream.behaviorHints?.filename,
+                    urlFilename = candidateUrl?.let(::streamFilenameFromUrl),
+                    description = stream.description,
+                    infoHash = stream.infoHash ?: stream.clientResolve?.infoHash
+                ).any { it in placeholderStreamKeys }
+            }
+        val picked = withContext(Dispatchers.Default) {
+            StreamAutoPlaySelector.selectAutoPlayStream(
+                streams = candidates,
+                mode = mode,
+                regexPattern = settings.streamAutoPlayRegex,
+                source = settings.streamAutoPlaySource,
+                installedAddonNames = installedAddonOrder.toSet(),
+                selectedAddons = settings.streamAutoPlaySelectedAddons,
+                selectedPlugins = settings.streamAutoPlaySelectedPlugins,
+                priorityList = settings.streamAutoPlayPriorityList,
+                carryPriorityAudioLanguage = true
+            )
+        } ?: return@launch
+        // The user may have changed source or episode meanwhile.
+        if (currentStreamUrl != url) return@launch
+        placeholderFallbackAttempts++
+        Log.i(PlayerRuntimeController.TAG, "Short error clip from $failedAddon, playing ${picked.addonName} instead")
+        switchToSourceStream(picked)
+    }
+}
+
+private const val MAX_PLACEHOLDER_FALLBACK_ATTEMPTS = 10
+
+private fun placeholderKeysFor(
+    addonName: String?,
+    filename: String?,
+    urlFilename: String?,
+    description: String?,
+    infoHash: String?
+): Set<String> {
+    val addon = addonName.orEmpty().trim()
+    val keys = linkedSetOf<String>()
+    filename?.trim()?.takeIf { it.isNotEmpty() }?.let { keys += "$addon|f:$it" }
+    urlFilename?.trim()?.takeIf { it.isNotEmpty() }?.let { keys += "$addon|f:$it" }
+    description?.trim()?.takeIf { it.isNotEmpty() }?.let { keys += "$addon|d:$it" }
+    infoHash?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }?.let { keys += "$addon|h:$it" }
+    if (keys.isEmpty()) keys += "$addon|"
+    return keys
 }
 
 private fun PlayerRuntimeController.launchEpisodeDebridPreparationIfNeeded(
@@ -1532,8 +1676,13 @@ internal fun PlayerRuntimeController.switchToEpisodeStream(
 
     nextEpisodeAutoPlayJob?.cancel()
     nextEpisodeAutoPlayJob = null
+    placeholderFallbackJob?.cancel()
+    placeholderFallbackJob = null
     stillWatchingPromptJob?.cancel()
     stillWatchingPromptJob = null
+    placeholderStreamKeys.clear()
+    placeholderFallbackAttempts = 0
+    placeholderCheckedStreamUrl = null
 
     flushPlaybackSnapshotForSwitchOrExit()
 
@@ -1669,8 +1818,13 @@ private fun PlayerRuntimeController.switchToEpisodeStreamCommon(
     episodeStreamsJob = null
     nextEpisodeAutoPlayJob?.cancel()
     nextEpisodeAutoPlayJob = null
+    placeholderFallbackJob?.cancel()
+    placeholderFallbackJob = null
     stillWatchingPromptJob?.cancel()
     stillWatchingPromptJob = null
+    placeholderStreamKeys.clear()
+    placeholderFallbackAttempts = 0
+    placeholderCheckedStreamUrl = null
     streamRepository.setLocalPluginSearchPaused(true)
     flushPlaybackSnapshotForSwitchOrExit()
 

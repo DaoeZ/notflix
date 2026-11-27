@@ -902,4 +902,5 @@
     <string name="notflix_billboard_play_description">Redă %1$s</string>
     <string name="notflix_billboard_info_description">Mai multe informații: %1$s</string>
     <string name="notflix_billboard_select">Selectează titlul %1$d din %2$d</string>
+    <string name="playback_unavailable_message">Nicio extensie de surse nu poate reda acest titlu. Instalează una în Setări › Extensii (ghiduri pe r/NotflixTV).</string>
 </resources>

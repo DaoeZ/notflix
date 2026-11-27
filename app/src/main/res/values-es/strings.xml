@@ -224,7 +224,7 @@
     <string name="detail_marked_previous_watched">Episodios anteriores marcados como vistos: %1$d</string>
 
     <string name="playback_unavailable">Reproducción no disponible</string>
-    <string name="playback_unavailable_message">La reproducción no está disponible para este título con tu configuración actual.</string>
+    <string name="playback_unavailable_message">Ningún complemento de fuentes puede reproducir este título. Instala uno en Ajustes › Complementos (guías en r/NotflixTV).</string>
     <string name="detail_btn_play">Reproducir</string>
     <string name="detail_btn_resume">Reanudar</string>
     <string name="detail_btn_play_episode">Reproducir T%1$d E%2$d</string>
@@ -2376,7 +2376,7 @@ Utilizas esta función bajo tu entera responsabilidad. P2P se puede desactivar e
     <string name="plugin_readonly_notice">Se están usando los complementos del perfil principal y no se pueden cambiar</string>
     <string name="plugin_repositories_section">Repositorios (%1$d)</string>
     <string name="plugin_providers_section">Proveedores (%1$d)</string>
-    <string name="plugin_title">Complementos</string>
+    <string name="plugin_title">Plugins</string>
     <string name="plugin_subtitle">Administra scrapers y proveedores locales</string>
     <string name="plugin_enable_plugins_title">Habilitar proveedores de complementos globalmente</string>
     <string name="plugin_enable_plugins_subtitle">Usar proveedores de complementos durante la búsqueda de fuentes</string>

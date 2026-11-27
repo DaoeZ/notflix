@@ -53,4 +53,26 @@
     <string name="extras_country_title">国 / 地域（トップ10）</string>
     <string name="extras_country_subtitle">ホームに表示するトップ10の国を選択</string>
     <string name="extras_country_auto">自動（%1$s）</string>
+    <string name="extras_show_top10_title">トップ10の列を表示</string>
+    <string name="extras_show_top10_desc">ホームにあなたの国のトップ10映画・シリーズを表示</string>
+    <string name="extras_accent_title">テーマカラー</string>
+    <string name="extras_accent_red">赤</string>
+    <string name="extras_accent_blue">青</string>
+    <string name="extras_accent_green">緑</string>
+    <string name="extras_accent_purple">紫</string>
+    <string name="extras_accent_orange">オレンジ</string>
+    <string name="extras_accent_pink">ピンク</string>
+    <string name="extras_search_keyboard_title">検索キーボード</string>
+    <string name="extras_search_keyboard_desc">画面上のNotflixキーボード、またはテレビのキーボード（Gboardとマイク）を開くテキスト欄</string>
+    <string name="extras_search_keyboard_notflix">Notflixキーボード</string>
+    <string name="extras_search_keyboard_system">システムキーボード</string>
+    <string name="companion_web_enter_code">リモコンを接続するには、テレビに表示されている6文字のコードを入力してください。</string>
+    <string name="companion_web_code_placeholder">コード (例: A1B2C3)</string>
+    <string name="companion_web_connect">接続</string>
+    <string name="companion_web_invalid_code">コードが無効です。テレビのコードを確認してもう一度お試しください。</string>
+    <string name="extras_like_title">いいね</string>
+    <string name="extras_dislike_title">興味なし</string>
+    <string name="extras_ui_scale_title">インターフェースサイズ</string>
+    <string name="extras_ui_scale_desc">テレビのメニュー、ポスター、文字の全体サイズを調整します</string>
+    <string name="extras_addon_rename_title">アドオン名を変更</string>
 </resources>

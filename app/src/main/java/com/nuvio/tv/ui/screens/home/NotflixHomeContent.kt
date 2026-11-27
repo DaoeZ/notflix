@@ -339,6 +339,7 @@ fun NotflixHomeContent(
     val tomorrowLabel = stringResource(R.string.cw_airs_tomorrow_short)
     val locale = LocalConfiguration.current.locales[0]
     val countryOverride by NotflixCountryPreference.selectedCountry.collectAsState()
+    val showTop10 by NotflixCountryPreference.showTop10.collectAsState()
     val countryName = remember(locale, countryOverride) {
         val code = NotflixCountryPreference.resolveCountryCode(locale, countryOverride)
         NotflixCountryPreference.displayCountryName(code, locale)
@@ -347,8 +348,8 @@ fun NotflixHomeContent(
     val fallbackTop10SeriesTitle = stringResource(R.string.top10_series_country, countryName)
     val fallbackTop10KidsTitle = stringResource(R.string.top10_kids_country, countryName)
     // Offline / no-TMDB-key fallback: derive Top 10 from already-loaded catalogs so Top 10 always works.
-    val effectiveTop10Movies = remember(top10MoviesRow, presentation.notflixCatalog.rows, fallbackTop10MoviesTitle, state.ageLimit, state.ageRatings, state.hiddenTitleKeys) {
-        top10MoviesRow ?: if (!com.nuvio.tv.core.profile.isKidsAgeLimit(state.ageLimit)) {
+    val effectiveTop10Movies = remember(showTop10, top10MoviesRow, presentation.notflixCatalog.rows, fallbackTop10MoviesTitle, state.ageLimit, state.ageRatings, state.hiddenTitleKeys) {
+        if (!showTop10) null else top10MoviesRow ?: if (!com.nuvio.tv.core.profile.isKidsAgeLimit(state.ageLimit)) {
             val items = presentation.notflixCatalog.rows.asSequence()
                 .mapNotNull { it.catalog }
                 .filter { it.apiType.equals("movie", ignoreCase = true) }
@@ -361,8 +362,8 @@ fun NotflixHomeContent(
             notflixPersonalRow(NOTFLIX_TOP10_MOVIES_KEY, fallbackTop10MoviesTitle, items)
         } else null
     }
-    val effectiveTop10Series = remember(top10SeriesRow, presentation.notflixCatalog.rows, fallbackTop10SeriesTitle, state.ageLimit, state.ageRatings, state.hiddenTitleKeys) {
-        top10SeriesRow ?: if (!com.nuvio.tv.core.profile.isKidsAgeLimit(state.ageLimit)) {
+    val effectiveTop10Series = remember(showTop10, top10SeriesRow, presentation.notflixCatalog.rows, fallbackTop10SeriesTitle, state.ageLimit, state.ageRatings, state.hiddenTitleKeys) {
+        if (!showTop10) null else top10SeriesRow ?: if (!com.nuvio.tv.core.profile.isKidsAgeLimit(state.ageLimit)) {
             val items = presentation.notflixCatalog.rows.asSequence()
                 .mapNotNull { it.catalog }
                 .filter { it.apiType.equals("series", ignoreCase = true) || it.apiType.equals("tv", ignoreCase = true) }
@@ -375,8 +376,8 @@ fun NotflixHomeContent(
             notflixPersonalRow(NOTFLIX_TOP10_SERIES_KEY, fallbackTop10SeriesTitle, items)
         } else null
     }
-    val effectiveTop10Kids = remember(top10KidsRow, presentation.notflixCatalog.rows, fallbackTop10KidsTitle, state.ageLimit, state.ageRatings, state.hiddenTitleKeys) {
-        top10KidsRow ?: if (com.nuvio.tv.core.profile.isKidsAgeLimit(state.ageLimit)) {
+    val effectiveTop10Kids = remember(showTop10, top10KidsRow, presentation.notflixCatalog.rows, fallbackTop10KidsTitle, state.ageLimit, state.ageRatings, state.hiddenTitleKeys) {
+        if (!showTop10) null else top10KidsRow ?: if (com.nuvio.tv.core.profile.isKidsAgeLimit(state.ageLimit)) {
             val items = presentation.notflixCatalog.rows.asSequence()
                 .mapNotNull { it.catalog }
                 .flatMap { it.items.asSequence() }
@@ -404,14 +405,14 @@ fun NotflixHomeContent(
     val keepPendingCw by remember { derivedStateOf { focused?.rowKey == "cw" } }
     val rows = remember(presentation.notflixCatalog, presentation.continueWatchingItems, state.upcomingItems, state.continueWatchingEnabled,
         state.notflixCwPhase, keepPendingCw, cwTitle, episodePattern, seeAll, myListRow, becauseRow,
-        effectiveTop10Movies, effectiveTop10Series, effectiveTop10Kids,
+        effectiveTop10Movies, effectiveTop10Series, effectiveTop10Kids, showTop10,
         state.ageLimit, state.ageTmdbKeyAvailable, state.ageRatings, state.watchedMovieIds, state.fullyWatchedSeriesIds,
         state.hiddenTitleKeys, state.disabledHomeCatalogKeys, airingTitle, airingCaption) {
         notflixRows(presentation, keepPendingCw, cwTitle, episodePattern, seeAll, myListRow, becauseRow,
             airingTitle, airingCaption,
-            top10MoviesRow = effectiveTop10Movies,
-            top10SeriesRow = effectiveTop10Series,
-            top10KidsRow = effectiveTop10Kids)
+            top10MoviesRow = effectiveTop10Movies.takeIf { showTop10 },
+            top10SeriesRow = effectiveTop10Series.takeIf { showTop10 },
+            top10KidsRow = effectiveTop10Kids.takeIf { showTop10 })
     }
     val heroes = remember(
         state.heroSectionEnabled,

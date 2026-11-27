@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Nyheder i denne version</string>
     <string name="notflix_whats_new_about_subtitle">Se ændringerne i version %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Vælg kortstørrelse: lille, mellem eller stor.</item>
-        <item>Vælg, hvor hurtigt kort åbnes, og deres knapper er lettere at se.</item>
-        <item>Kort åbnes også og afspiller trailer i samlinger.</item>
-        <item>Bedømmelserne viser, om de kommer fra IMDb eller TMDB.</item>
-        <item>Automatisk afspilning efter sprog: vælg flere, sæt dem i rækkefølge, og bestem om kvalitet eller sprog kommer først.</item>
-        <item>Titler og beskrivelser på appens sprog (med TMDB-nøgle).</item>
-        <item>Notflix er oversat til alle appens sprog.</item>
-        <item>Mere overskuelige indstillinger: valg åbner som lister, og indstillinger uden betydning for Notflix er skjult.</item>
-        <item>KIDS-profiler får deres egen startside med tegnefilm og familietitler (kræver en TMDB-nøgle).</item>
-        <item>Simkl kan nu tilsluttes.</item>
-        <item>Trakt: forbind med kun en kode, uden opsætning.</item>
+        <item>Temafarvevælger med tonet mørk baggrund og brugerdefineret TV-brugerfladestørrelse (60 %–130 %) i Udseende.</item>
+        <item>«Synes godt om» og «Ikke noget for mig» på detaljer og banner for bedre anbefalinger pr. profil.</item>
+        <item>Episodebedømmelser bruger nu SeriesGraph og TMDB som reserve, så næsten alle serier viser bedømmelser.</item>
+        <item>Automatisk overspring af falske eller ikke-cachede streams (op til 10 forsøg) og hurtigere autoafspilning af episoder.</item>
+        <item>Omdøb tilføjelser, vis/skjul Top 10-rækker og vælg mellem Notflix- eller systemtastatur i Søg.</item>
+        <item>Bedre lokaliserede plakater og stabilitetsrettelser.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix-nøgle</string>
     <string name="notflix_tmdb_attribution">Dette produkt bruger TMDB API, men er ikke godkendt eller certificeret af TMDB.</string>

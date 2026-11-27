@@ -2757,4 +2757,5 @@
     <string name="notflix_billboard_play_description">Пусни %1$s</string>
     <string name="notflix_billboard_info_description">Повече информация: %1$s</string>
     <string name="notflix_billboard_select">Изберете заглавие %1$d от %2$d</string>
+    <string name="playback_unavailable_message">Нито една добавка за източници не може да възпроизведе това заглавие. Инсталирайте такава от Настройки › Добавки (ръководства в r/NotflixTV).</string>
 </resources>

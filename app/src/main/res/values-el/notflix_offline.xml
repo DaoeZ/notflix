@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Επιλέξτε πηγή για λήψη</string>
     <string name="notflix_offline_started">Η λήψη μπήκε σε αναμονή</string>
     <string name="notflix_offline_failed">Δεν ήταν δυνατό το άνοιγμα ή η λήψη αυτού του αρχείου. Δοκιμάστε ένα απευθείας αρχείο βίντεο.</string>
+    <string name="notflix_offline_new_code">Νέος κωδικός</string>
 </resources>

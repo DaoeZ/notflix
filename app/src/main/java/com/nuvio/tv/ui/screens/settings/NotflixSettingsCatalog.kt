@@ -60,10 +60,10 @@ internal enum class NotflixSettingsPage(val section: NotflixSettingsSection, @pa
     PROVIDER_PHONE(NotflixSettingsSection.ACCOUNTS, R.string.notflix_provider_phone_title),
     ADDONS(NotflixSettingsSection.ADDONS, R.string.addon_title),
     ADDON_MANAGER(NotflixSettingsSection.ADDONS, R.string.addon_title),
-    COLLECTION_MANAGER(NotflixSettingsSection.ADDONS, R.string.notflix_collection_manage),
+    COLLECTION_MANAGER(NotflixSettingsSection.HOME, R.string.notflix_collection_manage),
     PLUGINS(NotflixSettingsSection.ADDONS, R.string.plugin_title),
     ADDON_SERVICES(NotflixSettingsSection.ADDONS, R.string.settings_media_servers),
-    HOME_COLLECTION(NotflixSettingsSection.ADDONS, R.string.notflix_settings_home_collection),
+    HOME_COLLECTION(NotflixSettingsSection.HOME, R.string.notflix_settings_home_collection),
     SYSTEM(NotflixSettingsSection.SYSTEM, R.string.notflix_settings_system),
     UPDATES(NotflixSettingsSection.SYSTEM, R.string.notflix_settings_updates),
     NEWS(NotflixSettingsSection.SYSTEM, R.string.notflix_whats_new_about_title),
@@ -83,21 +83,21 @@ internal fun notflixSettingsChildren(page: NotflixSettingsPage, primary: Boolean
             NotflixSettingsPage.PLAYER, NotflixSettingsPage.UP_NEXT, NotflixSettingsPage.STREAMS)
         NotflixSettingsPage.PLAYER -> listOf(NotflixSettingsPage.INTERFACE)
         NotflixSettingsPage.SUBTITLES -> listOf(NotflixSettingsPage.SUBTITLES_ADVANCED)
-        NotflixSettingsPage.HOME -> listOf(NotflixSettingsPage.INTRO, NotflixSettingsPage.CONTINUE_WATCHING,
-            NotflixSettingsPage.TRAILERS, NotflixSettingsPage.HOME_ADVANCED)
+        NotflixSettingsPage.HOME -> listOf(NotflixSettingsPage.COLLECTION_MANAGER, NotflixSettingsPage.HOME_COLLECTION,
+            NotflixSettingsPage.CONTINUE_WATCHING, NotflixSettingsPage.TRAILERS,
+            NotflixSettingsPage.INTRO, NotflixSettingsPage.HOME_ADVANCED)
         NotflixSettingsPage.HOME_ADVANCED -> listOf(NotflixSettingsPage.THEME, NotflixSettingsPage.HOME_CONTENT,
             NotflixSettingsPage.DETAIL, NotflixSettingsPage.CUSTOM_POSTERS)
-        NotflixSettingsPage.ACCOUNTS -> listOf(NotflixSettingsPage.TRAKT, NotflixSettingsPage.SIMKL,
-            NotflixSettingsPage.MDBLIST, NotflixSettingsPage.TMDB, NotflixSettingsPage.SKIP_SERVICES,
-            NotflixSettingsPage.DEBRID, NotflixSettingsPage.ACCOUNTS_ADVANCED)
+        NotflixSettingsPage.ACCOUNTS -> listOf(NotflixSettingsPage.DEBRID, NotflixSettingsPage.TRAKT,
+            NotflixSettingsPage.SIMKL, NotflixSettingsPage.MDBLIST, NotflixSettingsPage.TMDB,
+            NotflixSettingsPage.SKIP_SERVICES, NotflixSettingsPage.ACCOUNTS_ADVANCED)
         NotflixSettingsPage.MDBLIST -> listOf(NotflixSettingsPage.MDBLIST_ACCOUNT, NotflixSettingsPage.MDBLIST_RATINGS)
         NotflixSettingsPage.TMDB -> listOf(NotflixSettingsPage.TMDB_OPTIONS)
         NotflixSettingsPage.SKIP_SERVICES -> listOf(NotflixSettingsPage.ANIME_SKIP)
         // Notflix ships its own TMDB/Trakt keys and IntroDB works keyless: own keys are an advanced option.
         NotflixSettingsPage.ACCOUNTS_ADVANCED -> listOf(NotflixSettingsPage.LIBRARY_PROGRESS, NotflixSettingsPage.TMDB_KEY,
             NotflixSettingsPage.INTRO_DB, NotflixSettingsPage.PROVIDER_PHONE)
-        NotflixSettingsPage.ADDONS -> listOf(NotflixSettingsPage.ADDON_MANAGER, NotflixSettingsPage.COLLECTION_MANAGER,
-            NotflixSettingsPage.ADDON_SERVICES, NotflixSettingsPage.HOME_COLLECTION) +
+        NotflixSettingsPage.ADDONS -> listOf(NotflixSettingsPage.ADDON_MANAGER, NotflixSettingsPage.ADDON_SERVICES) +
             if (plugins) listOf(NotflixSettingsPage.PLUGINS) else emptyList()
         NotflixSettingsPage.SYSTEM -> listOf(NotflixSettingsPage.UPDATES, NotflixSettingsPage.NEWS,
             NotflixSettingsPage.EXPERIENCE, NotflixSettingsPage.ABOUT, NotflixSettingsPage.SYSTEM_ADVANCED)

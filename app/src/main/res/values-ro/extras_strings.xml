@@ -53,4 +53,26 @@
     <string name="extras_country_title">Țară / Regiune (Top 10)</string>
     <string name="extras_country_subtitle">Alege țara pentru lista Top 10 afișată pe ecranul principal</string>
     <string name="extras_country_auto">Automat (%1$s)</string>
+    <string name="extras_show_top10_title">Afișează rândurile Top 10</string>
+    <string name="extras_show_top10_desc">Top 10 filme și seriale din țara ta pe ecranul principal</string>
+    <string name="extras_accent_title">Culoarea temei</string>
+    <string name="extras_accent_red">Roșu</string>
+    <string name="extras_accent_blue">Albastru</string>
+    <string name="extras_accent_green">Verde</string>
+    <string name="extras_accent_purple">Mov</string>
+    <string name="extras_accent_orange">Portocaliu</string>
+    <string name="extras_accent_pink">Roz</string>
+    <string name="extras_search_keyboard_title">Tastatură de căutare</string>
+    <string name="extras_search_keyboard_desc">Tastatura Notflix pe ecran sau un câmp de text care deschide tastatura televizorului (Gboard și microfonul)</string>
+    <string name="extras_search_keyboard_notflix">Tastatura Notflix</string>
+    <string name="extras_search_keyboard_system">Tastatura sistemului</string>
+    <string name="companion_web_enter_code">Introdu codul de 6 caractere afișat pe TV pentru a conecta telecomanda.</string>
+    <string name="companion_web_code_placeholder">Cod (ex. A1B2C3)</string>
+    <string name="companion_web_connect">Conectare</string>
+    <string name="companion_web_invalid_code">Cod invalid. Verifică codul de pe TV și încearcă din nou.</string>
+    <string name="extras_like_title">Îmi place</string>
+    <string name="extras_dislike_title">Nu mă interesează</string>
+    <string name="extras_ui_scale_title">Dimensiune interfață</string>
+    <string name="extras_ui_scale_desc">Ajustează dimensiunea generală a meniurilor, afișelor și textului pe TV</string>
+    <string name="extras_addon_rename_title">Redenumește extensia</string>
 </resources>

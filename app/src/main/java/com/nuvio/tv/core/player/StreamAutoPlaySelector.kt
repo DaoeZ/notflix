@@ -276,12 +276,14 @@ object StreamAutoPlaySelector {
         }
         // Debrid add-ons return http links for downloads too ([RD download], ⬇, ⏳); trust their own
         // label before the "direct link means ready" rule (promoter 09-11).
-        val label = listOfNotNull(stream.name, stream.title).joinToString(" ")
+        val label = listOfNotNull(stream.name, stream.title, stream.description).joinToString(" ")
+        if (POSITIVE_CACHED_LABEL.containsMatchIn(label)) return true
         if (NOT_CACHED_LABEL.containsMatchIn(label)) return false
         return stream.isDirectDebrid() || (!stream.isTorrent() && stream.getStreamUrl() != null)
     }
 
-    private val NOT_CACHED_LABEL = Regex("""(?i)(\bdownload\b|\buncached\b|\bnot\s*cached\b|⬇|⏳)""")
+    private val POSITIVE_CACHED_LABEL = Regex("""(?i)(\[(?:RD|AD|TB|PM|ED|DL|OC|TR|PK)\+\]|⚡)""")
+    private val NOT_CACHED_LABEL = Regex("""(?i)(\bdownload\b|\bdescargar\b|\buncached\b|\bnot\s*cached\b|⬇|⏳|📥)""")
 
     /**
      * Heuristic: the add-on names the audio language in the name, title or description. Empty

@@ -53,4 +53,26 @@
     <string name="extras_country_title">國家 / 地區（Top 10）</string>
     <string name="extras_country_subtitle">選擇首頁顯示的 Top 10 所屬國家或地區</string>
     <string name="extras_country_auto">自動（%1$s）</string>
+    <string name="extras_show_top10_title">顯示 Top 10 列</string>
+    <string name="extras_show_top10_desc">在首頁顯示你所在國家的 Top 10 電影和影集</string>
+    <string name="extras_accent_title">主題顏色</string>
+    <string name="extras_accent_red">紅色</string>
+    <string name="extras_accent_blue">藍色</string>
+    <string name="extras_accent_green">綠色</string>
+    <string name="extras_accent_purple">紫色</string>
+    <string name="extras_accent_orange">橘色</string>
+    <string name="extras_accent_pink">粉紅色</string>
+    <string name="extras_search_keyboard_title">搜尋鍵盤</string>
+    <string name="extras_search_keyboard_desc">螢幕上的 Notflix 鍵盤，或開啟電視鍵盤（Gboard 及其麥克風）的文字欄位</string>
+    <string name="extras_search_keyboard_notflix">Notflix 鍵盤</string>
+    <string name="extras_search_keyboard_system">系統鍵盤</string>
+    <string name="companion_web_enter_code">輸入電視上顯示的 6 位代碼以連線遙控器。</string>
+    <string name="companion_web_code_placeholder">代碼（例如 A1B2C3）</string>
+    <string name="companion_web_connect">連線</string>
+    <string name="companion_web_invalid_code">代碼無效，請檢查電視上的代碼後重試。</string>
+    <string name="extras_like_title">喜歡</string>
+    <string name="extras_dislike_title">沒興趣</string>
+    <string name="extras_ui_scale_title">介面大小</string>
+    <string name="extras_ui_scale_desc">調整電視上選單、海報與文字的整體大小</string>
+    <string name="extras_addon_rename_title">重新命名外掛程式</string>
 </resources>

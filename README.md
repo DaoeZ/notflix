@@ -26,13 +26,15 @@ Notflix is a fan-made presentation layer for Nuvio. It keeps everything Nuvio do
 > [!IMPORTANT]
 > Notflix hosts, indexes and distributes **no content**. It only shows what the addons and services you set up return. It is an independent fan project, **not affiliated with any streaming service**, and not an official Nuvio release.
 
-## What's new in 1.0
+## What's new in 1.0.5
 
-- **Android TV leaves beta.** It's faster, and it has new player controls you can reorder, redesigned Settings, smarter autoplay by language, and posters and trailers in your language. Downloads now work on TV too.
-- **The Android phone app launches.** It has the same Notflix look, built for touch, with downloads, *Send to TV*, and sync with the TV app.
-- **iPhone** is coming later.
+- **Like / Not interested** on title pages, so *For You* learns what each profile likes.
+- **Theme colour** (red, blue, green, purple, orange or pink), and on TV an **interface size** setting from 60% to 130%.
+- **Episode ratings for almost every show**, with SeriesGraph and TMDB as fallbacks when IMDb has none.
+- **Trap videos skipped**: placeholder videos and uncached links are skipped automatically, and episodes start faster.
+- **Subtitle style stays per device**, hideable Top 10 rows, add-on renaming and reorganized settings.
 
-Full list in the [1.0 release notes](https://github.com/DaoeZ/notflix/releases/latest).
+1.0 brought the Android phone app and took the TV app out of beta. Full list in the [release notes](https://github.com/DaoeZ/notflix/releases/latest).
 
 ## Screenshots
 

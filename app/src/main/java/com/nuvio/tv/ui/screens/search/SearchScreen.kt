@@ -359,6 +359,7 @@ fun SearchScreen(
             androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
         )
         val localizedPosters by viewModel.localizedPosters.collectAsState()
+        val localizedRatings by viewModel.localizedRatings.collectAsState()
         val checkingKidsSearch by viewModel.checkingKidsSearch.collectAsState()
         DisposableEffect(viewModel, language) {
             viewModel.setNotflixSearchActive(true, language)
@@ -372,7 +373,9 @@ fun SearchScreen(
             notflixSearchStartItems(because?.items.orEmpty(), ageGateState, hiddenTitleKeys)
         }
         var showCompanionQr by remember { mutableStateOf(false) }
+        val systemKeyboard by NotflixSearchModePreference.systemKeyboard.collectAsState()
         NotflixSearchContent(
+            systemKeyboard = systemKeyboard,
             recommendedResults = startRecommendations,
             recommendationTitle = because?.let { stringResource(R.string.notflix_for_you) },
             query = uiState.query,
@@ -390,6 +393,7 @@ fun SearchScreen(
             onOpenCompanion = { showCompanionQr = true },
             onRetry = { viewModel.onEvent(SearchEvent.Retry) },
             onRememberSearch = { viewModel.onEvent(SearchEvent.RememberSearchFromTextInput) },
+            onSubmitSearch = { viewModel.onEvent(SearchEvent.SubmitSearch) },
             // M34: same warm-up the official grid runs when a card gains focus / opens.
             onItemFocused = { item -> viewModel.prefetchMetaOnFocus(item.id, item.rawType) },
             onItemSelected = { item ->
@@ -398,6 +402,7 @@ fun SearchScreen(
             onNavigateToDetail = onNavigateToDetail,
             localizedTitles = localizedTitles,
             localizedPosters = localizedPosters,
+            localizedRatings = localizedRatings,
             onRequestTitles = viewModel::requestLocalizedTitles
         )
         if (showCompanionQr) {

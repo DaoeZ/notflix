@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Изберете източник за изтегляне</string>
     <string name="notflix_offline_started">Изтеглянето е в опашката</string>
     <string name="notflix_offline_failed">Този файл не можа да бъде отворен или изтеглен. Опитайте с директен видеофайл.</string>
+    <string name="notflix_offline_new_code">Нов код</string>
 </resources>

@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Escolha uma fonte para baixar</string>
     <string name="notflix_offline_started">Download na fila</string>
     <string name="notflix_offline_failed">Não foi possível abrir ou baixar este arquivo. Tente um arquivo de vídeo direto.</string>
+    <string name="notflix_offline_new_code">Atualizar código</string>
 </resources>

@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Velg en kilde å laste ned</string>
     <string name="notflix_offline_started">Nedlasting satt i kø</string>
     <string name="notflix_offline_failed">Filen kunne ikke åpnes eller lastes ned. Prøv en direkte videofil.</string>
+    <string name="notflix_offline_new_code">Ny kode</string>
 </resources>

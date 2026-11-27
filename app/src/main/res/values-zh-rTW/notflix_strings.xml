@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">此版本的新功能</string>
     <string name="notflix_whats_new_about_subtitle">查看版本 %1$s 的變更</string>
     <string-array name="notflix_whats_new_items">
-        <item>選擇卡片大小：小、中或大。</item>
-        <item>選擇卡片開啟的速度，按鈕也更容易看清。</item>
-        <item>卡片現在也會在收藏中開啟並播放預告片。</item>
-        <item>評分會顯示來自 IMDb 或 TMDB。</item>
-        <item>依語言自動播放：可選擇多種語言、調整順序，並決定優先畫質還是語言。</item>
-        <item>標題與描述使用應用程式語言（需要 TMDB 金鑰）。</item>
-        <item>Notflix 已翻譯為應用程式的所有語言。</item>
-        <item>設定更清爽：選項以清單開啟，與 Notflix 無關的選項已隱藏。</item>
-        <item>KIDS 個人檔案擁有專屬首頁，提供卡通與闔家作品（需要 TMDB 金鑰）。</item>
-        <item>現在可以連接 Simkl。</item>
-        <item>Trakt：只需一組代碼即可連結，無需任何設定。</item>
+        <item>外觀設定新增主題色（搭配微調深色背景）與可自訂的電視介面大小（60%–130%）。</item>
+        <item>詳細頁面與橫幅新增「喜歡 / 不感興趣」按鈕，依個人檔案精準調整推薦內容。</item>
+        <item>劇集評分現已支援 SeriesGraph 與 TMDB 備援，幾乎每部影集都能顯示評分。</item>
+        <item>自動略過假影片或未快取串流（最多嘗試 10 次），並加快劇集自動播放。</item>
+        <item>支援重新命名外掛程式、開關 Top 10 排行列，並可切換 Notflix 或系統搜尋鍵盤。</item>
+        <item>改善在地化海報（優先顯示含片名的封面）並修正穩定性問題。</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix 金鑰</string>
     <string name="notflix_tmdb_attribution">本產品使用 TMDB API，但未經 TMDB 認可或認證。</string>

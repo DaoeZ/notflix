@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">ডাউনলোডের জন্য একটি সোর্স বেছে নিন</string>
     <string name="notflix_offline_started">ডাউনলোড সারিতে যোগ হয়েছে</string>
     <string name="notflix_offline_failed">এই ফাইলটি খোলা বা ডাউনলোড করা যায়নি। সরাসরি একটি ভিডিও ফাইল চেষ্টা করুন।</string>
+    <string name="notflix_offline_new_code">কোড রিফ্রেশ করুন</string>
 </resources>

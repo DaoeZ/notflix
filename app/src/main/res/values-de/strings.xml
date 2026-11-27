@@ -2341,4 +2341,5 @@
     <string name="notflix_billboard_play_description">%1$s abspielen</string>
     <string name="notflix_billboard_info_description">Mehr Informationen: %1$s</string>
     <string name="notflix_billboard_select">Titel %1$d von %2$d auswählen</string>
+    <string name="playback_unavailable_message">Kein Quellen-Add-on kann diesen Titel abspielen. Installiere eines unter Einstellungen › Add-ons (Anleitungen auf r/NotflixTV).</string>
 </resources>

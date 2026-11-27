@@ -219,7 +219,7 @@
     <string name="detail_marked_episodes_unwatched">Episódios marcados como não assistidos: %1$d</string>
     <string name="detail_marked_previous_watched">Episódios anteriores marcados como assistidos: %1$d</string>
     <string name="playback_unavailable">Reprodução indisponível</string>
-    <string name="playback_unavailable_message">A reprodução deste título não está disponível com a sua configuração atual.</string>
+    <string name="playback_unavailable_message">Nenhum add-on de fontes pode reproduzir este título. Instale um em Configurações › Add-ons (guias em r/NotflixTV).</string>
     
     <string name="detail_btn_play">Assistir</string>
     <string name="detail_btn_resume">Continuar</string>

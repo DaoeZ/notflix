@@ -334,6 +334,20 @@ class AddonRepositoryImpl(
         triggerRemoteSync()
     }
 
+    override suspend fun renameAddon(url: String, customName: String) {
+        val cleanUrl = canonicalizeUrl(url)
+        val trimmed = customName.trim()
+        val current = preferences.userSetNames.first().toMutableMap()
+        if (trimmed.isEmpty()) {
+            current.remove(cleanUrl)
+            current.remove(url)
+        } else {
+            current[cleanUrl] = trimmed
+        }
+        preferences.setUserSetNames(current)
+        triggerRemoteSync()
+    }
+
     override suspend fun setAddonOrder(urls: List<String>) {
         if (!preferences.setAddonOrder(urls)) return
         triggerRemoteSync()

@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Wybierz źródło do pobrania</string>
     <string name="notflix_offline_started">Pobieranie dodane do kolejki</string>
     <string name="notflix_offline_failed">Nie udało się otworzyć ani pobrać tego pliku. Spróbuj bezpośredniego pliku wideo.</string>
+    <string name="notflix_offline_new_code">Odśwież kod</string>
 </resources>

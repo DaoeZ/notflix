@@ -203,7 +203,7 @@
     <string name="detail_marked_episodes_unwatched">এপিসোডগুলো দেখা হয়নি হিসেবে মার্ক করা হয়েছে: %1$d</string>
     <string name="detail_marked_previous_watched">আগের এপিসোডগুলো দেখা হয়েছে হিসেবে মার্ক করা হয়েছে: %1$d</string>
     <string name="playback_unavailable">প্লেব্যাক উপলব্ধ নেই</string>
-    <string name="playback_unavailable_message">আপনার বর্তমান সেটআপের সাথে এই শিরোনামের জন্য প্লেব্যাক উপলব্ধ নয়।</string>
+    <string name="playback_unavailable_message">কোনো সোর্স অ্যাড-অন এই শিরোনামটি চালাতে পারছে না। সেটিংস › অ্যাড-অন থেকে একটি ইনস্টল করুন (নির্দেশিকা: r/NotflixTV)।</string>
     <string name="detail_btn_play">প্লে</string>
     <string name="detail_btn_resume">আবার শুরু করুন</string>
     <string name="detail_btn_play_episode">প্লে করুন S%1$d E%2$d</string>

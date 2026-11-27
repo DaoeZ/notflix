@@ -220,7 +220,7 @@
     <string name="detail_marked_previous_watched">Épisodes précédents marqués comme vus&#160;: %1$d</string>
 
     <string name="playback_unavailable">Lecture indisponible</string>
-    <string name="playback_unavailable_message">La lecture n’est pas disponible pour ce titre avec votre configuration actuelle.</string>
+    <string name="playback_unavailable_message">Aucune extension de sources ne peut lire ce titre. Installez-en une dans Paramètres › Extensions (guides sur r/NotflixTV).</string>
     <string name="detail_btn_play">Regarder</string>
     <string name="detail_btn_resume">Reprendre</string>
     <string name="detail_btn_play_episode">Regarder S%1$d E%2$d</string>

@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Escolha uma fonte para transferir</string>
     <string name="notflix_offline_started">Transferência em fila</string>
     <string name="notflix_offline_failed">Não foi possível abrir ou transferir este ficheiro. Experimente um ficheiro de vídeo direto.</string>
+    <string name="notflix_offline_new_code">Atualizar código</string>
 </resources>

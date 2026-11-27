@@ -193,17 +193,12 @@
     <string name="notflix_whats_new_about_title">Novosti u ovoj verziji</string>
     <string name="notflix_whats_new_about_subtitle">Pogledajte promjene u verziji %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Odaberite veličinu kartica: malo, srednje ili veliko.</item>
-        <item>Odaberite koliko se brzo kartice otvaraju; njihova dugmad se bolje vide.</item>
-        <item>Kartice se sada otvaraju i u kolekcijama i puštaju trejler.</item>
-        <item>Ocjene pokazuju da li dolaze s IMDb-a ili s TMDB-a.</item>
-        <item>Automatska reprodukcija po jeziku: odaberite više njih, poredajte ih i odlučite ima li prednost kvalitet ili jezik.</item>
-        <item>Naslovi i opisi na jeziku aplikacije (s TMDB ključem).</item>
-        <item>Notflix je preveden na sve jezike aplikacije.</item>
-        <item>Preglednije postavke: izbori se otvaraju kao lista, a opcije koje ne utiču na Notflix su skrivene.</item>
-        <item>KIDS profili imaju vlastiti početni ekran s crtanim filmovima i porodičnim naslovima (potreban je TMDB ključ).</item>
-        <item>Simkl se sada može povezati.</item>
-        <item>Trakt: povezivanje samo kodom, bez podešavanja.</item>
+        <item>Izbor boje teme sa toniranom tamnom pozadinom i prilagodljiva veličina TV interfejsa (60%–130%) u Izgledu.</item>
+        <item>Dugmad «Sviđa mi se» i «Ne zanima me» na detaljima i baneru za bolje preporuke po profilu.</item>
+        <item>Ocjene epizoda sada koriste SeriesGraph i TMDB rezervu kako bi gotovo svaka serija imala ocjene.</item>
+        <item>Automatsko preskakanje lažnih ili nekeširanih streamova (do 10 pokušaja) i brže automatsko puštanje epizoda.</item>
+        <item>Preimenovanje dodataka, uključivanje/isključivanje Top 10 redova i izbor Notflix ili sistemske tastature.</item>
+        <item>Poboljšani lokalizovani posteri i ispravke stabilnosti.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix ključ</string>
     <string name="notflix_tmdb_attribution">Ovaj proizvod koristi TMDB API, ali ga TMDB ne podržava niti certificira.</string>

@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Wat is er nieuw in deze versie</string>
     <string name="notflix_whats_new_about_subtitle">Bekijk de wijzigingen in versie %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Kies de kaartgrootte: klein, middel of groot.</item>
-        <item>Kies hoe snel kaarten opengaan; hun knoppen zijn beter zichtbaar.</item>
-        <item>Kaarten openen nu ook in collecties en spelen de trailer af.</item>
-        <item>De beoordelingen tonen of ze van IMDb of TMDB komen.</item>
-        <item>Automatisch afspelen per taal: kies er meerdere, zet ze op volgorde en bepaal of kwaliteit of taal voorgaat.</item>
-        <item>Titels en beschrijvingen in de taal van de app (met TMDB-sleutel).</item>
-        <item>Notflix is vertaald naar alle talen van de app.</item>
-        <item>Overzichtelijkere instellingen: keuzes openen als lijst en opties zonder effect op Notflix zijn verborgen.</item>
-        <item>KIDS-profielen krijgen een eigen startpagina met tekenfilms en familietitels (TMDB-sleutel nodig).</item>
-        <item>Simkl kan nu worden gekoppeld.</item>
-        <item>Trakt: koppelen met alleen een code, zonder instellingen.</item>
+        <item>Themakleurkiezer met getinte donkere achtergrond en aanpasbare tv-interfacegrootte (60%–130%) in Weergave.</item>
+        <item>Knoppen «Leuk» en «Niet voor mij» op details en banner voor betere aanbevelingen per profiel.</item>
+        <item>Afleveringsbeoordelingen vallen nu terug op SeriesGraph en TMDB zodat bijna elke serie scores toont.</item>
+        <item>Automatisch overslaan van nep- of niet-gecachete streams (tot 10 pogingen) en sneller automatisch afspelen van afleveringen.</item>
+        <item>Add-ons hernoemen, Top 10-rijen aan/uit zetten en kiezen tussen het Notflix- of systeemtoetsenbord.</item>
+        <item>Verbeterde gelokaliseerde posters en stabiliteitsverbeteringen.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix-sleutel</string>
     <string name="notflix_tmdb_attribution">Dit product gebruikt de TMDB-API, maar wordt niet ondersteund of gecertificeerd door TMDB.</string>

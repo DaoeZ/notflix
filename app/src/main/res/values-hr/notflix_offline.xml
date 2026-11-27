@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Odaberite izvor za preuzimanje</string>
     <string name="notflix_offline_started">Preuzimanje je u redu čekanja</string>
     <string name="notflix_offline_failed">Ovu datoteku nije moguće otvoriti ili preuzeti. Pokušajte s izravnom video datotekom.</string>
+    <string name="notflix_offline_new_code">Osvježi kôd</string>
 </resources>

@@ -53,4 +53,26 @@
     <string name="extras_country_title">Χώρα / Περιοχή (Top 10)</string>
     <string name="extras_country_subtitle">Επιλέξτε το Top 10 ποιας χώρας εμφανίζεται στην Αρχική</string>
     <string name="extras_country_auto">Αυτόματα (%1$s)</string>
+    <string name="extras_show_top10_title">Εμφάνιση σειρών Top 10</string>
+    <string name="extras_show_top10_desc">Top 10 ταινίες και σειρές στη χώρα σας στην αρχική</string>
+    <string name="extras_accent_title">Χρώμα θέματος</string>
+    <string name="extras_accent_red">Κόκκινο</string>
+    <string name="extras_accent_blue">Μπλε</string>
+    <string name="extras_accent_green">Πράσινο</string>
+    <string name="extras_accent_purple">Μωβ</string>
+    <string name="extras_accent_orange">Πορτοκαλί</string>
+    <string name="extras_accent_pink">Ροζ</string>
+    <string name="extras_search_keyboard_title">Πληκτρολόγιο αναζήτησης</string>
+    <string name="extras_search_keyboard_desc">Πληκτρολόγιο Notflix στην οθόνη ή πεδίο κειμένου που ανοίγει το πληκτρολόγιο της τηλεόρασης (Gboard και μικρόφωνο)</string>
+    <string name="extras_search_keyboard_notflix">Πληκτρολόγιο Notflix</string>
+    <string name="extras_search_keyboard_system">Πληκτρολόγιο συστήματος</string>
+    <string name="companion_web_enter_code">Εισαγάγετε τον 6ψήφιο κωδικό που εμφανίζεται στην τηλεόραση για σύνδεση του τηλεχειριστηρίου.</string>
+    <string name="companion_web_code_placeholder">Κωδικός (π.χ. A1B2C3)</string>
+    <string name="companion_web_connect">Σύνδεση</string>
+    <string name="companion_web_invalid_code">Μη έγκυρος κωδικός. Ελέγξτε τον κωδικό στην τηλεόραση και δοκιμάστε ξανά.</string>
+    <string name="extras_like_title">Μου αρέσει</string>
+    <string name="extras_dislike_title">Δεν με ενδιαφέρει</string>
+    <string name="extras_ui_scale_title">Μέγεθος διεπαφής</string>
+    <string name="extras_ui_scale_desc">Προσαρμόζει το συνολικό μέγεθος μενού, αφισών και κειμένου στην τηλεόραση</string>
+    <string name="extras_addon_rename_title">Μετονομασία πρόσθετου</string>
 </resources>

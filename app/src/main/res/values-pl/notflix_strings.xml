@@ -193,17 +193,12 @@
     <string name="notflix_whats_new_about_title">Nowości w tej wersji</string>
     <string name="notflix_whats_new_about_subtitle">Zobacz zmiany w wersji %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Wybierz rozmiar kart: mały, średni lub duży.</item>
-        <item>Wybierz, jak szybko karty się otwierają; ich przyciski są lepiej widoczne.</item>
-        <item>Karty otwierają się i odtwarzają zwiastun także w kolekcjach.</item>
-        <item>Oceny pokazują, czy pochodzą z IMDb, czy z TMDB.</item>
-        <item>Autoodtwarzanie według języka: wybierz kilka, ustaw kolejność i zdecyduj, czy ważniejsza jest jakość, czy język.</item>
-        <item>Tytuły i opisy w języku aplikacji (z kluczem TMDB).</item>
-        <item>Notflix jest przetłumaczony na wszystkie języki aplikacji.</item>
-        <item>Prostsze ustawienia: wybory otwierają się jako lista, a opcje bez wpływu na Notflix są ukryte.</item>
-        <item>Profile KIDS mają własny ekran główny z bajkami i tytułami rodzinnymi (wymaga klucza TMDB).</item>
-        <item>Simkl można teraz połączyć.</item>
-        <item>Trakt: połączenie samym kodem, bez konfiguracji.</item>
+        <item>Wybór koloru motywu z przyciemnionym barwionym tłem i regulowany rozmiar interfejsu TV (60%–130%) w Wyglądzie.</item>
+        <item>Przyciski «Lubię to» i «Nie dla mnie» w szczegółach i banerze, by lepiej dopasować polecenia dla każdego profilu.</item>
+        <item>Oceny odcinków korzystają teraz dodatkowo z SeriesGraph i TMDB, dzięki czemu prawie każdy serial ma oceny.</item>
+        <item>Automatyczne pomijanie fałszywych lub niebuforowanych źródeł (do 10 prób) i szybsze autoodtwarzanie odcinków.</item>
+        <item>Zmiana nazwy dodatków, przełącznik wierszy Top 10 oraz wybór klawiatury Notflix lub systemowej.</item>
+        <item>Lepsze zlokalizowane plakaty (preferuje okładki z tytułem) i poprawki stabilności.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Klucz Notflix</string>
     <string name="notflix_tmdb_attribution">Ten produkt korzysta z interfejsu API TMDB, ale nie jest zatwierdzony ani certyfikowany przez TMDB.</string>

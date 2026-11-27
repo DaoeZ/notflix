@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Újdonságok ebben a verzióban</string>
     <string name="notflix_whats_new_about_subtitle">Tekintse meg a(z) %1$s verzió változásait</string>
     <string-array name="notflix_whats_new_items">
-        <item>Válassza ki a kártyaméretet: kicsi, közepes vagy nagy.</item>
-        <item>Válassza ki, milyen gyorsan nyílnak a kártyák; a gombjaik jobban láthatók.</item>
-        <item>A kártyák most a gyűjteményekben is kinyílnak és előzetest játszanak.</item>
-        <item>Az értékelések jelzik, hogy IMDb-ről vagy TMDB-ről származnak.</item>
-        <item>Automatikus lejátszás nyelv szerint: válasszon többet, állítsa sorrendbe, és döntse el, hogy a minőség vagy a nyelv az első.</item>
-        <item>Címek és leírások az alkalmazás nyelvén (TMDB-kulccsal).</item>
-        <item>A Notflix minden alkalmazásnyelvre le van fordítva.</item>
-        <item>Átláthatóbb beállítások: a választások listában nyílnak meg, a Notflixet nem érintő opciók rejtve vannak.</item>
-        <item>A KIDS-profilok saját kezdőlapot kapnak rajzfilmekkel és családi címekkel (TMDB-kulcs szükséges).</item>
-        <item>A Simkl most már csatlakoztatható.</item>
-        <item>Trakt: csatlakozás egyetlen kóddal, beállítás nélkül.</item>
+        <item>Témaszín-választó színezett sötét háttérrel és testreszabható TV-felületmérettel (60%–130%) a Megjelenésnél.</item>
+        <item>«Tetszik» és «Nem érdekel» gombok az adatlapon és a banneren a profilonkénti ajánlások finomításához.</item>
+        <item>Az epizódértékelések mostantól a SeriesGraph és a TMDB adatait is használják tartalékként, így szinte minden sorozatnál látszanak.</item>
+        <item>Csali vagy nem gyorsítótárazott streamek automatikus átugrása (akár 10 próba) és gyorsabb epizód-automatikus lejátszás.</item>
+        <item>Kiegészítők átnevezése, Top 10 sorok ki-/bekapcsolása és Notflix vagy rendszerbillentyűzet választása.</item>
+        <item>Jobb lokalizált poszterek és stabilitási javítások.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix-kulcs</string>
     <string name="notflix_tmdb_attribution">Ez a termék a TMDB API-t használja, de a TMDB nem támogatja és nem tanúsítja.</string>

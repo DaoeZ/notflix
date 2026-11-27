@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Pilih sumber untuk diunduh</string>
     <string name="notflix_offline_started">Unduhan masuk antrean</string>
     <string name="notflix_offline_failed">File ini tidak dapat dibuka atau diunduh. Coba file video langsung.</string>
+    <string name="notflix_offline_new_code">Perbarui kode</string>
 </resources>

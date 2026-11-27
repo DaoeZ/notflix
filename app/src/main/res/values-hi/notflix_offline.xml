@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">डाउनलोड के लिए कोई सोर्स चुनें</string>
     <string name="notflix_offline_started">डाउनलोड कतार में है</string>
     <string name="notflix_offline_failed">यह फ़ाइल खोली या डाउनलोड नहीं की जा सकी। कोई डायरेक्ट वीडियो फ़ाइल आज़माएँ।</string>
+    <string name="notflix_offline_new_code">कोड रीफ़्रेश करें</string>
 </resources>

@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Alege o sursă de descărcat</string>
     <string name="notflix_offline_started">Descărcare adăugată în coadă</string>
     <string name="notflix_offline_failed">Fișierul nu a putut fi deschis sau descărcat. Încearcă un fișier video direct.</string>
+    <string name="notflix_offline_new_code">Reîmprospătează codul</string>
 </resources>

@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Novedades de esta versión</string>
     <string name="notflix_whats_new_about_subtitle">Consulta los cambios de la versión %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Elige el tamaño de las tarjetas: pequeño, mediano o grande.</item>
-        <item>Elige cuánto tarda en abrirse una tarjeta, y sus botones se ven mejor.</item>
-        <item>Las tarjetas también se abren y muestran el tráiler dentro de las colecciones.</item>
-        <item>Las notas indican si son de IMDb o de TMDB.</item>
-        <item>Reproducción automática por idiomas: elige varios, ordénalos y decide si manda la calidad o el idioma.</item>
-        <item>Títulos y descripciones en el idioma de la app (con clave de TMDB).</item>
-        <item>Notflix está traducido a todos los idiomas de la app.</item>
-        <item>Configuración más limpia: las opciones se eligen en listas y se ocultan las que no afectan a Notflix.</item>
-        <item>Los perfiles KIDS tienen su propio Inicio con caricaturas y títulos familiares (necesita clave de TMDB).</item>
-        <item>Simkl ya se puede conectar.</item>
-        <item>Trakt: ahora se conecta solo con un código, sin configurar nada.</item>
+        <item>Selector de color del tema con fondo teñido y tamaño de interfaz personalizable en la TV (60 %–130 %) en Apariencia.</item>
+        <item>Botones «Me gusta» y «No me interesa» en fichas y banner para afinar tus recomendaciones por perfil.</item>
+        <item>Las calificaciones de episodios ahora usan SeriesGraph y TMDB como respaldo para que casi todas las series muestren nota.</item>
+        <item>Salto automático de videos trampa y enlaces sin caché (hasta 10 intentos) y reproducción automática más rápida.</item>
+        <item>Renombra complementos en Complementos, muestra u oculta filas Top 10 y elige entre teclado Notflix o teclado del sistema.</item>
+        <item>Mejora en pósters localizados (prefiere portadas con título) y correcciones de estabilidad.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Clave de Notflix</string>
     <string name="notflix_tmdb_attribution">Este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB.</string>

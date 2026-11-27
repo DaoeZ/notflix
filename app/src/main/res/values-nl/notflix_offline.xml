@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Kies een bron om te downloaden</string>
     <string name="notflix_offline_started">Download in de wachtrij</string>
     <string name="notflix_offline_failed">Dit bestand kon niet worden geopend of gedownload. Probeer een direct videobestand.</string>
+    <string name="notflix_offline_new_code">Nieuwe code</string>
 </resources>

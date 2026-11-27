@@ -2904,4 +2904,5 @@
     <string name="notflix_billboard_play_description">Přehrát %1$s</string>
     <string name="notflix_billboard_info_description">Více informací: %1$s</string>
     <string name="notflix_billboard_select">Vybrat titul %1$d z %2$d</string>
+    <string name="playback_unavailable_message">Žádný zdrojový doplněk nemůže přehrát tento titul. Nainstalujte jej v Nastavení › Doplňky (návody na r/NotflixTV).</string>
 </resources>

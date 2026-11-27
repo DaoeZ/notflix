@@ -53,4 +53,26 @@
     <string name="extras_country_title">מדינה / אזור (טופ 10)</string>
     <string name="extras_country_subtitle">בחר של איזו מדינה רשימת הטופ 10 תוצג בדף הבית</string>
     <string name="extras_country_auto">אוטומטי (%1$s)</string>
+    <string name="extras_show_top10_title">הצג שורות טופ 10</string>
+    <string name="extras_show_top10_desc">10 הסרטים והסדרות המובילים בארץ שלך במסך הבית</string>
+    <string name="extras_accent_title">צבע ערכת הנושא</string>
+    <string name="extras_accent_red">אדום</string>
+    <string name="extras_accent_blue">כחול</string>
+    <string name="extras_accent_green">ירוק</string>
+    <string name="extras_accent_purple">סגול</string>
+    <string name="extras_accent_orange">כתום</string>
+    <string name="extras_accent_pink">ורוד</string>
+    <string name="extras_search_keyboard_title">מקלדת חיפוש</string>
+    <string name="extras_search_keyboard_desc">מקלדת Notflix על המסך, או שדה טקסט שפותח את המקלדת של הטלוויזיה (Gboard והמיקרופון)</string>
+    <string name="extras_search_keyboard_notflix">מקלדת Notflix</string>
+    <string name="extras_search_keyboard_system">מקלדת המערכת</string>
+    <string name="companion_web_enter_code">הזן את הקוד בן 6 התווים המוצג בטלוויזיה כדי לחבר את השלט.</string>
+    <string name="companion_web_code_placeholder">קוד (למשל A1B2C3)</string>
+    <string name="companion_web_connect">התחבר</string>
+    <string name="companion_web_invalid_code">קוד שגוי. בדוק את הקוד בטלוויזיה ונסה שוב.</string>
+    <string name="extras_like_title">אהבתי</string>
+    <string name="extras_dislike_title">לא מעניין אותי</string>
+    <string name="extras_ui_scale_title">גודל הממשק</string>
+    <string name="extras_ui_scale_desc">מתאים את הגודל הכולל של תפריטים, פוסטרים וטקסט בטלוויזיה</string>
+    <string name="extras_addon_rename_title">שינוי שם תוסף</string>
 </resources>

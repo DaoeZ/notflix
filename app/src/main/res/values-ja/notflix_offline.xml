@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">ダウンロードするソースを選択</string>
     <string name="notflix_offline_started">ダウンロードを待機中</string>
     <string name="notflix_offline_failed">このファイルを開けないか、ダウンロードできませんでした。直接リンクの動画ファイルをお試しください。</string>
+    <string name="notflix_offline_new_code">コードを更新</string>
 </resources>

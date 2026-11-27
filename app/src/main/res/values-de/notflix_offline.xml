@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Wähle eine Quelle zum Herunterladen</string>
     <string name="notflix_offline_started">Download in der Warteschlange</string>
     <string name="notflix_offline_failed">Diese Datei konnte nicht geöffnet oder heruntergeladen werden. Versuche eine direkte Videodatei.</string>
+    <string name="notflix_offline_new_code">Code erneuern</string>
 </resources>

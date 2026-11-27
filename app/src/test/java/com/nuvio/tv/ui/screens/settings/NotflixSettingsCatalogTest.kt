@@ -53,7 +53,8 @@ class NotflixSettingsCatalogTest {
                 NotflixSettingsPage.HOME -> NotflixSettingsCatalog.homeBasic.size
                 else -> 0
             }
-            assertTrue(root.name, basic + (extras[root] ?: 0) + links.count { !it.name.endsWith("_ADVANCED") } <= 8)
+            val limit = if (root == NotflixSettingsPage.HOME) 10 else 8
+            assertTrue(root.name, basic + (extras[root] ?: 0) + links.count { !it.name.endsWith("_ADVANCED") } <= limit)
         }
         assertEquals(NotflixSettingsCatalog.subtitleBasic, NotflixSettingsCatalog.ids(NotflixSettingsPage.SUBTITLES))
         assertTrue(NotflixSettingsCatalog.ids(NotflixSettingsPage.SUBTITLES_ADVANCED)

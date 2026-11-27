@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Chọn một nguồn để tải xuống</string>
     <string name="notflix_offline_started">Đã thêm vào hàng đợi tải xuống</string>
     <string name="notflix_offline_failed">Không thể mở hoặc tải xuống tệp này. Hãy thử một tệp video trực tiếp.</string>
+    <string name="notflix_offline_new_code">Làm mới mã</string>
 </resources>

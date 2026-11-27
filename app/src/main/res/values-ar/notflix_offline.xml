@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">اختر مصدرًا للتنزيل</string>
     <string name="notflix_offline_started">أُضيف التنزيل إلى قائمة الانتظار</string>
     <string name="notflix_offline_failed">تعذّر فتح هذا الملف أو تنزيله. جرّب ملف فيديو مباشرًا.</string>
+    <string name="notflix_offline_new_code">تحديث الرمز</string>
 </resources>

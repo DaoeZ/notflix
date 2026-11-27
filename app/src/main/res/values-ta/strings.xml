@@ -2328,4 +2328,5 @@
     <string name="notflix_billboard_play_description">%1$s இயக்கு</string>
     <string name="notflix_billboard_info_description">மேலும் தகவல்: %1$s</string>
     <string name="notflix_billboard_select">தலைப்பு %1$d / %2$d தேர்ந்தெடு</string>
+    <string name="playback_unavailable_message">எந்த மூல ஆட்-ஆனும் இந்தத் தலைப்பை இயக்க முடியாது. அமைப்புகள் › ஆட்-ஆன்களில் ஒன்றை நிறுவவும் (வழிகாட்டிகள்: r/NotflixTV).</string>
 </resources>

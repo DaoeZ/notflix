@@ -53,4 +53,26 @@
     <string name="extras_country_title">দেশ / অঞ্চল (শীর্ষ ১০)</string>
     <string name="extras_country_subtitle">হোমে কোন দেশের শীর্ষ ১০ দেখাবে তা বেছে নিন</string>
     <string name="extras_country_auto">স্বয়ংক্রিয় (%1$s)</string>
+    <string name="extras_show_top10_title">টপ ১০ সারি দেখান</string>
+    <string name="extras_show_top10_desc">হোমে আপনার দেশের টপ ১০ সিনেমা ও সিরিজ</string>
+    <string name="extras_accent_title">থিমের রং</string>
+    <string name="extras_accent_red">লাল</string>
+    <string name="extras_accent_blue">নীল</string>
+    <string name="extras_accent_green">সবুজ</string>
+    <string name="extras_accent_purple">বেগুনি</string>
+    <string name="extras_accent_orange">কমলা</string>
+    <string name="extras_accent_pink">গোলাপি</string>
+    <string name="extras_search_keyboard_title">সার্চ কিবোর্ড</string>
+    <string name="extras_search_keyboard_desc">স্ক্রিনে Notflix কিবোর্ড, অথবা একটি টেক্সট ফিল্ড যা আপনার টিভির কিবোর্ড খোলে (Gboard ও মাইক্রোফোন)</string>
+    <string name="extras_search_keyboard_notflix">Notflix কিবোর্ড</string>
+    <string name="extras_search_keyboard_system">সিস্টেম কিবোর্ড</string>
+    <string name="companion_web_enter_code">রিমোট সংযুক্ত করতে আপনার টিভিতে দেখানো ৬-অক্ষরের কোডটি লিখুন।</string>
+    <string name="companion_web_code_placeholder">কোড (যেমন A1B2C3)</string>
+    <string name="companion_web_connect">সংযুক্ত করুন</string>
+    <string name="companion_web_invalid_code">অবৈধ কোড। টিভিতে কোডটি দেখে আবার চেষ্টা করুন।</string>
+    <string name="extras_like_title">পছন্দ</string>
+    <string name="extras_dislike_title">আগ্রহী নই</string>
+    <string name="extras_ui_scale_title">ইন্টারফেসের আকার</string>
+    <string name="extras_ui_scale_desc">টিভিতে মেনু, পোস্টার এবং লেখার সামগ্রিক আকার সামঞ্জস্য করে</string>
+    <string name="extras_addon_rename_title">অ্যাড-অন পুনঃনামকরণ</string>
 </resources>

@@ -1074,4 +1074,5 @@ Klaida: Bandomoji simuliuojama klaida — tai nėra tikras gedimas. Šaltinis gr
     <string name="notflix_billboard_play_description">Leisti %1$s</string>
     <string name="notflix_billboard_info_description">Daugiau informacijos: %1$s</string>
     <string name="notflix_billboard_select">Pasirinkti pavadinimą %1$d iš %2$d</string>
+    <string name="playback_unavailable_message">Nė vienas šaltinių priedas negali paleisti šio įrašo. Įdiekite jį Nustatymai › Priedai (gidai: r/NotflixTV).</string>
 </resources>

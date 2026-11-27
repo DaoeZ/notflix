@@ -190,11 +190,12 @@
     <string name="notflix_whats_new_about_title">Novedades de esta versión</string>
     <string name="notflix_whats_new_about_subtitle">Consulta los cambios de la versión %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Clave TMDB integrada de Notflix y tráilers corregidos (el botón y el autoavance funcionan de serie, con respaldo en inglés y Cinemeta).</item>
-        <item>Las tarjetas expandidas en colecciones externas ahora muestran nota, géneros y sinopsis.</item>
-        <item>Corregido el aviso «Reproducción no disponible» en títulos antiguos de Mi lista guardados con otro ID.</item>
-        <item>El micrófono en Buscar ahora usa también el diálogo de voz nativo de Google TV cuando hace falta.</item>
-        <item>Añadido Filipinas al selector de País o región del Top 10 en Ajustes.</item>
+        <item>Selector de color del tema con fondo teñido y tamaño de interfaz personalizable en la tele (60 %–130 %) en Apariencia.</item>
+        <item>Botones «Me gusta» y «No me interesa» en fichas y banner para afinar tus recomendaciones por perfil.</item>
+        <item>Las notas de episodios ahora usan SeriesGraph y TMDB como respaldo para que casi todas las series tengan puntuación.</item>
+        <item>Salto automático de vídeos trampa y enlaces sin caché (hasta 10 intentos) y autoarranque más rápido de episodios.</item>
+        <item>Renombra complementos en Complementos, oculta o muestra filas Top 10 y elige entre teclado Notflix o teclado del sistema.</item>
+        <item>Mejora en pósters traducidos (evita portadas sin título cuando hay carátula con texto) y correcciones de estabilidad.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Clave de Notflix</string>
     <string name="notflix_tmdb_attribution">Este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB.</string>

@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Vyberte zdroj ke stažení</string>
     <string name="notflix_offline_started">Stahování zařazeno do fronty</string>
     <string name="notflix_offline_failed">Tento soubor nelze otevřít ani stáhnout. Zkuste přímý videosoubor.</string>
+    <string name="notflix_offline_new_code">Obnovit kód</string>
 </resources>

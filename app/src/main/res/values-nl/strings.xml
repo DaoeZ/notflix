@@ -3211,4 +3211,5 @@
     <string name="notflix_billboard_play_description">%1$s afspelen</string>
     <string name="notflix_billboard_info_description">Meer informatie: %1$s</string>
     <string name="notflix_billboard_select">Titel %1$d van %2$d selecteren</string>
+    <string name="playback_unavailable_message">Geen enkele bron-add-on kan deze titel afspelen. Installeer er een via Instellingen › Add-ons (handleidingen op r/NotflixTV).</string>
 </resources>

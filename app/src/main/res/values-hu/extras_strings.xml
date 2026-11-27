@@ -53,4 +53,26 @@
     <string name="extras_country_title">Ország / régió (Top 10)</string>
     <string name="extras_country_subtitle">Válaszd ki, melyik ország Top 10 listája jelenjen meg a Kezdőlapon</string>
     <string name="extras_country_auto">Automatikus (%1$s)</string>
+    <string name="extras_show_top10_title">Top 10 sorok megjelenítése</string>
+    <string name="extras_show_top10_desc">Az országod top 10 filmje és sorozata a kezdőlapon</string>
+    <string name="extras_accent_title">Témaszín</string>
+    <string name="extras_accent_red">Piros</string>
+    <string name="extras_accent_blue">Kék</string>
+    <string name="extras_accent_green">Zöld</string>
+    <string name="extras_accent_purple">Lila</string>
+    <string name="extras_accent_orange">Narancs</string>
+    <string name="extras_accent_pink">Rózsaszín</string>
+    <string name="extras_search_keyboard_title">Keresési billentyűzet</string>
+    <string name="extras_search_keyboard_desc">Notflix billentyűzet a képernyőn, vagy egy szövegmező, amely megnyitja a tévé billentyűzetét (Gboard és mikrofon)</string>
+    <string name="extras_search_keyboard_notflix">Notflix billentyűzet</string>
+    <string name="extras_search_keyboard_system">Rendszer-billentyűzet</string>
+    <string name="companion_web_enter_code">Add meg a TV-n látható 6 karakteres kódot a távirányító csatlakoztatásához.</string>
+    <string name="companion_web_code_placeholder">Kód (pl. A1B2C3)</string>
+    <string name="companion_web_connect">Csatlakozás</string>
+    <string name="companion_web_invalid_code">Érvénytelen kód. Ellenőrizd a kódot a TV-n, és próbáld újra.</string>
+    <string name="extras_like_title">Tetszik</string>
+    <string name="extras_dislike_title">Nem érdekel</string>
+    <string name="extras_ui_scale_title">Felület mérete</string>
+    <string name="extras_ui_scale_desc">A menük, poszterek és szövegek általános méretét állítja a TV-n</string>
+    <string name="extras_addon_rename_title">Kiegészítő átnevezése</string>
 </resources>

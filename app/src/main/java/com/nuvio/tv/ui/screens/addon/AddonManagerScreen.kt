@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Reorder
@@ -179,6 +180,7 @@ fun AddonManagerScreen(
             moveAddonUp = viewModel::moveAddonUp,
             moveAddonDown = viewModel::moveAddonDown,
             setAddonEnabled = viewModel::setAddonEnabled,
+            renameAddon = viewModel::renameAddon,
             removeAddon = viewModel::removeAddon,
             confirmPendingChange = viewModel::confirmPendingChange,
             rejectPendingChange = viewModel::rejectPendingChange
@@ -196,6 +198,7 @@ internal data class AddonManagerActions(
     val moveAddonUp: (String) -> Unit = {},
     val moveAddonDown: (String) -> Unit = {},
     val setAddonEnabled: (String, Boolean) -> Unit = { _, _ -> },
+    val renameAddon: (String, String) -> Unit = { _, _ -> },
     val removeAddon: (String) -> Unit = {},
     val confirmPendingChange: () -> Unit = {},
     val rejectPendingChange: () -> Unit = {}
@@ -228,6 +231,8 @@ internal fun AddonManagerContent(
     val manageFromPhoneFocusRequester = remember { FocusRequester() }
     var handledCatalogOrderReturnToken by rememberSaveable { mutableIntStateOf(0) }
     val installButtonFocusRequester = remember { FocusRequester() }
+    var addonPendingRename by remember { mutableStateOf<Addon?>(null) }
+    var renameDraft by remember { mutableStateOf("") }
     val textFieldFocusRequester = remember { FocusRequester() }
     val deleteDialogFocusRequester = remember { FocusRequester() }
     var isEditing by remember { mutableStateOf(false) }
@@ -597,6 +602,10 @@ internal fun AddonManagerContent(
                             }
                         },
                         onRemove = { addonUrlPendingDeletion = addon.baseUrl },
+                        onRename = {
+                            renameDraft = addon.displayName
+                            addonPendingRename = addon
+                        },
                         onEnabledChange = { enabled -> actions.setAddonEnabled(addon.baseUrl, enabled) },
                         isReadOnly = isReadOnly,
                         showReorder = !isEssential,
@@ -631,6 +640,59 @@ internal fun AddonManagerContent(
                         onConfirm = actions.confirmPendingChange,
                         onReject = actions.rejectPendingChange
                     )
+                }
+            }
+        }
+
+        addonPendingRename?.let { targetAddon ->
+            val renameFieldFocusRequester = remember { FocusRequester() }
+            LaunchedEffect(targetAddon.baseUrl) {
+                repeat(2) { withFrameNanos { } }
+                runCatching { renameFieldFocusRequester.requestFocus() }
+            }
+            NuvioDialog(
+                onDismiss = { addonPendingRename = null },
+                title = stringResource(R.string.extras_addon_rename_title),
+                subtitle = targetAddon.name,
+                suppressFirstKeyUp = false
+            ) {
+                BasicTextField(
+                    value = renameDraft,
+                    onValueChange = { renameDraft = it },
+                    singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(color = NuvioTheme.colors.TextPrimary),
+                    cursorBrush = SolidColor(NuvioTheme.colors.Primary),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        actions.renameAddon(targetAddon.baseUrl, renameDraft)
+                        addonPendingRename = null
+                    }),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(renameFieldFocusRequester)
+                        .background(NuvioTheme.colors.BackgroundCard, RoundedCornerShape(NuvioTheme.radii.md))
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                )
+                Spacer(modifier = Modifier.height(NuvioTheme.spacing.md))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.md, Alignment.End)
+                ) {
+                    Button(
+                        onClick = { addonPendingRename = null },
+                        modifier = Modifier.semantics { role = Role.Button }
+                    ) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                    Button(
+                        onClick = {
+                            actions.renameAddon(targetAddon.baseUrl, renameDraft)
+                            addonPendingRename = null
+                        },
+                        modifier = Modifier.semantics { role = Role.Button }
+                    ) {
+                        Text(stringResource(R.string.action_save))
+                    }
                 }
             }
         }
@@ -1420,6 +1482,7 @@ private fun AddonCard(
     canMoveDown: Boolean,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
+    onRename: () -> Unit = {},
     onRemove: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
     isReadOnly: Boolean = false,
@@ -1481,6 +1544,7 @@ private fun AddonCard(
                     canMoveDown = canMoveDown,
                     onMoveUp = onMoveUp,
                     onMoveDown = onMoveDown,
+                    onRename = onRename,
                     onRemove = onRemove,
                     onEnabledChange = onEnabledChange,
                     showReorder = showReorder,
@@ -1511,6 +1575,7 @@ private fun AddonCardContent(
     canMoveDown: Boolean = false,
     onMoveUp: () -> Unit = {},
     onMoveDown: () -> Unit = {},
+    onRename: () -> Unit = {},
     onRemove: () -> Unit = {},
     onEnabledChange: (Boolean) -> Unit = {},
     showReorder: Boolean = true,
@@ -1662,6 +1727,19 @@ private fun AddonCardContent(
                         ) {
                             Icon(imageVector = Icons.Default.ArrowDownward, contentDescription = stringResource(R.string.cd_move_down))
                         }
+                    }
+                    Button(
+                        onClick = onRename,
+                        modifier = Modifier.semantics { role = Role.Button },
+                        colors = ButtonDefaults.colors(
+                            containerColor = if (notflix) Color.Transparent else NuvioTheme.colors.BackgroundCard,
+                            contentColor = if (notflix) spec.Secondary else NuvioTheme.colors.TextSecondary,
+                            focusedContainerColor = if (notflix) spec.Text else NuvioTheme.colors.FocusBackground,
+                            focusedContentColor = if (notflix) spec.Background else NuvioTheme.colors.Primary
+                        ),
+                        shape = ButtonDefaults.shape(RoundedCornerShape(NuvioTheme.radii.md))
+                    ) {
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = stringResource(R.string.extras_addon_rename_title))
                     }
                     Button(
                         onClick = onRemove,

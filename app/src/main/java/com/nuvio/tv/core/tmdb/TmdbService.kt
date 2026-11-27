@@ -44,7 +44,7 @@ class TmdbService @Inject constructor(
         return tmdbApi.searchTitles(tmdbKey(), query, language).body()?.results.orEmpty()
     }
 
-    internal data class SearchArtwork(val title: String?, val poster: String?)
+    internal data class SearchArtwork(val title: String?, val poster: String?, val rating: Float? = null)
 
     internal suspend fun searchArtwork(id: String, type: String, language: String): SearchArtwork? {
         val mediaType = normalizeMediaType(type)
@@ -57,14 +57,22 @@ class TmdbService @Inject constructor(
             val match = response.body()?.let { data ->
                 (if (mediaType == "movie") data.movieResults else data.tvResults)?.firstOrNull()
             }
-            SearchArtwork(match?.title ?: match?.name, match?.id?.let { localizedPoster(it, mediaType, language) })
+            SearchArtwork(
+                match?.title ?: match?.name,
+                match?.id?.let { localizedPoster(it, mediaType, language) },
+                match?.voteAverage?.toFloat()?.takeIf { it > 0f }
+            )
         } else {
             val tmdbId = id.takeIf { it.startsWith("tmdb:") }?.substringAfter(':')?.toIntOrNull() ?: return null
             val response = if (mediaType == "movie") tmdbApi.getMovieDetails(tmdbId, tmdbKey(), language)
                 else tmdbApi.getTvDetails(tmdbId, tmdbKey(), language)
             if (!response.isSuccessful) return null
             val details = response.body()
-            SearchArtwork(details?.title ?: details?.name, localizedPoster(tmdbId, mediaType, language))
+            SearchArtwork(
+                details?.title ?: details?.name,
+                localizedPoster(tmdbId, mediaType, language),
+                details?.voteAverage?.toFloat()?.takeIf { it > 0f }
+            )
         }
         searchPosterCache.put(key, result)
         return result
@@ -726,7 +734,7 @@ internal fun selectNotflixPoster(posters: List<TmdbImage>, language: String): St
     return posters.firstNotNullOfOrNull { image ->
         searchImageUrl(image.filePath).takeIf { image.iso6391.equals(code, ignoreCase = true) }
     } ?: posters.firstNotNullOfOrNull { image ->
-        searchImageUrl(image.filePath).takeIf { image.iso6391.isNullOrBlank() }
+        searchImageUrl(image.filePath).takeIf { image.iso6391.equals("en", ignoreCase = true) }
     }
 }
 

@@ -28,11 +28,22 @@ object NotflixCountryPreference {
     private val _selectedCountry = MutableStateFlow(AUTO)
     val selectedCountry: StateFlow<String> = _selectedCountry.asStateFlow()
 
+    private const val SHOW_TOP10_KEY = "top10_rows_visible"
+    private val _showTop10 = MutableStateFlow(true)
+    /** Home shows the Top 10 rows; off for people who only want their own catalogs. */
+    val showTop10: StateFlow<Boolean> = _showTop10.asStateFlow()
+
     fun initialize(context: Context) {
         val sp = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs = sp
         val stored = sp.getString(KEY, null)?.trim()?.uppercase().orEmpty()
         _selectedCountry.value = if (stored.length == 2) stored else AUTO
+        _showTop10.value = sp.getBoolean(SHOW_TOP10_KEY, true)
+    }
+
+    fun setShowTop10(show: Boolean) {
+        _showTop10.value = show
+        prefs?.edit()?.putBoolean(SHOW_TOP10_KEY, show)?.apply()
     }
 
     fun select(code: String) {

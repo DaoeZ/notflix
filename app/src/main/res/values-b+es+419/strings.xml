@@ -220,7 +220,7 @@
     <string name="detail_marked_previous_watched">Episodios anteriores marcados como vistos: %1$d</string>
 
     <string name="playback_unavailable">Reproducción no disponible</string>
-    <string name="playback_unavailable_message">La reproducción no está disponible para este título con tu configuración actual.</string>
+    <string name="playback_unavailable_message">Ningún complemento de fuentes puede reproducir este título. Instala uno en Ajustes › Complementos (guías en r/NotflixTV).</string>
     <string name="detail_btn_play">Reproducir</string>
     <string name="detail_btn_resume">Continuar</string>
     <string name="detail_btn_play_episode">Reproducir T%1$d E%2$d</string>

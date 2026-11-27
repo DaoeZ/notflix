@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">Pasirinkite šaltinį atsisiuntimui</string>
     <string name="notflix_offline_started">Atsisiuntimas įtrauktas į eilę</string>
     <string name="notflix_offline_failed">Nepavyko atidaryti ar atsisiųsti šio failo. Pabandykite tiesioginį vaizdo failą.</string>
+    <string name="notflix_offline_new_code">Atnaujinti kodą</string>
 </resources>

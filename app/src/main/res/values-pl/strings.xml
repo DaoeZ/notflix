@@ -235,7 +235,7 @@
     <string name="playback_true_black_letterbox">Czysto czarne paski</string>
     <string name="playback_true_black_letterbox_sub">Zostaw paski wokół obrazu niemalowane, aby HDR zachował czystą czerń. Wyłącz jeśli na paskach pojawia się jasna linia.</string>
     <string name="playback_unavailable">Odtwarzanie niedostępne</string>
-    <string name="playback_unavailable_message">Odtwarzanie nie jest dostępne dla tego tytułu przy obecnej konfiguracji.</string>
+    <string name="playback_unavailable_message">Żaden dodatek ze źródłami nie może odtworzyć tego tytułu. Zainstaluj go w Ustawienia › Dodatki (poradniki na r/NotflixTV).</string>
     <string name="playback_cache_write_warning">Na urządzeniach z pamięcią wbudowaną ciągły zapis może z czasem powodować zużycie nośnika.</string>
 
     <!-- PlaybackAudioSettings -->

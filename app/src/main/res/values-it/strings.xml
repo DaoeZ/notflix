@@ -3131,7 +3131,7 @@
 
 
     <string name="playback_unavailable">Riproduzione non disponibile</string>
-    <string name="playback_unavailable_message">La riproduzione non è disponibile per questo titolo con la configurazione attuale.</string>
+    <string name="playback_unavailable_message">Nessun componente sorgente può riprodurre questo titolo. Installane uno in Impostazioni › Componenti aggiuntivi (guide su r/NotflixTV).</string>
     <string name="detail_more_like_this_powered_by_simkl">Offerto da Simkl</string>
     <string name="theme_color_custom">Personalizzato</string>
     <string name="custom_theme_title">Il tuo gradiente personalizzato</string>

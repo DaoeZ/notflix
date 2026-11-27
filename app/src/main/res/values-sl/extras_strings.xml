@@ -53,4 +53,26 @@
     <string name="extras_country_title">Država / regija (Top 10)</string>
     <string name="extras_country_subtitle">Izberite državo za seznam Top 10 na začetnem zaslonu</string>
     <string name="extras_country_auto">Samodejno (%1$s)</string>
+    <string name="extras_show_top10_title">Prikaži vrstice Top 10</string>
+    <string name="extras_show_top10_desc">Top 10 filmov in serij v vaši državi na začetnem zaslonu</string>
+    <string name="extras_accent_title">Barva teme</string>
+    <string name="extras_accent_red">Rdeča</string>
+    <string name="extras_accent_blue">Modra</string>
+    <string name="extras_accent_green">Zelena</string>
+    <string name="extras_accent_purple">Vijolična</string>
+    <string name="extras_accent_orange">Oranžna</string>
+    <string name="extras_accent_pink">Roza</string>
+    <string name="extras_search_keyboard_title">Tipkovnica za iskanje</string>
+    <string name="extras_search_keyboard_desc">Tipkovnica Notflix na zaslonu ali besedilno polje, ki odpre tipkovnico televizorja (Gboard in mikrofon)</string>
+    <string name="extras_search_keyboard_notflix">Tipkovnica Notflix</string>
+    <string name="extras_search_keyboard_system">Sistemska tipkovnica</string>
+    <string name="companion_web_enter_code">Vnesite 6-mestno kodo, prikazano na TV-ju, za povezavo daljinca.</string>
+    <string name="companion_web_code_placeholder">Koda (npr. A1B2C3)</string>
+    <string name="companion_web_connect">Poveži</string>
+    <string name="companion_web_invalid_code">Neveljavna koda. Preverite kodo na TV-ju in poskusite znova.</string>
+    <string name="extras_like_title">Všeč mi je</string>
+    <string name="extras_dislike_title">Ne zanima me</string>
+    <string name="extras_ui_scale_title">Velikost vmesnika</string>
+    <string name="extras_ui_scale_desc">Prilagodi splošno velikost menijev, plakatov in besedila na TV-ju</string>
+    <string name="extras_addon_rename_title">Preimenuj dodatek</string>
 </resources>

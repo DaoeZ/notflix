@@ -53,4 +53,26 @@
     <string name="extras_country_title">Země / oblast (Top 10)</string>
     <string name="extras_country_subtitle">Vyberte zemi, jejíž žebříček Top 10 se zobrazí na Domovské obrazovce</string>
     <string name="extras_country_auto">Automaticky (%1$s)</string>
+    <string name="extras_show_top10_title">Zobrazit řady Top 10</string>
+    <string name="extras_show_top10_desc">Top 10 filmů a seriálů ve vaší zemi na domovské obrazovce</string>
+    <string name="extras_accent_title">Barva motivu</string>
+    <string name="extras_accent_red">Červená</string>
+    <string name="extras_accent_blue">Modrá</string>
+    <string name="extras_accent_green">Zelená</string>
+    <string name="extras_accent_purple">Fialová</string>
+    <string name="extras_accent_orange">Oranžová</string>
+    <string name="extras_accent_pink">Růžová</string>
+    <string name="extras_search_keyboard_title">Klávesnice pro hledání</string>
+    <string name="extras_search_keyboard_desc">Klávesnice Notflix na obrazovce, nebo textové pole, které otevře klávesnici televize (Gboard a mikrofon)</string>
+    <string name="extras_search_keyboard_notflix">Klávesnice Notflix</string>
+    <string name="extras_search_keyboard_system">Systémová klávesnice</string>
+    <string name="companion_web_enter_code">Zadejte 6znakový kód zobrazený na TV pro připojení ovladače.</string>
+    <string name="companion_web_code_placeholder">Kód (např. A1B2C3)</string>
+    <string name="companion_web_connect">Připojit</string>
+    <string name="companion_web_invalid_code">Neplatný kód. Zkontrolujte kód na TV a zkuste to znovu.</string>
+    <string name="extras_like_title">Líbí se mi</string>
+    <string name="extras_dislike_title">Nezajímá mě</string>
+    <string name="extras_ui_scale_title">Velikost rozhraní</string>
+    <string name="extras_ui_scale_desc">Upravuje celkovou velikost nabídek, plakátů a textu na TV</string>
+    <string name="extras_addon_rename_title">Přejmenovat doplněk</string>
 </resources>

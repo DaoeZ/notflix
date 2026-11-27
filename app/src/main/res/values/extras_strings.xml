@@ -72,4 +72,22 @@
     <string name="extras_country_title">Country / Region (Top 10)</string>
     <string name="extras_country_subtitle">Choose which country\'s Top 10 appears on Home</string>
     <string name="extras_country_auto">Automatic (%1$s)</string>
+    <string name="extras_show_top10_title">Show Top 10 rows</string>
+    <string name="extras_show_top10_desc">Top 10 movies and series in your country on Home</string>
+    <string name="extras_accent_title">Theme colour</string>
+    <string name="extras_accent_red">Red</string>
+    <string name="extras_accent_blue">Blue</string>
+    <string name="extras_accent_green">Green</string>
+    <string name="extras_accent_purple">Purple</string>
+    <string name="extras_accent_orange">Orange</string>
+    <string name="extras_accent_pink">Pink</string>
+    <string name="extras_search_keyboard_title">Search keyboard</string>
+    <string name="extras_search_keyboard_desc">Notflix keyboard on screen, or a text field that opens your TV’s keyboard (Gboard and its microphone)</string>
+    <string name="extras_search_keyboard_notflix">Notflix keyboard</string>
+    <string name="extras_search_keyboard_system">System keyboard</string>
+    <string name="extras_like_title">Like</string>
+    <string name="extras_dislike_title">Not for me</string>
+    <string name="extras_ui_scale_title">Interface size</string>
+    <string name="extras_ui_scale_desc">Adjusts the overall size of menus, posters and text on TV</string>
+    <string name="extras_addon_rename_title">Rename add-on</string>
 </resources>

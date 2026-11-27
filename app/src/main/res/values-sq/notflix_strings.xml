@@ -189,17 +189,12 @@
     <string name="notflix_whats_new_about_title">Të rejat në këtë version</string>
     <string name="notflix_whats_new_about_subtitle">Shihni ndryshimet e versionit %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Zgjidhni madhësinë e kartave: të vogël, mesatare ose të madhe.</item>
-        <item>Zgjidhni sa shpejt hapen kartat; butonat e tyre duken më mirë.</item>
-        <item>Kartat tani hapen edhe në koleksione dhe luajnë rimorkio.</item>
-        <item>Vlerësimet tregojnë nëse vijnë nga IMDb ose TMDB.</item>
-        <item>Luajtje automatike sipas gjuhës: zgjidhni disa, renditini dhe vendosni nëse ka përparësi cilësia apo gjuha.</item>
-        <item>Titujt dhe përshkrimet në gjuhën e aplikacionit (me çelës TMDB).</item>
-        <item>Notflix është përkthyer në të gjitha gjuhët e aplikacionit.</item>
-        <item>Cilësime më të qarta: zgjedhjet hapen si listë dhe opsionet që nuk ndikojnë Notflix fshihen.</item>
-        <item>Profilet KIDS kanë faqen e tyre kryesore me filma vizatimorë dhe tituj familjarë (kërkohet çelës TMDB).</item>
-        <item>Simkl tani mund të lidhet.</item>
-        <item>Trakt: lidhuni vetëm me një kod, pa konfigurim.</item>
+        <item>Zgjedhësi i ngjyrës së temës me sfond të errët të nuancuar dhe madhësi e personalizueshme e ndërfaqes TV (60%–130%) te Pamja.</item>
+        <item>Butonat «Më pëlqen» dhe «Nuk më intereson» te detajet dhe baneri për rekomandime më të sakta sipas profilit.</item>
+        <item>Vlerësimet e episodeve tani përdorin SeriesGraph dhe TMDB si rezervë që thuajse çdo serial të shfaqë nota.</item>
+        <item>Kapërcim automatik i lidhjeve mashtruese ose pa cache (deri në 10 tentativa) dhe luajtje automatike më e shpejtë e episodeve.</item>
+        <item>Riemërto shtojcat, shfaq/fsheh rreshtat Top 10 dhe zgjidh mes tastierës Notflix ose të sistemit.</item>
+        <item>Posterë të lokalizuar më të mirë dhe rregullime qëndrueshmërie.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Çelësi Notflix</string>
     <string name="notflix_tmdb_attribution">Ky produkt përdor API-n e TMDB, por nuk është miratuar ose certifikuar nga TMDB.</string>

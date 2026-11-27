@@ -12,4 +12,5 @@
     <string name="notflix_offline_choose_source">選擇要下載的來源</string>
     <string name="notflix_offline_started">已加入下載佇列</string>
     <string name="notflix_offline_failed">無法開啟或下載此檔案。請嘗試直接的影片檔案。</string>
+    <string name="notflix_offline_new_code">重新整理代碼</string>
 </resources>

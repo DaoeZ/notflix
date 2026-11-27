@@ -53,4 +53,26 @@
     <string name="extras_country_title">Land / region (Topp 10)</string>
     <string name="extras_country_subtitle">Välj vilket lands Topp 10 som visas på startsidan</string>
     <string name="extras_country_auto">Automatiskt (%1$s)</string>
+    <string name="extras_show_top10_title">Visa Topp 10-rader</string>
+    <string name="extras_show_top10_desc">Topp 10 filmer och serier i ditt land på startsidan</string>
+    <string name="extras_accent_title">Temafärg</string>
+    <string name="extras_accent_red">Röd</string>
+    <string name="extras_accent_blue">Blå</string>
+    <string name="extras_accent_green">Grön</string>
+    <string name="extras_accent_purple">Lila</string>
+    <string name="extras_accent_orange">Orange</string>
+    <string name="extras_accent_pink">Rosa</string>
+    <string name="extras_search_keyboard_title">Söktangentbord</string>
+    <string name="extras_search_keyboard_desc">Notflix-tangentbord på skärmen, eller ett textfält som öppnar tv:ns tangentbord (Gboard och mikrofonen)</string>
+    <string name="extras_search_keyboard_notflix">Notflix-tangentbord</string>
+    <string name="extras_search_keyboard_system">Systemtangentbord</string>
+    <string name="companion_web_enter_code">Ange den 6-teckenskod som visas på TV:n för att ansluta fjärrkontrollen.</string>
+    <string name="companion_web_code_placeholder">Kod (t.ex. A1B2C3)</string>
+    <string name="companion_web_connect">Anslut</string>
+    <string name="companion_web_invalid_code">Ogiltig kod. Kontrollera koden på TV:n och försök igen.</string>
+    <string name="extras_like_title">Gilla</string>
+    <string name="extras_dislike_title">Inte intresserad</string>
+    <string name="extras_ui_scale_title">Gränssnittsstorlek</string>
+    <string name="extras_ui_scale_desc">Justerar den totala storleken på menyer, affischer och text på TV</string>
+    <string name="extras_addon_rename_title">Byt namn på tillägg</string>
 </resources>

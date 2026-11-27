@@ -53,4 +53,26 @@
     <string name="extras_country_title">Shteti / Rajoni (Top 10)</string>
     <string name="extras_country_subtitle">Zgjidhni për cilin shtet shfaqet lista Top 10 në Kryefaqe</string>
     <string name="extras_country_auto">Automatik (%1$s)</string>
+    <string name="extras_show_top10_title">Shfaq rreshtat Top 10</string>
+    <string name="extras_show_top10_desc">Top 10 filmat dhe serialet në vendin tënd në faqen kryesore</string>
+    <string name="extras_accent_title">Ngjyra e temës</string>
+    <string name="extras_accent_red">E kuqe</string>
+    <string name="extras_accent_blue">Blu</string>
+    <string name="extras_accent_green">E gjelbër</string>
+    <string name="extras_accent_purple">Vjollcë</string>
+    <string name="extras_accent_orange">Portokalli</string>
+    <string name="extras_accent_pink">Rozë</string>
+    <string name="extras_search_keyboard_title">Tastiera e kërkimit</string>
+    <string name="extras_search_keyboard_desc">Tastiera e Notflix në ekran, ose një fushë teksti që hap tastierën e televizorit (Gboard dhe mikrofoni)</string>
+    <string name="extras_search_keyboard_notflix">Tastiera e Notflix</string>
+    <string name="extras_search_keyboard_system">Tastiera e sistemit</string>
+    <string name="companion_web_enter_code">Shkruani kodin 6-karakterësh të shfaqur në TV për të lidhur telekomandën.</string>
+    <string name="companion_web_code_placeholder">Kodi (p.sh. A1B2C3)</string>
+    <string name="companion_web_connect">Lidhu</string>
+    <string name="companion_web_invalid_code">Kod i pavlefshëm. Kontrolloni kodin në TV dhe provoni përsëri.</string>
+    <string name="extras_like_title">Më pëlqen</string>
+    <string name="extras_dislike_title">Nuk më intereson</string>
+    <string name="extras_ui_scale_title">Madhësia e ndërfaqes</string>
+    <string name="extras_ui_scale_desc">Rregullon madhësinë e përgjithshme të menyve, posterëve dhe tekstit në TV</string>
+    <string name="extras_addon_rename_title">Riemërto shtojcën</string>
 </resources>

@@ -53,4 +53,26 @@
     <string name="extras_country_title">Kraj / region (Top 10)</string>
     <string name="extras_country_subtitle">Wybierz kraj, którego lista Top 10 ma się wyświetlać na ekranie głównym</string>
     <string name="extras_country_auto">Automatycznie (%1$s)</string>
+    <string name="extras_show_top10_title">Pokaż rzędy Top 10</string>
+    <string name="extras_show_top10_desc">Top 10 filmów i seriali w Twoim kraju na ekranie głównym</string>
+    <string name="extras_accent_title">Kolor motywu</string>
+    <string name="extras_accent_red">Czerwony</string>
+    <string name="extras_accent_blue">Niebieski</string>
+    <string name="extras_accent_green">Zielony</string>
+    <string name="extras_accent_purple">Fioletowy</string>
+    <string name="extras_accent_orange">Pomarańczowy</string>
+    <string name="extras_accent_pink">Różowy</string>
+    <string name="extras_search_keyboard_title">Klawiatura wyszukiwania</string>
+    <string name="extras_search_keyboard_desc">Klawiatura Notflix na ekranie lub pole tekstowe, które otwiera klawiaturę telewizora (Gboard i mikrofon)</string>
+    <string name="extras_search_keyboard_notflix">Klawiatura Notflix</string>
+    <string name="extras_search_keyboard_system">Klawiatura systemowa</string>
+    <string name="companion_web_enter_code">Wpisz 6-znakowy kod wyświetlany na telewizorze, aby połączyć pilota.</string>
+    <string name="companion_web_code_placeholder">Kod (np. A1B2C3)</string>
+    <string name="companion_web_connect">Połącz</string>
+    <string name="companion_web_invalid_code">Nieprawidłowy kod. Sprawdź kod na telewizorze i spróbuj ponownie.</string>
+    <string name="extras_like_title">Lubię to</string>
+    <string name="extras_dislike_title">Nie interesuje mnie</string>
+    <string name="extras_ui_scale_title">Rozmiar interfejsu</string>
+    <string name="extras_ui_scale_desc">Dostosowuje ogólny rozmiar menu, plakatów i tekstu na telewizorze</string>
+    <string name="extras_addon_rename_title">Zmień nazwę dodatku</string>
 </resources>

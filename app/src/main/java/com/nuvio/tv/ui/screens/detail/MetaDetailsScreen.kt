@@ -40,6 +40,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -864,10 +865,12 @@ fun MetaDetailsScreen(
                 if (playOnLoad && !playOnLoadReturnContentRevealed) {
                     PlaybackHandoffBackdrop(backdropUrl = heroBackdropUrl ?: meta.backdropUrl)
                 }
+                val activeProfileId by viewModel.activeProfileId.collectAsState()
                 MetaDetailsContent(
                     modifier = Modifier.graphicsLayer {
                         alpha = playOnLoadReturnContentAlpha
                     },
+                    activeProfileId = activeProfileId,
                     heroBackdropUrl = heroBackdropUrl,
                     meta = meta,
                     detailReturnEpisodeFocusRequest = DetailReturnEpisodeFocusRequest(
@@ -1222,6 +1225,7 @@ fun MetaDetailsScreen(
 @Composable
 internal fun MetaDetailsContent(
     modifier: Modifier = Modifier,
+    activeProfileId: Int = 1,
     heroBackdropUrl: String? = null,
     meta: Meta,
     detailReturnEpisodeFocusRequest: DetailReturnEpisodeFocusRequest? = null,
@@ -2342,6 +2346,7 @@ internal fun MetaDetailsContent(
     val heroContent: @Composable () -> Unit = {
         HeroContentSection(
             meta = meta,
+            activeProfileId = activeProfileId,
             nextEpisode = nextEpisode,
             nextToWatch = nextToWatch,
             onPlayClick = { if (shufflePoolEmpty) showRandomEpisodeOverlay = true else heroPlayClick() },

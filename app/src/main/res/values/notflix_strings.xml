@@ -193,11 +193,12 @@
     <string name="notflix_whats_new_about_title">What\'s new in this version</string>
     <string name="notflix_whats_new_about_subtitle">See the changes in version %1$s</string>
     <string-array name="notflix_whats_new_items">
-        <item>Built-in Notflix TMDB key and fixed trailers (button and autoplay now work out of the box, with English and Cinemeta fallback).</item>
-        <item>Expanded cards in non-Notflix collections now show rating, genres and synopsis.</item>
-        <item>Fixed «Playback unavailable» on older My List entries saved with alternative IDs.</item>
-        <item>Voice search in Search now falls back to Google TV\'s native voice dialog when needed.</item>
-        <item>Added Philippines to the Top 10 Country / Region selector in Settings.</item>
+        <item>Theme colour selector with tinted dark background and customizable TV interface size (60%–130%) in Appearance.</item>
+        <item>Like / Not for me buttons on details and banner to refine your recommendations per profile.</item>
+        <item>Episode ratings now fall back to SeriesGraph and TMDB so almost every show displays ratings.</item>
+        <item>Automatic skip of placeholder or uncached streams (up to 10 attempts) and faster episode autoplay.</item>
+        <item>Rename add-ons in Add-on Manager, toggle Top 10 rows, and choose between the Notflix or system search keyboard.</item>
+        <item>Improved localized posters (prefers titled artwork over textless covers) and stability fixes.</item>
     </string-array>
     <string name="notflix_provider_tmdb_built_in">Notflix key</string>
     <string name="notflix_tmdb_attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</string>

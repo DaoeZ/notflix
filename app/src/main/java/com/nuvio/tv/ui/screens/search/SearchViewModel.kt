@@ -379,6 +379,8 @@ class SearchViewModel @Inject constructor(
     private var localizedTitlesJob: Job? = null
     private val _localizedPosters = MutableStateFlow<Map<String, String>>(emptyMap())
     val localizedPosters: StateFlow<Map<String, String>> = _localizedPosters.asStateFlow()
+    private val _localizedRatings = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val localizedRatings: StateFlow<Map<String, Float>> = _localizedRatings.asStateFlow()
 
     fun requestLocalizedTitles(items: List<MetaPreview>) {
         localizedTitlesJob?.cancel()
@@ -409,6 +411,10 @@ class SearchViewModel @Inject constructor(
                 }
                 _localizedPosters.update { previous ->
                     (previous + resolved.mapNotNull { (key, art) -> art?.poster?.let { key to it } }).entries.takeLastEntries()
+                }
+                _localizedRatings.update { previous ->
+                    (previous + resolved.mapNotNull { (key, art) -> art?.rating?.let { key to it } })
+                        .entries.toList().takeLast(160).associate { it.key to it.value }
                 }
             }
         }
@@ -943,13 +949,14 @@ class SearchViewModel @Inject constructor(
                             notflixTitleMatchRank(it.originalTitle ?: it.originalName.orEmpty(), query)
                         )
                     }.thenByDescending { it.popularity ?: 0.0 })
-                    .take(6)
+                    .take(16)
                 coroutineScope {
                     results.map { hit ->
                         async {
                             val mediaType = hit.mediaType ?: return@async null
                             val id = tmdbService.tmdbToImdb(hit.id, mediaType) ?: return@async null
                             val title = hit.title ?: hit.name ?: return@async null
+                            val tmdbRating = hit.voteAverage?.toFloat()?.takeIf { it > 0f }
                             MetaPreview(
                                 id = id,
                                 type = if (mediaType == "movie") ContentType.MOVIE else ContentType.SERIES,
@@ -960,7 +967,8 @@ class SearchViewModel @Inject constructor(
                                 logo = null,
                                 description = hit.overview,
                                 releaseInfo = hit.releaseDate ?: hit.firstAirDate,
-                                imdbRating = null,
+                                imdbRating = tmdbRating,
+                                ratingSource = com.nuvio.tv.domain.model.RatingSource.TMDB,
                                 imdbId = id,
                                 genres = emptyList(),
                                 released = hit.releaseDate ?: hit.firstAirDate,

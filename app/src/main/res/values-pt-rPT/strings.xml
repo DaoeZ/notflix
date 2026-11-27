@@ -2648,4 +2648,5 @@
     <string name="notflix_billboard_play_description">Reproduzir %1$s</string>
     <string name="notflix_billboard_info_description">Mais informações: %1$s</string>
     <string name="notflix_billboard_select">Selecionar título %1$d de %2$d</string>
+    <string name="playback_unavailable_message">Nenhum suplemento de fontes consegue reproduzir este título. Instale um em Definições › Suplementos (guias em r/NotflixTV).</string>
 </resources>

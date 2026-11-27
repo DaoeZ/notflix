@@ -220,7 +220,7 @@
     <string name="detail_marked_previous_watched">已标记为已观看的先前剧集：%1$d</string>
 
     <string name="playback_unavailable">无法播放</string>
-    <string name="playback_unavailable_message">在当前配置下，此标题无法播放。</string>
+    <string name="playback_unavailable_message">没有片源插件可以播放此内容。请在 设置 › 插件 中安装一个（教程见 r/NotflixTV）。</string>
     <string name="detail_btn_play">播放</string>
     <string name="detail_btn_resume">继续播放</string>
     <string name="detail_btn_play_episode">播放 S%1$d E%2$d</string>
